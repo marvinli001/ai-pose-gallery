@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+
+{% block title %}AI姿势参考图库 - 智能搜索{% endblock %}
+
+{% block content %}
+<!-- 头部搜索区域 -->
+<div class="hero-section bg-gradient-primary text-white py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h1 class="display-4 mb-4">
+                    <i class="fas fa-search"></i> AI姿势参考图库
+                </h1>
+                <p class="lead mb-4">
+                    用自然语言描述你想要的姿势，AI会为你找到最匹配的参考图片
+                </p>
+                
+                <!-- 搜索框 -->
+                <div class="search-container mb-4">
+                    <div class="input-group input-group-lg">
+                        <input type="text" 
+                               class="form-control" 
+                               id="searchInput" 
+                               placeholder="例如：女性坐姿 室内 自然光"
+                               autocomplete="off">
+                        <button class="btn btn-warning" type="button" id="searchBtn">
+                            <i class="fas fa-search"></i> 搜索
+                        </button>
+                    </div>
+                    
+                    <!-- 搜索建议下拉框 -->
+                    <div id="searchSuggestions" class="suggestions-dropdown" style="display: none;"></div>
+                </div>
+                
+                <!-- 热门搜索 -->
+                <div id="popularSearches" class="popular-searches mb-3">
+                    <small class="text-white-50">热门搜索：</small>
+                    <div class="d-inline" id="popularTags"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 主内容区域 -->
+<div class="container py-5">
+    <!-- 搜索结果 -->
+    <div id="searchResults" style="display: none;">
+        <div class="row mb-4">
+            <div class="col">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 id="resultsTitle">搜索结果</h3>
+                    <div id="resultsInfo" class="text-muted"></div>
+                </div>
+                <hr>
+            </div>
+        </div>
+        
+        <div id="imagesGrid" class="row g-4">
+            <!-- 搜索结果将动态插入这里 -->
+        </div>
+        
+        <!-- 加载更多 -->
+        <div class="text-center mt-4">
+            <button id="loadMoreBtn" class="btn btn-outline-primary" style="display: none;">
+                <i class="fas fa-plus"></i> 加载更多
+            </button>
+        </div>
+    </div>
+    
+    <!-- 默认内容 - 最新图片 -->
+    <div id="defaultContent">
+        <div class="row mb-4">
+            <div class="col">
+                <h3><i class="fas fa-images"></i> 最新上传</h3>
+                <hr>
+            </div>
+        </div>
+        
+        <div id="latestImagesGrid" class="row g-4">
+            <!-- 最新图片将动态加载 -->
+        </div>
+    </div>
+    
+    <!-- 标签云 -->
+    <div class="row mt-5">
+        <div class="col">
+            <h4><i class="fas fa-tags"></i> 热门标签</h4>
+            <div id="tagCloud" class="tag-cloud mt-3">
+                <!-- 标签云将动态加载 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图片详情模态框 -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalImageTitle">图片详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalImageContent">
+                <!-- 图片详情内容 -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 40vh;
+    display: flex;
+    align-items: center;
+}
+
+.search-container {
+    position: relative;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.suggestions-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.suggestion-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    color: #333;
+}
+
+.suggestion-item:hover {
+    background-color: #f8f9fa;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.popular-searches .badge {
+    margin: 0.2rem;
+    cursor: pointer;
+}
+
+.tag-cloud .badge {
+    margin: 0.25rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.image-card {
+    transition: transform 0.2s ease-in-out;
+    cursor: pointer;
+}
+
+.image-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.image-card img {
+    height: 250px;
+    object-fit: cover;
+}
+
+.loading {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentQuery = '';
+    let currentPage = 1;
+    let isLoading = false;
+    
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const searchSuggestions = document.getElementById('searchSuggestions');
+    const searchResults = document.getElementById('searchResults');
+    const defaultContent = document.getElementById('defaultContent');
+    const imagesGrid = document.getElementById('imagesGrid');
+    const latestImagesGrid = document.getElementById('latestImagesGrid');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+    
+    // 搜索功能
+    searchBtn.addEventListener('click', performSearch);
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+    
+    // 搜索建议
+    let suggestionTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(suggestionTimeout);
+        const query = this.value.trim();
+        
+        if (query.length > 0) {
+            suggestionTimeout = setTimeout(() => {
+                fetchSearchSuggestions(query);
+            }, 300);
+        } else {
+            searchSuggestions.style.display = 'none';
+        }
+    });
+    
+    // 点击外部隐藏建议
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
+            searchSuggestions.style.display = 'none';
+        }
+    });
+    
+    async function performSearch() {
+        const query = searchInput.value.trim();
+        if (!query) return;
+        
+        currentQuery = query;
+        currentPage = 1;
+        
+        showLoading(imagesGrid);
+        searchSuggestions.style.display = 'none';
+        
+        try {
+            const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=20`);
+            const data = await response.json();
+            
+            if (data.success) {
+                displaySearchResults(data.data);
+            } else {
+                showError('搜索失败');
+            }
+        } catch (error) {
+            console.error('搜索错误:', error);
+            showError('搜索出错，请重试');
+        }
+    }
+    
+    async function fetchSearchSuggestions(query) {
+        try {
+            const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+            
+            if (data.success && data.data.suggestions.length > 0) {
+                displaySuggestions(data.data.suggestions);
+            } else {
+                searchSuggestions.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('获取建议失败:', error);
+        }
+    }
+    
+    function displaySuggestions(suggestions) {
+        const html = suggestions.map(suggestion => 
+            `<div class="suggestion-item" onclick="selectSuggestion('${suggestion}')">${suggestion}</div>`
+        ).join('');
+        
+        searchSuggestions.innerHTML = html;
+        searchSuggestions.style.display = 'block';
+    }
+    
+    function selectSuggestion(suggestion) {
+        searchInput.value = suggestion;
+        searchSuggestions.style.display = 'none';
+        performSearch();
+    }
+    
+    function displaySearchResults(data) {
+        // 显示搜索结果区域
+        searchResults.style.display = 'block';
+        defaultContent.style.display = 'none';
+        
+        // 更新结果信息
+        document.getElementById('resultsTitle').textContent = `"${data.query}" 的搜索结果`;
+        document.getElementById('resultsInfo').textContent = `找到 ${data.total} 个结果`;
+        
+        // 显示图片
+        displayImages(data.images, imagesGrid);
+        
+        // 显示/隐藏加载更多按钮
+        loadMoreBtn.style.display = data.images.length >= 20 ? 'block' : 'none';
+    }
+    
+    function displayImages(images, container) {
+        if (currentPage === 1) {
+            container.innerHTML = '';
+        }
+        
+        images.forEach(image => {
+            const imageCard = createImageCard(image);
+            container.appendChild(imageCard);
+        });
+    }
+    
+    function createImageCard(image) {
+        const col = document.createElement('div');
+        col.className = 'col-md-4 col-lg-3';
+        
+        col.innerHTML = `
+            <div class="card image-card h-100" onclick="showImageDetail(${image.id})">
+                <img src="${image.url}" class="card-img-top" alt="${image.filename}">
+                <div class="card-body">
+                    <h6 class="card-title">${image.filename}</h6>
+                    <p class="card-text small text-muted">${image.description || '暂无描述'}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-eye"></i> ${image.view_count}
+                        </small>
+                        <small class="text-muted">${image.uploader}</small>
+                    </div>
+                    <div class="mt-2">
+                        ${image.tags.slice(0, 3).map(tag => 
+                            `<span class="badge bg-secondary me-1" style="font-size: 0.7rem;">${tag.name}</span>`
+                        ).join('')}
+                        ${image.tags.length > 3 ? `<span class="badge bg-light text-dark" style="font-size: 0.7rem;">+${image.tags.length - 3}</span>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        return col;
+    }
+    
+    async function showImageDetail(imageId) {
+        try {
+            const response = await fetch(`/api/images/${imageId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const image = data.data;
+                document.getElementById('modalImageTitle').textContent = image.filename;
+                document.getElementById('modalImageContent').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-8">
+                            <img src="${image.url}" class="img-fluid rounded" alt="${image.filename}">
+                        </div>
+                        <div class="col-md-4">
+                            <h6>图片信息</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>尺寸:</strong> ${image.width} × ${image.height}</li>
+                                <li><strong>大小:</strong> ${(image.file_size / 1024 / 1024).toFixed(2)} MB</li>
+                                <li><strong>上传者:</strong> ${image.uploader}</li>
+                                <li><strong>查看次数:</strong> ${image.view_count}</li>
+                                <li><strong>上传时间:</strong> ${new Date(image.upload_time).toLocaleString()}</li>
+                            </ul>
+                            
+                            <h6 class="mt-3">AI描述</h6>
+                            <p class="text-muted">${image.description || '暂无描述'}</p>
+                            
+                            <h6 class="mt-3">标签</h6>
+                            <div>
+                                ${image.tags.map(tag => 
+                                    `<span class="badge bg-primary me-1 mb-1">${tag.name}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                imageModal.show();
+            }
+        } catch (error) {
+            console.error('获取图片详情失败:', error);
+        }
+    }
+    
+    // 加载更多
+    loadMoreBtn.addEventListener('click', async function() {
+        if (isLoading) return;
+        
+        isLoading = true;
+        currentPage++;
+        
+        try {
+            const response = await fetch(`/api/search?q=${encodeURIComponent(currentQuery)}&limit=20&offset=${(currentPage - 1) * 20}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                displayImages(data.data.images, imagesGrid);
+                
+                if (data.data.images.length < 20) {
+                    loadMoreBtn.style.display = 'none';
+                }
+            }
+        } catch (error) {
+            console.error('加载更多失败:', error);
+        } finally {
+            isLoading = false;
+        }
+    });
+    
+    // 工具函数
+    function showLoading(container) {
+        container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin fa-2x"></i><p>搜索中...</p></div>';
+    }
+    
+    function showError(message) {
+        imagesGrid.innerHTML = `<div class="col-12"><div class="alert alert-danger">${message}</div></div>`;
+    }
+    
+    // 页面加载时的初始化
+    async function init() {
+        // 加载热门搜索
+        try {
+            const response = await fetch('/api/search/popular');
+            const data = await response.json();
+            
+            if (data.success) {
+                const popularTags = document.getElementById('popularTags');
+                popularTags.innerHTML = data.data.popular_searches.map(search => 
+                    `<span class="badge bg-light text-dark me-1" onclick="searchByTag('${search}')">${search}</span>`
+                ).join('');
+            }
+        } catch (error) {
+            console.error('加载热门搜索失败:', error);
+        }
+        
+        // 加载最新图片
+        try {
+            const response = await fetch('/api/images?per_page=12');
+            const data = await response.json();
+            
+            if (data.success) {
+                displayImages(data.data.images, latestImagesGrid);
+            }
+        } catch (error) {
+            console.error('加载最新图片失败:', error);
+        }
+        
+        // 加载热门标签
+        try {
+            const response = await fetch('/api/tags');
+            const data = await response.json();
+            
+            if (data.success) {
+                const tagCloud = document.getElementById('tagCloud');
+                tagCloud.innerHTML = data.data.tags.slice(0, 20).map(tag => 
+                    `<span class="badge bg-outline-primary me-1 mb-1" onclick="searchByTag('${tag.name}')" style="font-size: ${Math.min(1.2, 0.8 + tag.usage_count * 0.1)}rem;">${tag.name}</span>`
+                ).join('');
+            }
+        } catch (error) {
+            console.error('加载标签云失败:', error);
+        }
+    }
+    
+    function searchByTag(tag) {
+        searchInput.value = tag;
+        performSearch();
+    }
+    
+    // 全局函数
+    window.selectSuggestion = selectSuggestion;
+    window.showImageDetail = showImageDetail;
+    window.searchByTag = searchByTag;
+    
+    // 初始化
+    init();
+});
+</script>
+{% endblock %}

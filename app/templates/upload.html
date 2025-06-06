@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}上传图片 - AI姿势参考图库{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-cloud-upload-alt"></i> 上传姿势参考图片
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- 上传表单 -->
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="imageFile" class="form-label">选择图片文件</label>
+                            <input type="file" class="form-control" id="imageFile" name="file" 
+                                   accept=".jpg,.jpeg,.png" required>
+                            <div class="form-text">
+                                支持 JPG、PNG 格式，文件大小不超过 5MB
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="uploader" class="form-label">上传者（可选）</label>
+                            <input type="text" class="form-control" id="uploader" name="uploader" 
+                                   placeholder="请输入你的名字或留空">
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg" id="uploadBtn">
+                                <i class="fas fa-upload"></i> 开始上传
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- 进度条 -->
+                    <div id="progressContainer" class="mt-4" style="display: none;">
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <div class="text-center mt-2">
+                            <small id="progressText">准备上传...</small>
+                        </div>
+                    </div>
+                    
+                    <!-- 上传结果 -->
+                    <div id="uploadResult" class="mt-4" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 上传历史 -->
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history"></i> 最近上传
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="recentUploads">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-images fa-2x mb-2"></i>
+                            <p>暂无上传记录</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadForm = document.getElementById('uploadForm');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.querySelector('.progress-bar');
+    const progressText = document.getElementById('progressText');
+    const uploadResult = document.getElementById('uploadResult');
+    const imageFile = document.getElementById('imageFile');
+    
+    // 文件选择预览
+    imageFile.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // 验证文件类型
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('请选择 JPG 或 PNG 格式的图片文件');
+                this.value = '';
+                return;
+            }
+            
+            // 验证文件大小
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                alert('文件大小不能超过 5MB');
+                this.value = '';
+                return;
+            }
+            
+            console.log('文件选择:', file.name, (file.size / 1024 / 1024).toFixed(2) + 'MB');
+        }
+    });
+    
+    // 上传表单提交
+    uploadForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const file = imageFile.files[0];
+        if (!file) {
+            alert('请选择图片文件');
+            return;
+        }
+        
+        // 显示进度条
+        uploadBtn.disabled = true;
+        progressContainer.style.display = 'block';
+        uploadResult.style.display = 'none';
+        
+        updateProgress(10, '准备上传...');
+        
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const uploader = document.getElementById('uploader').value.trim();
+            if (uploader) {
+                formData.append('uploader', uploader);
+            }
+            
+            updateProgress(30, '上传中...');
+            
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            updateProgress(60, '处理中...');
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                updateProgress(80, 'AI分析中...');
+                
+                // 显示上传成功
+                showUploadSuccess(result.data);
+                
+                // 轮询检查AI分析状态
+                await pollAnalysisStatus(result.data.id);
+                
+                updateProgress(100, '完成!');
+                
+                // 重置表单
+                uploadForm.reset();
+                
+                // 刷新最近上传
+                loadRecentUploads();
+                
+            } else {
+                throw new Error(result.detail || result.message || '上传失败');
+            }
+            
+        } catch (error) {
+            console.error('上传错误:', error);
+            showUploadError(error.message);
+        } finally {
+            uploadBtn.disabled = false;
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+            }, 2000);
+        }
+    });
+    
+    function updateProgress(percent, text) {
+        progressBar.style.width = percent + '%';
+        progressText.textContent = text;
+    }
+    
+    function showUploadSuccess(data) {
+        uploadResult.innerHTML = `
+            <div class="alert alert-success">
+                <h6><i class="fas fa-check-circle"></i> 上传成功!</h6>
+                <p class="mb-1">文件名: ${data.original_filename}</p>
+                <p class="mb-1">大小: ${(data.file_size / 1024 / 1024).toFixed(2)} MB</p>
+                <p class="mb-1">尺寸: ${data.width} × ${data.height}</p>
+                <div class="mt-2">
+                    <img src="${data.url}" alt="上传的图片" style="max-width: 200px; max-height: 200px;" class="img-thumbnail">
+                </div>
+                <div id="analysisStatus" class="mt-2">
+                    <small class="text-muted"><i class="fas fa-spinner fa-spin"></i> AI正在分析图片...</small>
+                </div>
+            </div>
+        `;
+        uploadResult.style.display = 'block';
+    }
+    
+    function showUploadError(message) {
+        uploadResult.innerHTML = `
+            <div class="alert alert-danger">
+                <h6><i class="fas fa-exclamation-circle"></i> 上传失败</h6>
+                <p class="mb-0">${message}</p>
+            </div>
+        `;
+        uploadResult.style.display = 'block';
+    }
+    
+    async function pollAnalysisStatus(imageId) {
+        let attempts = 0;
+        const maxAttempts = 30; // 最多检查30次（30秒）
+        
+        const checkStatus = async () => {
+            try {
+                const response = await fetch(`/api/upload/status/${imageId}`);
+                const data = await response.json();
+                
+                const statusElement = document.getElementById('analysisStatus');
+                if (!statusElement) return;
+                
+                if (data.ai_analysis_status === 'completed') {
+                    statusElement.innerHTML = `
+                        <div class="mt-2">
+                            <h6 class="text-success"><i class="fas fa-check"></i> AI分析完成</h6>
+                            <p><strong>描述:</strong> ${data.ai_description}</p>
+                            <p><strong>置信度:</strong> ${(data.ai_confidence * 100).toFixed(1)}%</p>
+                            <div><strong>标签:</strong>
+                                ${data.tags.map(tag => `<span class="badge bg-primary me-1">${tag.name}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                    return true; // 完成
+                } else if (data.ai_analysis_status === 'failed') {
+                    statusElement.innerHTML = `
+                        <small class="text-warning"><i class="fas fa-exclamation-triangle"></i> AI分析失败，但图片已保存</small>
+                    `;
+                    return true; // 完成（虽然失败）
+                } else if (attempts < maxAttempts) {
+                    // 继续等待
+                    attempts++;
+                    setTimeout(checkStatus, 1000);
+                    return false;
+                } else {
+                    // 超时
+                    statusElement.innerHTML = `
+                        <small class="text-warning"><i class="fas fa-clock"></i> AI分析超时，请稍后查看结果</small>
+                    `;
+                    return true;
+                }
+            } catch (error) {
+                console.error('检查分析状态失败:', error);
+                return true; // 停止检查
+            }
+        };
+        
+        await checkStatus();
+    }
+    
+    async function loadRecentUploads() {
+        // 这里可以添加加载最近上传的逻辑
+        // 暂时留空，后续实现
+    }
+    
+    // 页面加载时加载最近上传
+    loadRecentUploads();
+});
+</script>
+{% endblock %}
