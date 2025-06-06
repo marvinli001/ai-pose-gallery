@@ -1,127 +1,320 @@
 {% extends "base.html" %}
 
-{% block title %}AI姿势参考图库 - 智能搜索{% endblock %}
+{% block title %}AI姿势参考图库 - 智能姿势搜索{% endblock %}
 
 {% block content %}
-<!-- 头部搜索区域 -->
-<div class="hero-section bg-gradient-primary text-white py-5">
+<div class="hero-section">
+    <div class="container py-5">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold hero-title mb-4">
+                    AI姿势参考图库
+                </h1>
+                <p class="lead hero-subtitle mb-4">
+                    为插画师、摄影师、设计师量身打造的智能姿势参考库。
+                    使用GPT-4o进行图像分析，支持自然语言搜索。
+                </p>
+                <div class="d-flex gap-3 mb-4">
+                    <a href="/upload" class="btn btn-light btn-lg shadow">
+                        <i class="fas fa-upload"></i> 上传图片
+                    </a>
+                    <a href="#search-section" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-search"></i> 开始搜索
+                    </a>
+                </div>
+                <div class="row text-center hero-stats">
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <h3 class="hero-stat-number" id="totalImages">-</h3>
+                            <small class="hero-stat-label">张图片</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <h3 class="hero-stat-number" id="totalTags">-</h3>
+                            <small class="hero-stat-label">个标签</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <h3 class="hero-stat-number" id="totalSearches">-</h3>
+                            <small class="hero-stat-label">次搜索</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="feature-showcase">
+                    <div class="card shadow-lg border-0 feature-card">
+                        <div class="card-body p-4">
+                            <h5 class="card-title feature-title">
+                                <i class="fas fa-robot text-primary"></i> 
+                                GPT-4o智能分析
+                            </h5>
+                            <p class="card-text feature-description">
+                                自动识别姿势、表情、场景、光线、角度等特征，
+                                生成精准的标签和描述。
+                            </p>
+                        </div>
+                    </div>
+                    <div class="card shadow-lg border-0 mt-3 feature-card">
+                        <div class="card-body p-4">
+                            <h5 class="card-title feature-title">
+                                <i class="fas fa-comments text-success"></i> 
+                                自然语言搜索
+                            </h5>
+                            <p class="card-text feature-description">
+                                支持"女性坐姿室内"、"男性站立户外"等
+                                自然语言查询方式。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 搜索区域 -->
+<section id="search-section" class="py-5 bg-light">
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-lg-8 text-center">
-                <h1 class="display-4 mb-4">
-                    <i class="fas fa-search"></i> AI姿势参考图库
-                </h1>
-                <p class="lead mb-4">
-                    用自然语言描述你想要的姿势，AI会为你找到最匹配的参考图片
-                </p>
+            <div class="col-lg-8">
+                <h2 class="text-center mb-4 section-title">智能姿势搜索</h2>
                 
                 <!-- 搜索框 -->
                 <div class="search-container mb-4">
                     <div class="input-group input-group-lg">
-                        <input type="text" 
-                               class="form-control" 
-                               id="searchInput" 
-                               placeholder="例如：女性坐姿 室内 自然光"
-                               autocomplete="off">
-                        <button class="btn btn-warning" type="button" id="searchBtn">
+                        <input type="text" class="form-control search-input" id="searchInput" 
+                               placeholder="试试输入：女性坐姿、男性站立、思考表情...">
+                        <button class="btn btn-primary search-btn" type="button" id="searchBtn">
                             <i class="fas fa-search"></i> 搜索
                         </button>
                     </div>
-                    
-                    <!-- 搜索建议下拉框 -->
-                    <div id="searchSuggestions" class="suggestions-dropdown" style="display: none;"></div>
+                    <div id="searchSuggestions" class="suggestions-dropdown"></div>
                 </div>
                 
                 <!-- 热门搜索 -->
-                <div id="popularSearches" class="popular-searches mb-3">
-                    <small class="text-white-50">热门搜索：</small>
-                    <div class="d-inline" id="popularTags"></div>
+                <div class="popular-searches mb-4">
+                    <h6 class="popular-title mb-3">热门搜索：</h6>
+                    <div id="popularTags" class="d-flex flex-wrap gap-2">
+                        <!-- 动态加载热门标签 -->
+                    </div>
+                </div>
+                
+                <!-- 高级搜索选项 -->
+                <div class="advanced-search-toggle text-center">
+                    <button class="btn btn-link advanced-toggle" type="button" data-bs-toggle="collapse" 
+                            data-bs-target="#advancedSearch">
+                        <i class="fas fa-cog"></i> 高级搜索选项
+                    </button>
+                </div>
+                
+                <div class="collapse" id="advancedSearch">
+                    <div class="card mt-3 advanced-card">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label filter-label">性别</label>
+                                    <select class="form-select filter-select" id="genderFilter">
+                                        <option value="">不限</option>
+                                        <option value="女性">女性</option>
+                                        <option value="男性">男性</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label filter-label">姿势类型</label>
+                                    <select class="form-select filter-select" id="poseFilter">
+                                        <option value="">不限</option>
+                                        <option value="站姿">站姿</option>
+                                        <option value="坐姿">坐姿</option>
+                                        <option value="躺姿">躺姿</option>
+                                        <option value="蹲姿">蹲姿</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label filter-label">场景</label>
+                                    <select class="form-select filter-select" id="sceneFilter">
+                                        <option value="">不限</option>
+                                        <option value="室内">室内</option>
+                                        <option value="户外">户外</option>
+                                        <option value="办公室">办公室</option>
+                                        <option value="家居">家居</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="text-center mt-3">
+                                <button class="btn btn-primary advanced-apply" onclick="performAdvancedSearch()">
+                                    <i class="fas fa-filter"></i> 应用筛选
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</section>
 
-<!-- 主内容区域 -->
-<div class="container py-5">
-    <!-- 搜索结果 -->
-    <div id="searchResults" style="display: none;">
-        <div class="row mb-4">
-            <div class="col">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h3 id="resultsTitle">搜索结果</h3>
-                    <div id="resultsInfo" class="text-muted"></div>
+<!-- 搜索结果区域 -->
+<section class="py-5" id="results-section" style="display: none;">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 id="resultsTitle" class="results-title">搜索结果</h3>
+            <div class="view-controls">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary active" onclick="setViewMode('grid')">
+                        <i class="fas fa-th"></i> 网格
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" onclick="setViewMode('list')">
+                        <i class="fas fa-list"></i> 列表
+                    </button>
                 </div>
-                <hr>
             </div>
         </div>
         
-        <div id="imagesGrid" class="row g-4">
-            <!-- 搜索结果将动态插入这里 -->
+        <div id="searchResults" class="results-container">
+            <!-- 搜索结果将在这里动态加载 -->
         </div>
         
         <!-- 加载更多 -->
-        <div class="text-center mt-4">
-            <button id="loadMoreBtn" class="btn btn-outline-primary" style="display: none;">
+        <div class="text-center mt-4" id="loadMoreSection" style="display: none;">
+            <button class="btn btn-outline-primary" onclick="loadMoreResults()">
                 <i class="fas fa-plus"></i> 加载更多
             </button>
         </div>
     </div>
-    
-    <!-- 默认内容 - 最新图片 -->
-    <div id="defaultContent">
-        <div class="row mb-4">
-            <div class="col">
-                <h3><i class="fas fa-images"></i> 最新上传</h3>
-                <hr>
-            </div>
-        </div>
-        
-        <div id="latestImagesGrid" class="row g-4">
-            <!-- 最新图片将动态加载 -->
-        </div>
-    </div>
-    
-    <!-- 标签云 -->
-    <div class="row mt-5">
-        <div class="col">
-            <h4><i class="fas fa-tags"></i> 热门标签</h4>
-            <div id="tagCloud" class="tag-cloud mt-3">
-                <!-- 标签云将动态加载 -->
-            </div>
-        </div>
-    </div>
-</div>
+</section>
 
-<!-- 图片详情模态框 -->
-<div class="modal fade" id="imageModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalImageTitle">图片详情</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="modalImageContent">
-                <!-- 图片详情内容 -->
-            </div>
+<!-- 推荐图片区域 -->
+<section class="py-5 bg-light" id="recommended-section">
+    <div class="container">
+        <h3 class="text-center mb-4 section-title">推荐图片</h3>
+        <div id="recommendedImages" class="row">
+            <!-- 推荐图片将在这里动态加载 -->
         </div>
     </div>
-</div>
+</section>
 {% endblock %}
 
 {% block styles %}
 <style>
+/* 修复首页文字颜色和对比度 */
 .hero-section {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 40vh;
+    color: white;
+    min-height: 70vh;
     display: flex;
     align-items: center;
+    position: relative;
+}
+
+/* 确保所有hero区域的文字都是白色 */
+.hero-section * {
+    color: white !important;
+}
+
+.hero-title {
+    color: white !important;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    font-weight: 700;
+}
+
+.hero-subtitle {
+    color: rgba(255,255,255,0.95) !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.hero-stats {
+    margin-top: 2rem;
+}
+
+.hero-stat-number {
+    color: white !important;
+    font-weight: 700;
+    font-size: 2rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.hero-stat-label {
+    color: rgba(255,255,255,0.9) !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+/* 按钮样式优化 */
+.btn-light {
+    background-color: white;
+    border-color: white;
+    color: #333 !important;
+    font-weight: 600;
+}
+
+.btn-light:hover {
+    background-color: rgba(255,255,255,0.9);
+    color: #333 !important;
+}
+
+.btn-outline-light {
+    border-color: white;
+    color: white !important;
+    font-weight: 600;
+}
+
+.btn-outline-light:hover {
+    background-color: white;
+    color: #333 !important;
+}
+
+/* 功能卡片样式优化 */
+.feature-showcase .feature-card {
+    transform: translateY(0);
+    transition: transform 0.3s ease;
+    background: white;
+}
+
+.feature-showcase .feature-card:hover {
+    transform: translateY(-5px);
+}
+
+.feature-title {
+    color: #333 !important;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.feature-description {
+    color: #666 !important;
+    line-height: 1.6;
+    margin-bottom: 0;
+}
+
+/* 搜索区域样式 */
+.section-title {
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 2rem;
 }
 
 .search-container {
     position: relative;
-    max-width: 600px;
-    margin: 0 auto;
+}
+
+.search-input {
+    border: 2px solid #e9ecef;
+    font-size: 1rem;
+    padding: 1rem;
+}
+
+.search-input:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.25);
+}
+
+.search-btn {
+    padding: 1rem 2rem;
+    font-weight: 600;
 }
 
 .suggestions-dropdown {
@@ -131,11 +324,13 @@
     right: 0;
     background: white;
     border: 1px solid #ddd;
-    border-radius: 0.375rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-top: none;
+    border-radius: 0 0 0.375rem 0.375rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     z-index: 1000;
     max-height: 200px;
     overflow-y: auto;
+    display: none;
 }
 
 .suggestion-item {
@@ -149,64 +344,202 @@
     background-color: #f8f9fa;
 }
 
-.suggestion-item:last-child {
-    border-bottom: none;
+/* 热门搜索样式 */
+.popular-title {
+    color: #666;
+    font-weight: 600;
 }
 
 .popular-searches .badge {
-    margin: 0.2rem;
     cursor: pointer;
+    transition: transform 0.2s ease;
+    background-color: #0d6efd !important;
+    color: white !important;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
 }
 
-.tag-cloud .badge {
-    margin: 0.25rem;
-    font-size: 0.9rem;
-    cursor: pointer;
+.popular-searches .badge:hover {
+    transform: scale(1.05);
+    background-color: #0b5ed7 !important;
+}
+
+/* 高级搜索样式 */
+.advanced-toggle {
+    color: #666 !important;
+    text-decoration: none;
+}
+
+.advanced-toggle:hover {
+    color: #0d6efd !important;
+}
+
+.advanced-card {
+    border: 2px solid #e9ecef;
+}
+
+.filter-label {
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.filter-select {
+    border: 1px solid #ced4da;
+    color: #333;
+}
+
+.filter-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.25);
+}
+
+.advanced-apply {
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+}
+
+/* 搜索结果样式 */
+.results-title {
+    color: #333;
+    font-weight: 600;
+}
+
+.results-container.grid-view .image-card {
+    margin-bottom: 2rem;
+}
+
+.results-container.list-view .image-card {
+    margin-bottom: 1rem;
 }
 
 .image-card {
-    transition: transform 0.2s ease-in-out;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
     cursor: pointer;
+    background: white;
 }
 
 .image-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
 }
 
-.image-card img {
+.image-thumbnail {
+    width: 100%;
     height: 250px;
     object-fit: cover;
+    border-radius: 0.375rem;
 }
 
-.loading {
-    text-align: center;
-    padding: 2rem;
-    color: #6c757d;
+.confidence-badge {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    font-size: 0.75rem;
+}
+
+/* 文字颜色确保可读性 */
+.card-text, .card-title, .text-muted {
+    color: #666 !important;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+    color: white !important;
+}
+
+.badge.bg-light {
+    background-color: #f8f9fa !important;
+    color: #333 !important;
+}
+
+/* 加载动画 */
+.loading-skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+    .hero-section {
+        min-height: 60vh;
+        text-align: center;
+    }
+    
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+    
+    .feature-showcase {
+        margin-top: 3rem;
+    }
+    
+    .search-input {
+        font-size: 0.9rem;
+        padding: 0.8rem;
+    }
+    
+    .search-btn {
+        padding: 0.8rem 1.5rem;
+    }
+}
+
+/* 暗色主题支持 */
+@media (prefers-color-scheme: dark) {
+    .bg-light {
+        background-color: #f8f9fa !important;
+    }
+    
+    .card {
+        background-color: white;
+    }
+    
+    .form-control, .form-select {
+        background-color: white;
+        color: #333;
+    }
 }
 </style>
 {% endblock %}
 
 {% block scripts %}
 <script>
+let currentSearchQuery = '';
+let currentPage = 1;
+let viewMode = 'grid';
+
 document.addEventListener('DOMContentLoaded', function() {
-    let currentQuery = '';
-    let currentPage = 1;
-    let isLoading = false;
-    
+    initializePage();
+    setupSearchHandlers();
+    loadRecommendedImages();
+    loadPopularTags();
+    loadStats();
+});
+
+async function initializePage() {
+    // 初始化页面功能
+    console.log('AI姿势参考图库初始化完成');
+}
+
+function setupSearchHandlers() {
     const searchInput = document.getElementById('searchInput');
     const searchBtn = document.getElementById('searchBtn');
-    const searchSuggestions = document.getElementById('searchSuggestions');
-    const searchResults = document.getElementById('searchResults');
-    const defaultContent = document.getElementById('defaultContent');
-    const imagesGrid = document.getElementById('imagesGrid');
-    const latestImagesGrid = document.getElementById('latestImagesGrid');
-    const loadMoreBtn = document.getElementById('loadMoreBtn');
-    const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
     
-    // 搜索功能
+    // 搜索按钮点击
     searchBtn.addEventListener('click', performSearch);
-    searchInput.addEventListener('keydown', function(e) {
+    
+    // 回车键搜索
+    searchInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             performSearch();
         }
@@ -216,268 +549,353 @@ document.addEventListener('DOMContentLoaded', function() {
     let suggestionTimeout;
     searchInput.addEventListener('input', function() {
         clearTimeout(suggestionTimeout);
-        const query = this.value.trim();
-        
-        if (query.length > 0) {
-            suggestionTimeout = setTimeout(() => {
-                fetchSearchSuggestions(query);
-            }, 300);
-        } else {
-            searchSuggestions.style.display = 'none';
-        }
+        suggestionTimeout = setTimeout(() => {
+            showSearchSuggestions(this.value);
+        }, 300);
     });
     
-    // 点击外部隐藏建议
+    // 点击其他地方隐藏建议
     document.addEventListener('click', function(e) {
-        if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
-            searchSuggestions.style.display = 'none';
+        if (!e.target.closest('.search-container')) {
+            hideSearchSuggestions();
         }
     });
+}
+
+async function performSearch() {
+    const query = document.getElementById('searchInput').value.trim();
+    if (!query) {
+        alert('请输入搜索关键词');
+        return;
+    }
     
-    async function performSearch() {
-        const query = searchInput.value.trim();
-        if (!query) return;
+    currentSearchQuery = query;
+    currentPage = 1;
+    
+    showResultsSection();
+    showSearchLoading();
+    
+    try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=20&use_ai=true`);
+        const data = await response.json();
         
-        currentQuery = query;
-        currentPage = 1;
-        
-        showLoading(imagesGrid);
-        searchSuggestions.style.display = 'none';
-        
-        try {
-            const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=20`);
-            const data = await response.json();
-            
-            if (data.success) {
-                displaySearchResults(data.data);
-            } else {
-                showError('搜索失败');
-            }
-        } catch (error) {
-            console.error('搜索错误:', error);
-            showError('搜索出错，请重试');
+        if (data.success) {
+            displaySearchResults(data.data);
+        } else {
+            showSearchError('搜索失败，请重试');
         }
+    } catch (error) {
+        showSearchError('网络错误：' + error.message);
+    }
+}
+
+async function performAdvancedSearch() {
+    const gender = document.getElementById('genderFilter').value;
+    const pose = document.getElementById('poseFilter').value;
+    const scene = document.getElementById('sceneFilter').value;
+    
+    let query = document.getElementById('searchInput').value.trim();
+    
+    // 构建高级搜索查询
+    const filters = [gender, pose, scene].filter(f => f);
+    if (filters.length > 0) {
+        query = query ? `${query} ${filters.join(' ')}` : filters.join(' ');
     }
     
-    async function fetchSearchSuggestions(query) {
-        try {
-            const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(query)}`);
-            const data = await response.json();
-            
-            if (data.success && data.data.suggestions.length > 0) {
-                displaySuggestions(data.data.suggestions);
-            } else {
-                searchSuggestions.style.display = 'none';
-            }
-        } catch (error) {
-            console.error('获取建议失败:', error);
-        }
+    if (!query) {
+        alert('请输入搜索条件');
+        return;
     }
     
-    function displaySuggestions(suggestions) {
-        const html = suggestions.map(suggestion => 
-            `<div class="suggestion-item" onclick="selectSuggestion('${suggestion}')">${suggestion}</div>`
-        ).join('');
-        
-        searchSuggestions.innerHTML = html;
-        searchSuggestions.style.display = 'block';
+    document.getElementById('searchInput').value = query;
+    await performSearch();
+}
+
+function displaySearchResults(searchData) {
+    const resultsContainer = document.getElementById('searchResults');
+    const images = searchData.images || [];
+    
+    document.getElementById('resultsTitle').textContent = 
+        `搜索"${currentSearchQuery}"的结果 (${images.length}张)`;
+    
+    if (images.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h5 style="color: #666;">没有找到相关图片</h5>
+                <p class="text-muted">尝试使用其他关键词或上传更多图片</p>
+                <a href="/upload" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> 上传图片
+                </a>
+            </div>
+        `;
+        return;
     }
     
-    function selectSuggestion(suggestion) {
-        searchInput.value = suggestion;
-        searchSuggestions.style.display = 'none';
-        performSearch();
-    }
+    resultsContainer.className = `results-container ${viewMode}-view`;
     
-    function displaySearchResults(data) {
-        // 显示搜索结果区域
-        searchResults.style.display = 'block';
-        defaultContent.style.display = 'none';
-        
-        // 更新结果信息
-        document.getElementById('resultsTitle').textContent = `"${data.query}" 的搜索结果`;
-        document.getElementById('resultsInfo').textContent = `找到 ${data.total} 个结果`;
-        
-        // 显示图片
-        displayImages(data.images, imagesGrid);
-        
-        // 显示/隐藏加载更多按钮
-        loadMoreBtn.style.display = data.images.length >= 20 ? 'block' : 'none';
-    }
-    
-    function displayImages(images, container) {
-        if (currentPage === 1) {
-            container.innerHTML = '';
-        }
-        
+    let html = '';
+    if (viewMode === 'grid') {
+        html = '<div class="row">';
         images.forEach(image => {
-            const imageCard = createImageCard(image);
-            container.appendChild(imageCard);
+            html += generateImageCard(image, 'col-lg-3 col-md-4 col-sm-6 mb-4');
+        });
+        html += '</div>';
+    } else {
+        images.forEach(image => {
+            html += generateImageListItem(image);
         });
     }
     
-    function createImageCard(image) {
-        const col = document.createElement('div');
-        col.className = 'col-md-4 col-lg-3';
-        
-        col.innerHTML = `
-            <div class="card image-card h-100" onclick="showImageDetail(${image.id})">
-                <img src="${image.url}" class="card-img-top" alt="${image.filename}">
+    resultsContainer.innerHTML = html;
+    
+    // 显示加载更多按钮（如果有更多结果）
+    const loadMoreSection = document.getElementById('loadMoreSection');
+    if (images.length >= 20) {
+        loadMoreSection.style.display = 'block';
+    } else {
+        loadMoreSection.style.display = 'none';
+    }
+}
+
+function generateImageCard(image, colClass = '') {
+    const confidence = (image.confidence * 100).toFixed(0);
+    const tags = image.tags.slice(0, 3).map(tag => 
+        `<span class="badge bg-secondary me-1">${tag.name}</span>`
+    ).join('');
+    
+    return `
+        <div class="${colClass}">
+            <div class="card image-card border-0 shadow-sm" onclick="openImageDetail(${image.id})">
+                <div class="position-relative">
+                    <img src="${image.url}" class="image-thumbnail" alt="${image.description}">
+                    <span class="badge bg-primary confidence-badge">${confidence}%</span>
+                </div>
                 <div class="card-body">
-                    <h6 class="card-title">${image.filename}</h6>
-                    <p class="card-text small text-muted">${image.description || '暂无描述'}</p>
+                    <p class="card-text small mb-2" style="color: #666;">${image.description || '暂无描述'}</p>
                     <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">
+                        <div class="tags-container">
+                            ${tags}
+                        </div>
+                        <small style="color: #999;">
                             <i class="fas fa-eye"></i> ${image.view_count}
                         </small>
-                        <small class="text-muted">${image.uploader}</small>
-                    </div>
-                    <div class="mt-2">
-                        ${image.tags.slice(0, 3).map(tag => 
-                            `<span class="badge bg-secondary me-1" style="font-size: 0.7rem;">${tag.name}</span>`
-                        ).join('')}
-                        ${image.tags.length > 3 ? `<span class="badge bg-light text-dark" style="font-size: 0.7rem;">+${image.tags.length - 3}</span>` : ''}
                     </div>
                 </div>
             </div>
-        `;
-        
-        return col;
-    }
+        </div>
+    `;
+}
+
+function generateImageListItem(image) {
+    const confidence = (image.confidence * 100).toFixed(0);
+    const tags = image.tags.map(tag => 
+        `<span class="badge bg-light me-1" style="color: #333;">${tag.name}</span>`
+    ).join('');
     
-    async function showImageDetail(imageId) {
-        try {
-            const response = await fetch(`/api/images/${imageId}`);
-            const data = await response.json();
-            
-            if (data.success) {
-                const image = data.data;
-                document.getElementById('modalImageTitle').textContent = image.filename;
-                document.getElementById('modalImageContent').innerHTML = `
-                    <div class="row">
-                        <div class="col-md-8">
-                            <img src="${image.url}" class="img-fluid rounded" alt="${image.filename}">
+    return `
+        <div class="card image-card mb-3" onclick="openImageDetail(${image.id})">
+            <div class="row g-0">
+                <div class="col-md-3">
+                    <img src="${image.url}" class="img-fluid rounded-start h-100" 
+                         style="object-fit: cover;" alt="${image.description}">
+                </div>
+                <div class="col-md-9">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="card-title" style="color: #333;">${image.filename}</h6>
+                            <span class="badge bg-primary">${confidence}% 置信度</span>
                         </div>
-                        <div class="col-md-4">
-                            <h6>图片信息</h6>
-                            <ul class="list-unstyled">
-                                <li><strong>尺寸:</strong> ${image.width} × ${image.height}</li>
-                                <li><strong>大小:</strong> ${(image.file_size / 1024 / 1024).toFixed(2)} MB</li>
-                                <li><strong>上传者:</strong> ${image.uploader}</li>
-                                <li><strong>查看次数:</strong> ${image.view_count}</li>
-                                <li><strong>上传时间:</strong> ${new Date(image.upload_time).toLocaleString()}</li>
-                            </ul>
-                            
-                            <h6 class="mt-3">AI描述</h6>
-                            <p class="text-muted">${image.description || '暂无描述'}</p>
-                            
-                            <h6 class="mt-3">标签</h6>
-                            <div>
-                                ${image.tags.map(tag => 
-                                    `<span class="badge bg-primary me-1 mb-1">${tag.name}</span>`
-                                ).join('')}
+                        <p class="card-text" style="color: #666;">${image.description || '暂无描述'}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="tags-container">
+                                ${tags}
+                            </div>
+                            <div style="color: #999;">
+                                <small>
+                                    <i class="fas fa-eye"></i> ${image.view_count} | 
+                                    <i class="fas fa-clock"></i> ${formatDate(image.upload_time)}
+                                </small>
                             </div>
                         </div>
                     </div>
-                `;
-                imageModal.show();
-            }
-        } catch (error) {
-            console.error('获取图片详情失败:', error);
-        }
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function showSearchSuggestions(query) {
+    if (!query || query.length < 2) {
+        hideSearchSuggestions();
+        return;
     }
     
-    // 加载更多
-    loadMoreBtn.addEventListener('click', async function() {
-        if (isLoading) return;
+    try {
+        const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
         
-        isLoading = true;
-        currentPage++;
-        
-        try {
-            const response = await fetch(`/api/search?q=${encodeURIComponent(currentQuery)}&limit=20&offset=${(currentPage - 1) * 20}`);
-            const data = await response.json();
-            
-            if (data.success) {
-                displayImages(data.data.images, imagesGrid);
-                
-                if (data.data.images.length < 20) {
-                    loadMoreBtn.style.display = 'none';
-                }
-            }
-        } catch (error) {
-            console.error('加载更多失败:', error);
-        } finally {
-            isLoading = false;
+        if (data.success && data.data.suggestions.length > 0) {
+            displaySuggestions(data.data.suggestions);
+        } else {
+            hideSearchSuggestions();
         }
+    } catch (error) {
+        console.error('获取搜索建议失败:', error);
+        hideSearchSuggestions();
+    }
+}
+
+function displaySuggestions(suggestions) {
+    const dropdown = document.getElementById('searchSuggestions');
+    
+    let html = '';
+    suggestions.forEach(suggestion => {
+        html += `
+            <div class="suggestion-item" onclick="selectSuggestion('${suggestion}')">
+                <i class="fas fa-search text-muted me-2"></i>${suggestion}
+            </div>
+        `;
     });
     
-    // 工具函数
-    function showLoading(container) {
-        container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin fa-2x"></i><p>搜索中...</p></div>';
-    }
-    
-    function showError(message) {
-        imagesGrid.innerHTML = `<div class="col-12"><div class="alert alert-danger">${message}</div></div>`;
-    }
-    
-    // 页面加载时的初始化
-    async function init() {
-        // 加载热门搜索
-        try {
-            const response = await fetch('/api/search/popular');
-            const data = await response.json();
-            
-            if (data.success) {
-                const popularTags = document.getElementById('popularTags');
-                popularTags.innerHTML = data.data.popular_searches.map(search => 
-                    `<span class="badge bg-light text-dark me-1" onclick="searchByTag('${search}')">${search}</span>`
-                ).join('');
-            }
-        } catch (error) {
-            console.error('加载热门搜索失败:', error);
-        }
+    dropdown.innerHTML = html;
+    dropdown.style.display = 'block';
+}
+
+function hideSearchSuggestions() {
+    document.getElementById('searchSuggestions').style.display = 'none';
+}
+
+function selectSuggestion(suggestion) {
+    document.getElementById('searchInput').value = suggestion;
+    hideSearchSuggestions();
+    performSearch();
+}
+
+async function loadPopularTags() {
+    try {
+        const response = await fetch('/api/search/popular');
+        const data = await response.json();
         
-        // 加载最新图片
-        try {
-            const response = await fetch('/api/images?per_page=12');
-            const data = await response.json();
+        if (data.success) {
+            const container = document.getElementById('popularTags');
+            let html = '';
             
-            if (data.success) {
-                displayImages(data.data.images, latestImagesGrid);
-            }
-        } catch (error) {
-            console.error('加载最新图片失败:', error);
+            data.data.popular_searches.forEach(tag => {
+                html += `
+                    <span class="badge bg-primary me-2 mb-2" onclick="searchTag('${tag}')">
+                        ${tag}
+                    </span>
+                `;
+            });
+            
+            container.innerHTML = html;
         }
+    } catch (error) {
+        console.error('加载热门标签失败:', error);
+    }
+}
+
+async function loadRecommendedImages() {
+    try {
+        const response = await fetch('/api/images?per_page=8');
+        const data = await response.json();
         
-        // 加载热门标签
-        try {
-            const response = await fetch('/api/tags');
-            const data = await response.json();
+        if (data.success) {
+            const container = document.getElementById('recommendedImages');
+            let html = '';
             
-            if (data.success) {
-                const tagCloud = document.getElementById('tagCloud');
-                tagCloud.innerHTML = data.data.tags.slice(0, 20).map(tag => 
-                    `<span class="badge bg-outline-primary me-1 mb-1" onclick="searchByTag('${tag.name}')" style="font-size: ${Math.min(1.2, 0.8 + tag.usage_count * 0.1)}rem;">${tag.name}</span>`
-                ).join('');
-            }
-        } catch (error) {
-            console.error('加载标签云失败:', error);
+            data.data.images.forEach(image => {
+                html += generateImageCard(image, 'col-lg-3 col-md-4 col-sm-6 mb-4');
+            });
+            
+            container.innerHTML = html;
+        }
+    } catch (error) {
+        console.error('加载推荐图片失败:', error);
+    }
+}
+
+async function loadStats() {
+    try {
+        const response = await fetch('/api/admin/stats');
+        const data = await response.json();
+        
+        if (data.success) {
+            const stats = data.data;
+            document.getElementById('totalImages').textContent = stats.active_images || 0;
+            document.getElementById('totalTags').textContent = stats.active_tags || 0;
+            document.getElementById('totalSearches').textContent = stats.total_connections || 0;
+        }
+    } catch (error) {
+        console.error('加载统计失败:', error);
+    }
+}
+
+function searchTag(tag) {
+    document.getElementById('searchInput').value = tag;
+    performSearch();
+}
+
+function setViewMode(mode) {
+    viewMode = mode;
+    
+    // 更新按钮状态
+    document.querySelectorAll('.view-controls .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // 重新显示结果
+    if (document.getElementById('results-section').style.display !== 'none') {
+        const resultsContainer = document.getElementById('searchResults');
+        if (resultsContainer.innerHTML.trim()) {
+            // 触发重新渲染
+            performSearch();
         }
     }
-    
-    function searchByTag(tag) {
-        searchInput.value = tag;
-        performSearch();
-    }
-    
-    // 全局函数
-    window.selectSuggestion = selectSuggestion;
-    window.showImageDetail = showImageDetail;
-    window.searchByTag = searchByTag;
-    
-    // 初始化
-    init();
-});
+}
+
+function showResultsSection() {
+    document.getElementById('results-section').style.display = 'block';
+    document.getElementById('results-section').scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+    });
+}
+
+function showSearchLoading() {
+    document.getElementById('searchResults').innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">搜索中...</span>
+            </div>
+            <p class="mt-3" style="color: #666;">正在使用GPT-4o智能搜索...</p>
+        </div>
+    `;
+}
+
+function showSearchError(message) {
+    document.getElementById('searchResults').innerHTML = `
+        <div class="alert alert-danger text-center">
+            <i class="fas fa-exclamation-triangle me-2"></i>${message}
+        </div>
+    `;
+}
+
+function openImageDetail(imageId) {
+    window.open(`/image/${imageId}`, '_blank');
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-CN');
+}
+
+async function loadMoreResults() {
+    currentPage++;
+    // 实现加载更多逻辑
+    console.log('加载更多结果, 页码:', currentPage);
+}
 </script>
 {% endblock %}
