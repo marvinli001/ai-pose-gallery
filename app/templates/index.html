@@ -45,25 +45,28 @@
             </div>
             <div class="col-lg-6">
                 <div class="feature-showcase">
+                    <!-- 功能卡片1 - GPT-4o智能分析 -->
                     <div class="card shadow-lg border-0 feature-card">
                         <div class="card-body p-4">
-                            <h5 class="card-title feature-title">
+                            <h5 class="feature-card-title">
                                 <i class="fas fa-robot text-primary"></i> 
                                 GPT-4o智能分析
                             </h5>
-                            <p class="card-text feature-description">
+                            <p class="feature-card-text">
                                 自动识别姿势、表情、场景、光线、角度等特征，
                                 生成精准的标签和描述。
                             </p>
                         </div>
                     </div>
+                    
+                    <!-- 功能卡片2 - 自然语言搜索 -->
                     <div class="card shadow-lg border-0 mt-3 feature-card">
                         <div class="card-body p-4">
-                            <h5 class="card-title feature-title">
+                            <h5 class="feature-card-title">
                                 <i class="fas fa-comments text-success"></i> 
                                 自然语言搜索
                             </h5>
-                            <p class="card-text feature-description">
+                            <p class="feature-card-text">
                                 支持"女性坐姿室内"、"男性站立户外"等
                                 自然语言查询方式。
                             </p>
@@ -214,17 +217,8 @@
     color: white !important;
 }
 
-.hero-title {
+.hero-title, .hero-subtitle, .hero-stat-number, .hero-stat-label {
     color: white !important;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    font-weight: 700;
-}
-
-.hero-subtitle {
-    color: rgba(255,255,255,0.95) !important;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-    font-size: 1.1rem;
-    line-height: 1.6;
 }
 
 .hero-stats {
@@ -236,6 +230,13 @@
     font-weight: 700;
     font-size: 2rem;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.hero-section .feature-card .text-primary {
+    color: #0d6efd !important;
+}
+.hero-section .feature-card .text-success {
+    color: #198754 !important;
 }
 
 .hero-stat-label {
@@ -267,32 +268,63 @@
     color: #333 !important;
 }
 
-/* 功能卡片样式优化 */
+/* ===== 重点修复：功能卡片样式 ===== */
 .feature-showcase .feature-card {
     transform: translateY(0);
     transition: transform 0.3s ease;
-    background: white;
+    background: white !important; /* 强制白色背景 */
+    border: none !important;
 }
 
 .feature-showcase .feature-card:hover {
     transform: translateY(-5px);
 }
 
-.feature-title {
+/* 功能卡片标题 - 强制深色 */
+.feature-card-title {
     color: #333 !important;
-    font-weight: 600;
-    margin-bottom: 1rem;
+    font-weight: 600 !important;
+    margin-bottom: 1rem !important;
+    font-size: 1.25rem !important;
 }
 
-.feature-description {
-    color: #666 !important;
-    line-height: 1.6;
-    margin-bottom: 0;
+/* 功能卡片标题图标颜色 */
+.feature-card-title .text-primary {
+    color: #0d6efd !important;
+}
+
+.feature-card-title .text-success {
+    color: #198754 !important;
+}
+
+/* 功能卡片文字内容 - 强制深灰色 */
+.feature-card-text {
+    color: #555 !important;
+    line-height: 1.6 !important;
+    margin-bottom: 0 !important;
+    font-size: 0.95rem !important;
+}
+
+/* 覆盖可能的Bootstrap默认样式 */
+.feature-card .card-body {
+    background: white !important;
+}
+
+.feature-card .card-body * {
+    color: inherit;
+}
+
+.feature-card .card-title {
+    color: #333 !important;
+}
+
+.feature-card .card-text {
+    color: #555 !important;
 }
 
 /* 搜索区域样式 */
 .section-title {
-    color: #333;
+    color: #333 !important;
     font-weight: 600;
     margin-bottom: 2rem;
 }
@@ -305,11 +337,16 @@
     border: 2px solid #e9ecef;
     font-size: 1rem;
     padding: 1rem;
+    color: #333 !important;
 }
 
 .search-input:focus {
     border-color: #0d6efd;
     box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.25);
+}
+
+.search-input::placeholder {
+    color: #6c757d !important;
 }
 
 .search-btn {
@@ -337,7 +374,7 @@
     padding: 0.75rem 1rem;
     cursor: pointer;
     border-bottom: 1px solid #eee;
-    color: #333;
+    color: #333 !important;
 }
 
 .suggestion-item:hover {
@@ -346,7 +383,7 @@
 
 /* 热门搜索样式 */
 .popular-title {
-    color: #666;
+    color: #666 !important;
     font-weight: 600;
 }
 
@@ -376,17 +413,19 @@
 
 .advanced-card {
     border: 2px solid #e9ecef;
+    background: white !important;
 }
 
 .filter-label {
-    color: #333;
+    color: #333 !important;
     font-weight: 600;
     margin-bottom: 0.5rem;
 }
 
 .filter-select {
     border: 1px solid #ced4da;
-    color: #333;
+    color: #333 !important;
+    background: white !important;
 }
 
 .filter-select:focus {
@@ -401,7 +440,7 @@
 
 /* 搜索结果样式 */
 .results-title {
-    color: #333;
+    color: #333 !important;
     font-weight: 600;
 }
 
@@ -416,7 +455,7 @@
 .image-card {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     cursor: pointer;
-    background: white;
+    background: white !important;
 }
 
 .image-card:hover {
@@ -439,8 +478,16 @@
 }
 
 /* 文字颜色确保可读性 */
-.card-text, .card-title, .text-muted {
+.card-text {
     color: #666 !important;
+}
+
+.card-title {
+    color: #333 !important;
+}
+
+.text-muted {
+    color: #6c757d !important;
 }
 
 .badge.bg-secondary {
@@ -494,20 +541,33 @@
     }
 }
 
-/* 暗色主题支持 */
-@media (prefers-color-scheme: dark) {
-    .bg-light {
-        background-color: #f8f9fa !important;
-    }
-    
-    .card {
-        background-color: white;
-    }
-    
-    .form-control, .form-select {
-        background-color: white;
-        color: #333;
-    }
+.hero-section .feature-card,
+.hero-section .feature-card * {
+    color: #333 !important;
+}
+.hero-section .feature-card .feature-card-title {
+    color: #333 !important;
+}
+.hero-section .feature-card .feature-card-text {
+    color: #555 !important;
+}
+
+/* 强制覆盖所有可能的Bootstrap样式冲突 */
+.feature-card * {
+    color: inherit !important;
+}
+
+.feature-card h5 {
+    color: #333 !important;
+}
+
+.feature-card p {
+    color: #555 !important;
+}
+
+/* 确保卡片内容区域是白色背景 */
+.card-body {
+    background-color: white !important;
 }
 </style>
 {% endblock %}
@@ -623,7 +683,7 @@ function displaySearchResults(searchData) {
             <div class="text-center py-5">
                 <i class="fas fa-search fa-3x text-muted mb-3"></i>
                 <h5 style="color: #666;">没有找到相关图片</h5>
-                <p class="text-muted">尝试使用其他关键词或上传更多图片</p>
+                <p style="color: #999;">尝试使用其他关键词或上传更多图片</p>
                 <a href="/upload" class="btn btn-primary">
                     <i class="fas fa-upload"></i> 上传图片
                 </a>
