@@ -1,7 +1,7 @@
 """
-搜索API - 集成GPT-4o智能搜索 (中文版本)
+搜索API - 添加相似图片推荐功能
 """
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, Path
 from sqlalchemy.orm import Session
 from typing import Optional
 
@@ -10,6 +10,33 @@ from app.services.smart_search_service import SmartSearchService
 from app.services.database_service import DatabaseService
 
 router = APIRouter()
+
+
+@router.get("/similar/{image_id}")
+async def get_similar_images(
+    image_id: int = Path(..., description="目标图片ID"),
+    similarity_type: str = Query("tags", description="相似度类型: tags, style, mood, ai"),
+    limit: int = Query(6, ge=1, le=20, description="返回数量"),
+    db: Session = Depends(get_db)
+):
+    """获取相似图片推荐"""
+    try:
+        search_service = SmartSearchService(db)
+        result = await search_service.find_similar_images(image_id, similarity_type, limit)
+        
+        if result["success"]:
+            return {
+                "success": True,
+                "data": result
+            }
+        else:
+            raise HTTPException(status_code=404, detail=result["error"])
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ 获取相似图片失败: {e}")
+        raise HTTPException(status_code=500, detail=f"获取相似图片失败: {str(e)}")
 
 
 @router.get("/search")
@@ -262,6 +289,7 @@ async def get_images(
                 "width": image.width,
                 "height": image.height,
                 "description": image.ai_description,
+                "confidence": image.ai_confidence,
                 "upload_time": image.upload_time.isoformat(),
                 "view_count": image.view_count,
                 "uploader": image.uploader,

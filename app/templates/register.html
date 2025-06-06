@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}注册 - AI姿势参考图库{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-success text-white text-center py-4">
+                    <h3 class="mb-0">
+                        <i class="fas fa-user-plus"></i> 用户注册
+                    </h3>
+                </div>
+                <div class="card-body p-5">
+                    <form id="registerForm">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">
+                                <i class="fas fa-user"></i> 用户名 *
+                            </label>
+                            <input type="text" class="form-control" id="username" 
+                                   placeholder="3-50个字符，支持字母数字下划线" required>
+                            <div class="form-text">用户名将作为您的唯一标识</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope"></i> 邮箱 *
+                            </label>
+                            <input type="email" class="form-control" id="email" 
+                                   placeholder="请输入有效的邮箱地址" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock"></i> 密码 *
+                            </label>
+                            <input type="password" class="form-control" id="password" 
+                                   placeholder="至少6个字符" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">
+                                <i class="fas fa-lock"></i> 确认密码 *
+                            </label>
+                            <input type="password" class="form-control" id="confirmPassword" 
+                                   placeholder="请再次输入密码" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="fullName" class="form-label">
+                                <i class="fas fa-id-card"></i> 真实姓名
+                            </label>
+                            <input type="text" class="form-control" id="fullName" 
+                                   placeholder="选填，用于显示">
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="agreeTerms" required>
+                            <label class="form-check-label" for="agreeTerms">
+                                我同意 <a href="#" class="text-decoration-none">服务条款</a> 和 
+                                <a href="#" class="text-decoration-none">隐私政策</a>
+                            </label>
+                        </div>
+                        
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-user-plus"></i> 注册
+                            </button>
+                        </div>
+                        
+                        <div class="text-center">
+                            <p class="mb-0">
+                                已有账号？ 
+                                <a href="/login" class="text-decoration-none">立即登录</a>
+                            </p>
+                        </div>
+                    </form>
+                    
+                    <!-- 注册结果提示 -->
+                    <div id="registerResult" class="mt-3" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.card {
+    border-radius: 1rem;
+}
+
+.card-header {
+    border-radius: 1rem 1rem 0 0 !important;
+}
+
+.form-control {
+    border-radius: 0.5rem;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+}
+
+.form-control:focus {
+    border-color: #198754;
+    box-shadow: 0 0 0 0.2rem rgba(25,135,84,0.25);
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545;
+}
+
+.form-control.is-valid {
+    border-color: #198754;
+}
+
+.btn-success {
+    border-radius: 0.5rem;
+    font-weight: 600;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.alert {
+    border-radius: 0.5rem;
+    border: none;
+}
+
+.form-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 检查是否已登录
+    checkAuthStatus();
+    
+    // 注册表单提交
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        performRegister();
+    });
+    
+    // 实时密码确认验证
+    document.getElementById('confirmPassword').addEventListener('input', validatePasswordMatch);
+    document.getElementById('password').addEventListener('input', validatePasswordMatch);
+});
+
+async function checkAuthStatus() {
+    try {
+        const response = await fetch('/api/auth/check');
+        const data = await response.json();
+        
+        if (data.authenticated) {
+            // 已登录，重定向到首页
+            window.location.href = '/';
+        }
+    } catch (error) {
+        console.error('检查登录状态失败:', error);
+    }
+}
+
+function validatePasswordMatch() {
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    
+    if (confirmPassword && password !== confirmPassword) {
+        confirmPasswordInput.classList.add('is-invalid');
+        confirmPasswordInput.classList.remove('is-valid');
+    } else if (confirmPassword) {
+        confirmPasswordInput.classList.remove('is-invalid');
+        confirmPasswordInput.classList.add('is-valid');
+    }
+}
+
+async function performRegister() {
+    const username = document.getElementById('username').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const fullName = document.getElementById('fullName').value;
+    const agreeTerms = document.getElementById('agreeTerms').checked;
+    
+    // 验证
+    if (!username || !email || !password || !confirmPassword) {
+        showResult('请填写所有必填项', 'danger');
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        showResult('两次输入的密码不一致', 'danger');
+        return;
+    }
+    
+    if (!agreeTerms) {
+        showResult('请同意服务条款和隐私政策', 'danger');
+        return;
+    }
+    
+    // 显示加载状态
+    const submitBtn = document.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 注册中...';
+    submitBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: username,
+                email: email,
+                password: password,
+                full_name: fullName || null
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showResult('注册成功！请登录', 'success');
+            
+            // 延迟跳转到登录页
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 2000);
+        } else {
+            showResult(data.detail || '注册失败', 'danger');
+        }
+    } catch (error) {
+        showResult('网络错误，请重试', 'danger');
+        console.error('注册失败:', error);
+    } finally {
+        // 恢复按钮状态
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+function showResult(message, type) {
+    const resultDiv = document.getElementById('registerResult');
+    resultDiv.innerHTML = `
+        <div class="alert alert-${type}" role="alert">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+            ${message}
+        </div>
+    `;
+    resultDiv.style.display = 'block';
+    
+    // 自动隐藏成功消息
+    if (type === 'success') {
+        setTimeout(() => {
+            resultDiv.style.display = 'none';
+        }, 5000);
+    }
+}
+</script>
+{% endblock %}

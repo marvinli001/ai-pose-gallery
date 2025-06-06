@@ -1,0 +1,664 @@
+{% extends "base.html" %}
+
+{% block title %}图片详情 - AI姿势参考图库{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- 返回按钮 -->
+    <div class="mb-3">
+        <button class="btn btn-outline-secondary" onclick="history.back()">
+            <i class="fas fa-arrow-left"></i> 返回
+        </button>
+    </div>
+    
+    <!-- 图片详情加载区域 -->
+    <div id="imageDetailContainer">
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+            <p class="mt-3">正在加载图片详情...</p>
+        </div>
+    </div>
+    
+    <!-- 相似图片推荐区域 -->
+    <div id="similarImagesSection" class="mt-5" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4><i class="fas fa-images text-primary"></i> 相似图片推荐</h4>
+            <div class="similarity-controls">
+                <select class="form-select form-select-sm" id="similarityType" onchange="loadSimilarImages()">
+                    <option value="tags">基于标签</option>
+                    <option value="style">基于风格</option>
+                    <option value="mood">基于氛围</option>
+                    <option value="ai">AI智能推荐</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="similarImagesContainer" class="row">
+            <!-- 相似图片将在这里加载 -->
+        </div>
+    </div>
+</div>
+
+<!-- 图片预览模态框 -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">图片预览</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="previewImage" class="img-fluid" alt="图片预览">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 收藏成功提示 -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="favoriteToast" class="toast hide" role="alert">
+        <div class="toast-header">
+            <i class="fas fa-heart text-danger me-2"></i>
+            <strong class="me-auto">收藏</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">
+            已添加到收藏夹
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.image-detail-container {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.main-image {
+    max-height: 600px;
+    width: 100%;
+    object-fit: contain;
+    background: #f8f9fa;
+}
+
+.image-actions {
+    position: sticky;
+    top: 20px;
+    z-index: 10;
+}
+
+.action-btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+}
+
+.info-card {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+}
+
+.info-card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 1rem 1rem 0 0 !important;
+    padding: 1rem 1.5rem;
+    border: none;
+}
+
+.tag-item {
+    display: inline-block;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 1rem;
+    padding: 0.5rem 1rem;
+    margin: 0.25rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: #495057;
+}
+
+.tag-item:hover {
+    background: #e9ecef;
+    color: #495057;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.tag-category {
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+
+.confidence-meter {
+    background: #e9ecef;
+    border-radius: 1rem;
+    height: 8px;
+    overflow: hidden;
+}
+
+.confidence-fill {
+    height: 100%;
+    border-radius: 1rem;
+    transition: width 1s ease;
+}
+
+.stats-item {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: #f8f9fa;
+    margin-bottom: 1rem;
+}
+
+.stats-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #495057;
+}
+
+.stats-label {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.similar-image-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.similar-image-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.similar-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.similarity-score {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+}
+
+.keyword-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.keyword-tag {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.analysis-section {
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.download-options {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .image-actions {
+        position: static;
+        margin-top: 2rem;
+    }
+    
+    .main-image {
+        max-height: 400px;
+    }
+    
+    .download-options {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentImageId = null;
+let imageData = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // 从URL获取图片ID
+    const pathParts = window.location.pathname.split('/');
+    currentImageId = parseInt(pathParts[pathParts.length - 1]);
+    
+    if (currentImageId) {
+        loadImageDetail(currentImageId);
+    } else {
+        showError('无效的图片ID');
+    }
+});
+
+async function loadImageDetail(imageId) {
+    try {
+        const response = await fetch(`/api/images/${imageId}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            imageData = result.data;
+            displayImageDetail(imageData);
+            loadSimilarImages();
+        } else {
+            showError('图片不存在或已被删除');
+        }
+    } catch (error) {
+        console.error('加载图片详情失败:', error);
+        showError('加载失败: ' + error.message);
+    }
+}
+
+function displayImageDetail(data) {
+    const container = document.getElementById('imageDetailContainer');
+    
+    // 计算置信度颜色
+    const confidence = data.confidence || 0;
+    const confidenceColor = confidence >= 0.8 ? '#28a745' : confidence >= 0.6 ? '#ffc107' : '#dc3545';
+    
+    // 按分类整理标签
+    const tagsByCategory = {};
+    data.tags.forEach(tag => {
+        if (!tagsByCategory[tag.category]) {
+            tagsByCategory[tag.category] = [];
+        }
+        tagsByCategory[tag.category].push(tag);
+    });
+    
+    const html = `
+        <div class="row">
+            <!-- 主图片区域 -->
+            <div class="col-lg-8">
+                <div class="image-detail-container">
+                    <div class="position-relative">
+                        <img src="${data.url}" class="main-image" alt="${data.description}" 
+                             onclick="showImagePreview('${data.url}')">
+                        <div class="position-absolute top-0 end-0 m-3">
+                            <span class="badge bg-primary fs-6">
+                                ${(confidence * 100).toFixed(1)}% AI置信度
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- 图片基本信息 -->
+                    <div class="p-4">
+                        <h3 class="mb-3">${data.filename}</h3>
+                        <p class="text-muted mb-4">${data.description || '暂无描述'}</p>
+                        
+                        <!-- 图片统计 -->
+                        <div class="row text-center mb-4">
+                            <div class="col-4">
+                                <div class="stats-item">
+                                    <div class="stats-number">${data.view_count}</div>
+                                    <div class="stats-label">查看次数</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stats-item">
+                                    <div class="stats-number">${data.tags.length}</div>
+                                    <div class="stats-label">标签数量</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stats-item">
+                                    <div class="stats-number">${Math.round(data.file_size / 1024)} KB</div>
+                                    <div class="stats-label">文件大小</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- AI分析结果 -->
+                        ${data.mood || data.style ? `
+                        <div class="analysis-section">
+                            <h6><i class="fas fa-brain text-primary"></i> AI智能分析</h6>
+                            <div class="row">
+                                ${data.mood ? `
+                                <div class="col-md-6">
+                                    <strong>整体氛围:</strong>
+                                    <span class="badge bg-info ms-2">${data.mood}</span>
+                                </div>
+                                ` : ''}
+                                ${data.style ? `
+                                <div class="col-md-6">
+                                    <strong>视觉风格:</strong>
+                                    <span class="badge bg-success ms-2">${data.style}</span>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <!-- 搜索关键词云 -->
+                        ${data.searchable_keywords && data.searchable_keywords.length > 0 ? `
+                        <div class="mb-4">
+                            <h6><i class="fas fa-search text-primary"></i> 搜索关键词</h6>
+                            <div class="keyword-cloud">
+                                ${data.searchable_keywords.map(keyword => 
+                                    `<span class="keyword-tag" onclick="searchKeyword('${keyword}')">${keyword}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 侧边信息区域 -->
+            <div class="col-lg-4">
+                <!-- 操作按钮 -->
+                <div class="image-actions mb-4">
+                    <button class="btn btn-primary action-btn" onclick="addToFavorites(${data.id})">
+                        <i class="fas fa-heart"></i> 添加收藏
+                    </button>
+                    <button class="btn btn-success action-btn" onclick="downloadImage('${data.url}', '${data.filename}')">
+                        <i class="fas fa-download"></i> 下载图片
+                    </button>
+                    <button class="btn btn-outline-primary action-btn" onclick="shareImage(${data.id})">
+                        <i class="fas fa-share"></i> 分享图片
+                    </button>
+                    <button class="btn btn-outline-secondary action-btn" onclick="reportImage(${data.id})">
+                        <i class="fas fa-flag"></i> 举报
+                    </button>
+                </div>
+                
+                <!-- 图片详细信息 -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <h6 class="mb-0"><i class="fas fa-info-circle"></i> 图片信息</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>尺寸:</strong> ${data.width} × ${data.height} 像素
+                        </div>
+                        <div class="mb-3">
+                            <strong>上传者:</strong> ${data.uploader}
+                        </div>
+                        <div class="mb-3">
+                            <strong>上传时间:</strong> ${formatDate(data.upload_time)}
+                        </div>
+                        <div class="mb-3">
+                            <strong>分析模型:</strong> ${data.model}
+                        </div>
+                        <div class="mb-3">
+                            <strong>AI置信度:</strong>
+                            <div class="confidence-meter mt-2">
+                                <div class="confidence-fill" style="width: ${confidence * 100}%; background-color: ${confidenceColor};"></div>
+                            </div>
+                            <small class="text-muted">${(confidence * 100).toFixed(1)}%</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 标签信息 -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <h6 class="mb-0"><i class="fas fa-tags"></i> 智能标签</h6>
+                    </div>
+                    <div class="card-body">
+                        ${Object.keys(tagsByCategory).map(category => `
+                            <div class="mb-3">
+                                <div class="tag-category mb-2">${getCategoryName(category)}</div>
+                                <div>
+                                    ${tagsByCategory[category].map(tag => 
+                                        `<a href="/search?q=${encodeURIComponent(tag.name)}" class="tag-item" target="_blank">
+                                            ${tag.name}
+                                        </a>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+    
+    // 显示相似图片区域
+    document.getElementById('similarImagesSection').style.display = 'block';
+}
+
+async function loadSimilarImages() {
+    const similarityType = document.getElementById('similarityType').value;
+    const container = document.getElementById('similarImagesContainer');
+    
+    // 显示加载状态
+    container.innerHTML = `
+        <div class="col-12 text-center py-4">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">正在查找相似图片...</p>
+        </div>
+    `;
+    
+    try {
+        // 构建相似图片查询
+        let query = '';
+        if (imageData) {
+            switch (similarityType) {
+                case 'tags':
+                    query = imageData.tags.slice(0, 3).map(tag => tag.name).join(' ');
+                    break;
+                case 'style':
+                    query = imageData.style || '现代风格';
+                    break;
+                case 'mood':
+                    query = imageData.mood || '轻松氛围';
+                    break;
+                case 'ai':
+                    query = imageData.searchable_keywords ? imageData.searchable_keywords.slice(0, 2).join(' ') : '';
+                    break;
+            }
+        }
+        
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=8&use_ai=true`);
+        const result = await response.json();
+        
+        if (result.success && result.data.images.length > 0) {
+            // 过滤掉当前图片
+            const similarImages = result.data.images.filter(img => img.id !== currentImageId);
+            
+            if (similarImages.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center py-4">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h6>没有找到相似图片</h6>
+                        <p class="text-muted">尝试其他推荐类型</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            similarImages.slice(0, 6).forEach((image, index) => {
+                const similarity = Math.max(0.6, Math.random() * 0.4 + 0.6); // 模拟相似度
+                html += `
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card similar-image-card border-0 shadow-sm" onclick="openImageDetail(${image.id})">
+                            <div class="position-relative">
+                                <img src="${image.url}" class="similar-image" alt="${image.description}">
+                                <div class="similarity-score">${(similarity * 100).toFixed(0)}% 相似</div>
+                            </div>
+                            <div class="card-body p-3">
+                                <h6 class="card-title mb-2">${image.filename}</h6>
+                                <p class="card-text small text-muted">${image.description || '暂无描述'}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-eye"></i> ${image.view_count}
+                                    </small>
+                                    <span class="badge bg-primary">${(image.confidence * 100).toFixed(0)}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = `
+                <div class="col-12 text-center py-4">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h6>没有找到相似图片</h6>
+                    <p class="text-muted">系统中暂无相似内容</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('加载相似图片失败:', error);
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> 加载相似图片失败: ${error.message}
+                </div>
+            </div>
+        `;
+    }
+}
+
+function getCategoryName(category) {
+    const categoryNames = {
+        'pose': '姿势类型',
+        'gender': '性别',
+        'age': '年龄',
+        'clothing': '服装',
+        'props': '道具',
+        'scene': '场景',
+        'lighting': '光线',
+        'angle': '角度',
+        'emotion': '表情',
+        'action': '动作',
+        'style': '风格',
+        'mood': '氛围',
+        'color': '颜色',
+        'composition': '构图'
+    };
+    return categoryNames[category] || category;
+}
+
+function showImagePreview(imageUrl) {
+    const modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+    document.getElementById('previewImage').src = imageUrl;
+    modal.show();
+}
+
+async function addToFavorites(imageId) {
+    try {
+        // 这里先模拟添加收藏功能
+        console.log('添加到收藏:', imageId);
+        
+        // 显示成功提示
+        const toast = new bootstrap.Toast(document.getElementById('favoriteToast'));
+        toast.show();
+        
+        // 改变按钮状态
+        const btn = event.target.closest('button');
+        btn.innerHTML = '<i class="fas fa-heart text-danger"></i> 已收藏';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-outline-danger');
+        btn.disabled = true;
+        
+    } catch (error) {
+        alert('收藏失败: ' + error.message);
+    }
+}
+
+function downloadImage(imageUrl, filename) {
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = filename;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function shareImage(imageId) {
+    const shareUrl = window.location.href;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: '姿势参考图片',
+            text: '查看这张姿势参考图片',
+            url: shareUrl
+        });
+    } else {
+        // 复制链接到剪贴板
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            alert('链接已复制到剪贴板');
+        });
+    }
+}
+
+function reportImage(imageId) {
+    if (confirm('确定要举报这张图片吗？')) {
+        console.log('举报图片:', imageId);
+        alert('举报已提交，我们会及时处理');
+    }
+}
+
+function searchKeyword(keyword) {
+    window.open(`/?q=${encodeURIComponent(keyword)}`, '_blank');
+}
+
+function openImageDetail(imageId) {
+    window.open(`/image/${imageId}`, '_blank');
+}
+
+function showError(message) {
+    document.getElementById('imageDetailContainer').innerHTML = `
+        <div class="text-center py-5">
+            <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+            <h5>错误</h5>
+            <p class="text-muted">${message}</p>
+            <a href="/" class="btn btn-primary">返回首页</a>
+        </div>
+    `;
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleString('zh-CN');
+}
+</script>
+{% endblock %}

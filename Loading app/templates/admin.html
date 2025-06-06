@@ -1,0 +1,1094 @@
+{% extends "base.html" %}
+
+{% block title %}管理员后台 - AI姿势参考图库{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- 侧边栏 -->
+        <nav class="col-md-3 col-lg-2 sidebar bg-dark">
+            <div class="sidebar-sticky">
+                <div class="text-center py-4">
+                    <h5 class="text-white">
+                        <i class="fas fa-cogs"></i> 管理后台
+                    </h5>
+                    <div class="admin-info text-white-50">
+                        <small>{{ current_user.username }}</small><br>
+                        <small>{{ current_user.role.value }}</small>
+                    </div>
+                </div>
+                
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link text-white active" href="#dashboard" onclick="showTab('dashboard')">
+                            <i class="fas fa-chart-line"></i> 统计面板
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="#images" onclick="showTab('images')">
+                            <i class="fas fa-images"></i> 图片管理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="#users" onclick="showTab('users')">
+                            <i class="fas fa-users"></i> 用户管理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="#ai-tools" onclick="showTab('ai-tools')">
+                            <i class="fas fa-robot"></i> AI工具
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="#system" onclick="showTab('system')">
+                            <i class="fas fa-server"></i> 系统设置
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="mt-auto p-3">
+                    <a href="/" class="btn btn-outline-light btn-sm">
+                        <i class="fas fa-home"></i> 返回首页
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <!-- 主内容区 -->
+        <main class="col-md-9 col-lg-10 px-4">
+            <!-- 统计面板 -->
+            <div id="dashboard" class="tab-content active">
+                <div class="d-flex justify-content-between align-items-center py-3">
+                    <h2><i class="fas fa-chart-line"></i> 系统统计</h2>
+                    <button class="btn btn-primary" onclick="loadStats()">
+                        <i class="fas fa-sync-alt"></i> 刷新
+                    </button>
+                </div>
+                
+                <!-- 统计卡片 -->
+                <div class="row mb-4">
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card bg-primary text-white mb-4">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <div class="text-white-75 small">总图片数</div>
+                                        <div class="h2" id="totalImages">-</div>
+                                    </div>
+                                    <div class="h3">
+                                        <i class="fas fa-images"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer d-flex align-items-center justify-content-between">
+                                <small>今日上传: <span id="todayUploads">-</span></small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card bg-success text-white mb-4">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <div class="text-white-75 small">注册用户</div>
+                                        <div class="h2" id="totalUsers">-</div>
+                                    </div>
+                                    <div class="h3">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer d-flex align-items-center justify-content-between">
+                                <small>今日新增: <span id="todayRegistrations">-</span></small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card bg-warning text-white mb-4">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <div class="text-white-75 small">待分析</div>
+                                        <div class="h2" id="pendingAnalysis">-</div>
+                                    </div>
+                                    <div class="h3">
+                                        <i class="fas fa-brain"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer d-flex align-items-center justify-content-between">
+                                <small>已完成: <span id="completedAnalysis">-</span></small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card bg-info text-white mb-4">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <div class="text-white-75 small">标签数量</div>
+                                        <div class="h2" id="totalTags">-</div>
+                                    </div>
+                                    <div class="h3">
+                                        <i class="fas fa-tags"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer d-flex align-items-center justify-content-between">
+                                <small>活跃: <span id="activeTags">-</span></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 快速操作 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-bolt"></i> 快速操作</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <button class="btn btn-primary w-100 mb-2" onclick="showTab('ai-tools')">
+                                    <i class="fas fa-robot"></i><br>批量AI分析
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-success w-100 mb-2" onclick="scanDirectory()">
+                                    <i class="fas fa-folder-open"></i><br>扫描目录
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-warning w-100 mb-2" onclick="clearCache()">
+                                    <i class="fas fa-broom"></i><br>清理缓存
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-info w-100 mb-2" onclick="showSystemInfo()">
+                                    <i class="fas fa-server"></i><br>系统信息
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 图片管理 -->
+            <div id="images" class="tab-content">
+                <div class="d-flex justify-content-between align-items-center py-3">
+                    <h2><i class="fas fa-images"></i> 图片管理</h2>
+                    <div class="btn-group">
+                        <select class="form-select" id="imageStatusFilter" onchange="loadImages()">
+                            <option value="active">活跃图片</option>
+                            <option value="deleted">已删除</option>
+                            <option value="all">全部</option>
+                        </select>
+                        <select class="form-select" id="aiStatusFilter" onchange="loadImages()">
+                            <option value="">全部状态</option>
+                            <option value="pending">待分析</option>
+                            <option value="completed">已完成</option>
+                            <option value="failed">分析失败</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="loadImages()">
+                            <i class="fas fa-sync-alt"></i> 刷新
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>缩略图</th>
+                                        <th>文件名</th>
+                                        <th>上传者</th>
+                                        <th>AI状态</th>
+                                        <th>大小</th>
+                                        <th>上传时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="imagesTableBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center">
+                                            <div class="py-3">
+                                                <i class="fas fa-spinner fa-spin"></i> 加载中...
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div id="imagesPagination" class="d-flex justify-content-center mt-3">
+                            <!-- 分页将在这里显示 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 用户管理 -->
+            <div id="users" class="tab-content">
+                <div class="d-flex justify-content-between align-items-center py-3">
+                    <h2><i class="fas fa-users"></i> 用户管理</h2>
+                    <div class="btn-group">
+                        <select class="form-select" id="userRoleFilter" onchange="loadUsers()">
+                            <option value="">全部角色</option>
+                            <option value="user">普通用户</option>
+                            <option value="moderator">版主</option>
+                            <option value="admin">管理员</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="loadUsers()">
+                            <i class="fas fa-sync-alt"></i> 刷新
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>用户名</th>
+                                        <th>邮箱</th>
+                                        <th>角色</th>
+                                        <th>状态</th>
+                                        <th>上传数</th>
+                                        <th>注册时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center">
+                                            <div class="py-3">
+                                                <i class="fas fa-spinner fa-spin"></i> 加载中...
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div id="usersPagination" class="d-flex justify-content-center mt-3">
+                            <!-- 分页将在这里显示 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI工具 -->
+            <div id="ai-tools" class="tab-content">
+                <div class="py-3">
+                    <h2><i class="fas fa-robot"></i> AI分析工具</h2>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-magic"></i> 批量AI分析</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>对图片进行批量AI分析处理</p>
+                                <div class="mb-3">
+                                    <label class="form-label">分析范围:</label>
+                                    <select class="form-select" id="batchAnalysisFilter">
+                                        <option value="pending">仅待分析图片</option>
+                                        <option value="failed">仅失败图片</option>
+                                        <option value="all">全部图片</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">处理数量限制:</label>
+                                    <input type="number" class="form-control" id="batchAnalysisLimit" value="10" min="1" max="100">
+                                </div>
+                                <button class="btn btn-primary" onclick="startBatchAnalysis()">
+                                    <i class="fas fa-play"></i> 开始批量分析
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-folder-open"></i> 目录扫描</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>扫描指定目录并导入新图片</p>
+                                <div class="mb-3">
+                                    <label class="form-label">目录路径:</label>
+                                    <input type="text" class="form-control" id="scanDirectoryPath" 
+                                           placeholder="例如: uploads" value="uploads">
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="autoAnalyzeScanned" checked>
+                                    <label class="form-check-label">自动分析新导入的图片</label>
+                                </div>
+                                <button class="btn btn-info" onclick="startDirectoryScan()">
+                                    <i class="fas fa-scan"></i> 开始扫描
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 操作日志 -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-list"></i> 操作日志</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="operationLog" style="height: 300px; overflow-y: auto; background: #f8f9fa; padding: 1rem; font-family: monospace; font-size: 0.875rem;">
+                            <div class="text-muted">等待操作...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 系统设置 -->
+            <div id="system" class="tab-content">
+                <div class="py-3">
+                    <h2><i class="fas fa-server"></i> 系统设置</h2>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-info-circle"></i> 系统信息</h5>
+                            </div>
+                            <div class="card-body" id="systemInfo">
+                                <div class="text-center py-3">
+                                    <i class="fas fa-spinner fa-spin"></i> 加载中...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-database"></i> 数据库状态</h5>
+                            </div>
+                            <div class="card-body" id="databaseInfo">
+                                <div class="text-center py-3">
+                                    <i class="fas fa-spinner fa-spin"></i> 加载中...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-cloud"></i> 存储设置</h5>
+                            </div>
+                            <div class="card-body" id="storageInfo">
+                                <div class="text-center py-3">
+                                    <i class="fas fa-spinner fa-spin"></i> 加载中...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 系统操作 -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-cogs"></i> 系统操作</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <button class="btn btn-warning w-100 mb-2" onclick="clearSystemCache()">
+                                    <i class="fas fa-broom"></i><br>清理缓存
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-info w-100 mb-2" onclick="exportSystemData()">
+                                    <i class="fas fa-download"></i><br>导出数据
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-success w-100 mb-2" onclick="optimizeDatabase()">
+                                    <i class="fas fa-database"></i><br>优化数据库
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-secondary w-100 mb-2" onclick="generateReport()">
+                                    <i class="fas fa-chart-line"></i><br>生成报表
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    padding: 0;
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+}
+
+.sidebar-sticky {
+    position: relative;
+    top: 0;
+    height: calc(100vh - 48px);
+    padding-top: .5rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.sidebar .nav-link {
+    font-weight: 500;
+    color: #ffffff80;
+    border-radius: 0.25rem;
+    margin: 0.125rem 0.5rem;
+}
+
+.sidebar .nav-link:hover {
+    color: #ffffff;
+    background-color: rgba(255,255,255,0.1);
+}
+
+.sidebar .nav-link.active {
+    color: #ffffff;
+    background-color: rgba(255,255,255,0.2);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+main {
+    margin-left: 225px;
+    padding-top: 1rem;
+}
+
+.admin-info {
+    padding: 0.5rem;
+    background: rgba(255,255,255,0.1);
+    border-radius: 0.25rem;
+    margin-bottom: 1rem;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.image-thumbnail {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 0.25rem;
+}
+
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-pending { background: #fff3cd; color: #856404; }
+.status-completed { background: #d4edda; color: #155724; }
+.status-failed { background: #f8d7da; color: #721c24; }
+
+@media (max-width: 767.98px) {
+    .sidebar {
+        position: static;
+        height: auto;
+    }
+    
+    main {
+        margin-left: 0;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentTab = 'dashboard';
+let statsData = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化
+    checkAdminPermission();
+    loadStats();
+    showTab('dashboard');
+});
+
+async function checkAdminPermission() {
+    try {
+        const response = await fetch('/api/auth/check');
+        const data = await response.json();
+        
+        if (!data.authenticated) {
+            window.location.href = '/login?redirect=/admin';
+            return;
+        }
+        
+        if (data.user.role !== 'admin' && data.user.role !== 'moderator') {
+            alert('您没有管理员权限');
+            window.location.href = '/';
+            return;
+        }
+    } catch (error) {
+        console.error('检查权限失败:', error);
+        window.location.href = '/login';
+    }
+}
+
+function showTab(tabId) {
+    // 隐藏所有标签页
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // 显示目标标签页
+    document.getElementById(tabId).classList.add('active');
+    
+    // 更新导航状态
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    
+    // 根据标签页加载数据
+    currentTab = tabId;
+    switch(tabId) {
+        case 'dashboard':
+            if (!statsData) loadStats();
+            break;
+        case 'images':
+            loadImages();
+            break;
+        case 'users':
+            loadUsers();
+            break;
+        case 'system':
+            loadSystemInfo();
+            break;
+    }
+}
+
+async function loadStats() {
+    try {
+        const response = await fetch('/api/admin/stats');
+        const data = await response.json();
+        
+        if (data.success) {
+            statsData = data.data;
+            displayStats(statsData);
+        } else {
+            showError('加载统计数据失败');
+        }
+    } catch (error) {
+        console.error('加载统计失败:', error);
+        showError('网络错误：' + error.message);
+    }
+}
+
+function displayStats(data) {
+    document.getElementById('totalImages').textContent = data.overview.total_images || 0;
+    document.getElementById('totalUsers').textContent = data.overview.total_users || 0;
+    document.getElementById('totalTags').textContent = data.overview.total_tags || 0;
+    document.getElementById('pendingAnalysis').textContent = data.ai_analysis.pending || 0;
+    
+    document.getElementById('todayUploads').textContent = data.today.uploads || 0;
+    document.getElementById('todayRegistrations').textContent = data.today.registrations || 0;
+    document.getElementById('completedAnalysis').textContent = data.ai_analysis.completed || 0;
+    document.getElementById('activeTags').textContent = data.overview.active_tags || 0;
+}
+
+async function loadImages(page = 1) {
+    try {
+        const status = document.getElementById('imageStatusFilter')?.value || 'active';
+        const aiStatus = document.getElementById('aiStatusFilter')?.value || '';
+        
+        const params = new URLSearchParams({
+            page: page,
+            per_page: 10,
+            status: status
+        });
+        
+        if (aiStatus) params.append('ai_status', aiStatus);
+        
+        const response = await fetch(`/api/admin/images?${params}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayImages(data.data.images);
+            displayPagination(data.data.pagination, 'imagesPagination', loadImages);
+        } else {
+            showError('加载图片列表失败');
+        }
+    } catch (error) {
+        console.error('加载图片失败:', error);
+        showError('网络错误：' + error.message);
+    }
+}
+
+function displayImages(images) {
+    const tbody = document.getElementById('imagesTableBody');
+    
+    if (images.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-4">
+                    <i class="fas fa-images fa-2x text-muted mb-2"></i>
+                    <p class="text-muted">没有找到图片</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = images.map(image => `
+        <tr>
+            <td>
+                <img src="${image.thumbnail_url || image.url}" class="image-thumbnail" alt="${image.filename}">
+            </td>
+            <td>
+                <div class="fw-bold">${image.filename}</div>
+                <small class="text-muted">${image.width}×${image.height}</small>
+            </td>
+            <td>${image.uploader}</td>
+            <td>
+                <span class="status-badge status-${image.ai_analysis_status}">
+                    ${getStatusText(image.ai_analysis_status)}
+                </span>
+            </td>
+            <td>${formatFileSize(image.file_size)}</td>
+            <td>${formatDate(image.upload_time)}</td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="reanalyzeImage(${image.id})" title="重新分析">
+                        <i class="fas fa-brain"></i>
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="deleteImage(${image.id})" title="删除">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function loadUsers(page = 1) {
+    try {
+        const role = document.getElementById('userRoleFilter')?.value || '';
+        
+        const params = new URLSearchParams({
+            page: page,
+            per_page: 10
+        });
+        
+        if (role) params.append('role', role);
+        
+        const response = await fetch(`/api/admin/users?${params}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayUsers(data.data.users);
+            displayPagination(data.data.pagination, 'usersPagination', loadUsers);
+        } else {
+            showError('加载用户列表失败');
+        }
+    } catch (error) {
+        console.error('加载用户失败:', error);
+        showError('网络错误：' + error.message);
+    }
+}
+
+function displayUsers(users) {
+    const tbody = document.getElementById('usersTableBody');
+    
+    if (users.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-4">
+                    <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                    <p class="text-muted">没有找到用户</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = users.map(user => `
+        <tr>
+            <td>
+                <div class="fw-bold">${user.username}</div>
+                <small class="text-muted">${user.full_name || '未设置'}</small>
+            </td>
+            <td>${user.email}</td>
+            <td>
+                <span class="badge bg-${getRoleBadgeClass(user.role)}">
+                    ${getRoleText(user.role)}
+                </span>
+            </td>
+            <td>
+                <span class="badge bg-${user.is_active ? 'success' : 'danger'}">
+                    ${user.is_active ? '活跃' : '禁用'}
+                </span>
+            </td>
+            <td>${user.upload_count}</td>
+            <td>${formatDate(user.created_at)}</td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="editUser(${user.id})" title="编辑">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-outline-${user.is_active ? 'warning' : 'success'}" 
+                            onclick="toggleUserStatus(${user.id}, ${!user.is_active})" 
+                            title="${user.is_active ? '禁用' : '启用'}">
+                        <i class="fas fa-${user.is_active ? 'ban' : 'check'}"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function loadSystemInfo() {
+    try {
+        const response = await fetch('/api/admin/system-info');
+        const data = await response.json();
+        
+        if (data.success) {
+            displaySystemInfo(data.data);
+        } else {
+            showError('加载系统信息失败');
+        }
+    } catch (error) {
+        console.error('加载系统信息失败:', error);
+        showError('网络错误：' + error.message);
+    }
+}
+
+function displaySystemInfo(data) {
+    document.getElementById('systemInfo').innerHTML = `
+        <p><strong>系统:</strong> ${data.system.platform}</p>
+        <p><strong>Python:</strong> ${data.system.python_version}</p>
+        <p><strong>CPU:</strong> ${data.system.cpu_count} 核</p>
+        <p><strong>内存:</strong> ${data.system.memory_available_gb}GB / ${data.system.memory_total_gb}GB</p>
+    `;
+    
+    document.getElementById('databaseInfo').innerHTML = `
+        <p><strong>版本:</strong> ${data.database.version || '未知'}</p>
+        <p><strong>连接数:</strong> ${data.database.connections || '未知'}</p>
+        <p><strong>运行时间:</strong> ${formatUptime(data.database.uptime_seconds)}</p>
+    `;
+    
+    document.getElementById('storageInfo').innerHTML = `
+        <p><strong>类型:</strong> ${data.storage.type}</p>
+        <p><strong>目录:</strong> ${data.storage.upload_dir}</p>
+        <p><strong>最大文件:</strong> ${data.application.max_file_size_mb}MB</p>
+    `;
+}
+
+async function startBatchAnalysis() {
+    const filter = document.getElementById('batchAnalysisFilter').value;
+    const limit = document.getElementById('batchAnalysisLimit').value;
+    
+    if (confirm(`确定要开始批量分析吗？将处理 ${filter} 图片，限制 ${limit} 张。`)) {
+        try {
+            addLog('开始批量AI分析...');
+            
+            const response = await fetch('/api/admin/batch/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status_filter: filter,
+                    limit: parseInt(limit)
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                addLog(`批量分析任务已启动，将处理 ${data.count} 张图片`);
+                showSuccess('批量分析任务已启动');
+            } else {
+                addLog('批量分析启动失败: ' + (data.detail || '未知错误'));
+                showError('批量分析启动失败');
+            }
+        } catch (error) {
+            addLog('批量分析启动失败: ' + error.message);
+            showError('网络错误：' + error.message);
+        }
+    }
+}
+
+async function startDirectoryScan() {
+    const path = document.getElementById('scanDirectoryPath').value;
+    const autoAnalyze = document.getElementById('autoAnalyzeScanned').checked;
+    
+    if (!path) {
+        alert('请输入目录路径');
+        return;
+    }
+    
+    if (confirm(`确定要扫描目录 "${path}" 吗？`)) {
+        try {
+            addLog(`开始扫描目录: ${path}`);
+            
+            const params = new URLSearchParams({
+                directory_path: path,
+                auto_analyze: autoAnalyze
+            });
+            
+            const response = await fetch(`/api/admin/scan-directory?${params}`, {
+                method: 'POST'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                addLog('目录扫描任务已启动');
+                showSuccess('目录扫描任务已启动');
+            } else {
+                addLog('目录扫描启动失败: ' + (data.detail || '未知错误'));
+                showError('目录扫描启动失败');
+            }
+        } catch (error) {
+            addLog('目录扫描启动失败: ' + error.message);
+            showError('网络错误：' + error.message);
+        }
+    }
+}
+
+async function reanalyzeImage(imageId) {
+    if (confirm('确定要重新分析这张图片吗？')) {
+        try {
+            const response = await fetch(`/api/admin/images/${imageId}/reanalyze`, {
+                method: 'POST'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showSuccess('重新分析任务已启动');
+                loadImages(); // 刷新列表
+            } else {
+                showError('启动重新分析失败');
+            }
+        } catch (error) {
+            showError('网络错误：' + error.message);
+        }
+    }
+}
+
+async function deleteImage(imageId) {
+    if (confirm('确定要删除这张图片吗？')) {
+        try {
+            const response = await fetch(`/api/admin/images/${imageId}`, {
+                method: 'DELETE'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showSuccess('图片删除成功');
+                loadImages(); // 刷新列表
+            } else {
+                showError('删除图片失败');
+            }
+        } catch (error) {
+            showError('网络错误：' + error.message);
+        }
+    }
+}
+
+async function toggleUserStatus(userId, newStatus) {
+    const action = newStatus ? '启用' : '禁用';
+    if (confirm(`确定要${action}这个用户吗？`)) {
+        try {
+            const response = await fetch(`/api/admin/users/${userId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_active: newStatus })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showSuccess(`用户${action}成功`);
+                loadUsers(); // 刷新列表
+            } else {
+                showError(`${action}用户失败`);
+            }
+        } catch (error) {
+            showError('网络错误：' + error.message);
+        }
+    }
+}
+
+async function clearSystemCache() {
+    if (confirm('确定要清理系统缓存吗？')) {
+        try {
+            const response = await fetch('/api/admin/clear-cache', {
+                method: 'POST'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showSuccess('系统缓存清理完成');
+            } else {
+                showError('清理缓存失败');
+            }
+        } catch (error) {
+            showError('网络错误：' + error.message);
+        }
+    }
+}
+
+// 辅助函数
+function displayPagination(pagination, containerId, loadFunction) {
+    const container = document.getElementById(containerId);
+    if (pagination.pages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '<nav><ul class="pagination">';
+    
+    // 上一页
+    if (pagination.page > 1) {
+        html += `<li class="page-item"><a class="page-link" href="#" onclick="${loadFunction.name}(${pagination.page - 1})">上一页</a></li>`;
+    }
+    
+    // 页码
+    for (let i = Math.max(1, pagination.page - 2); i <= Math.min(pagination.pages, pagination.page + 2); i++) {
+        html += `<li class="page-item ${i === pagination.page ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="${loadFunction.name}(${i})">${i}</a>
+                 </li>`;
+    }
+    
+    // 下一页
+    if (pagination.page < pagination.pages) {
+        html += `<li class="page-item"><a class="page-link" href="#" onclick="${loadFunction.name}(${pagination.page + 1})">下一页</a></li>`;
+    }
+    
+    html += '</ul></nav>';
+    container.innerHTML = html;
+}
+
+function addLog(message) {
+    const logContainer = document.getElementById('operationLog');
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = document.createElement('div');
+    logEntry.innerHTML = `<span class="text-muted">[${timestamp}]</span> ${message}`;
+    logContainer.appendChild(logEntry);
+    logContainer.scrollTop = logContainer.scrollHeight;
+}
+
+function getStatusText(status) {
+    const statusMap = {
+        'pending': '待分析',
+        'completed': '已完成',
+        'failed': '分析失败'
+    };
+    return statusMap[status] || status;
+}
+
+function getRoleText(role) {
+    const roleMap = {
+        'user': '普通用户',
+        'moderator': '版主',
+        'admin': '管理员'
+    };
+    return roleMap[role] || role;
+}
+
+function getRoleBadgeClass(role) {
+    const classMap = {
+        'user': 'secondary',
+        'moderator': 'warning',
+        'admin': 'danger'
+    };
+    return classMap[role] || 'secondary';
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+}
+
+function formatUptime(seconds) {
+    if (!seconds || seconds === '未知') return '未知';
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    return `${days}天 ${hours}小时`;
+}
+
+function showError(message) {
+    alert('错误: ' + message);
+}
+
+function showSuccess(message) {
+    alert('成功: ' + message);
+}
+
+function editUser(userId) {
+    alert('用户编辑功能开发中...');
+}
+
+function scanDirectory() {
+    showTab('ai-tools');
+}
+
+function clearCache() {
+    clearSystemCache();
+}
+
+function showSystemInfo() {
+    showTab('system');
+}
+
+function exportSystemData() {
+    alert('数据导出功能开发中...');
+}
+
+function optimizeDatabase() {
+    alert('数据库优化功能开发中...');
+}
+
+function generateReport() {
+    alert('报表生成功能开发中...');
+}
+</script>
+{% endblock %}

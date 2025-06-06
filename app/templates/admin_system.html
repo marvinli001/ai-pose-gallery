@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置 - AI姿势参考图库</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        
+        .admin-header {
+            background: white;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .metric-cards {
+            margin-bottom: 2rem;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            height: 100%;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .metric-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            margin-bottom: 1rem;
+        }
+        
+        .metric-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .metric-success { background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%); }
+        .metric-warning { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .metric-info { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .metric-danger { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            margin: 0;
+        }
+        
+        .metric-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+        
+        .metric-change {
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+        }
+        
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        
+        .tab-section {
+            background: white;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .nav-tabs {
+            border-bottom: none;
+            background: #f8f9fa;
+            padding: 1rem;
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            border-radius: 0.5rem;
+            margin-right: 0.5rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background: #007bff;
+            color: white;
+        }
+        
+        .tab-content {
+            padding: 2rem;
+        }
+        
+        .action-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+            text-align: center;
+            height: 100%;
+        }
+        
+        .action-card:hover {
+            border-color: #007bff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,123,255,0.1);
+        }
+        
+        .action-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #007bff;
+        }
+        
+        .log-container {
+            background: #1e1e1e;
+            color: #ffffff;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        
+        .log-line {
+            margin-bottom: 0.25rem;
+            word-wrap: break-word;
+        }
+        
+        .log-timestamp {
+            color: #6c757d;
+        }
+        
+        .log-level-error {
+            color: #dc3545;
+        }
+        
+        .log-level-warning {
+            color: #ffc107;
+        }
+        
+        .log-level-info {
+            color: #17a2b8;
+        }
+        
+        .config-section {
+            background: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .config-item:last-child {
+            border-bottom: none;
+        }
+        
+        .config-label {
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .config-value {
+            color: #6c757d;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        
+        .status-online { background-color: #28a745; }
+        .status-warning { background-color: #ffc107; }
+        .status-offline { background-color: #dc3545; }
+        
+        .backup-item {
+            background: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #007bff;
+        }
+        
+        .performance-chart {
+            height: 300px;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            display: none;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .admin-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .metric-card {
+                margin-bottom: 1rem;
+            }
+            
+            .metric-value {
+                font-size: 1.5rem;
+            }
+            
+            .tab-content {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+{% include "components/admin_nav.html" %}
+
+    <div class="container-fluid py-4">
+        <!-- 页面标题 -->
+        <div class="admin-header">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="mb-0">
+                        <i class="fas fa-server text-primary"></i> 系统设置与监控
+                    </h1>
+                    <p class="text-muted mb-0">监控系统性能和管理系统设置</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <span class="badge bg-success me-2">
+                        <i class="fas fa-circle status-indicator status-online"></i>
+                        系统运行正常
+                    </span>
+                    <button class="btn btn-primary" onclick="refreshAllData()">
+                        <i class="fas fa-sync-alt"></i> 刷新数据
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 性能监控卡片 -->
+        <div class="row metric-cards">
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="metric-card">
+                    <div class="metric-icon metric-primary">
+                        <i class="fas fa-microchip"></i>
+                    </div>
+                    <h3 class="metric-value" id="cpuUsage">-</h3>
+                    <p class="metric-label">CPU 使用率</p>
+                    <div class="metric-change">
+                        <span id="cpuCores">- 核心</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="metric-card">
+                    <div class="metric-icon metric-success">
+                        <i class="fas fa-memory"></i>
+                    </div>
+                    <h3 class="metric-value" id="memoryUsage">-</h3>
+                    <p class="metric-label">内存使用率</p>
+                    <div class="metric-change">
+                        <span id="memoryDetails">- / -</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="metric-card">
+                    <div class="metric-icon metric-warning">
+                        <i class="fas fa-hdd"></i>
+                    </div>
+                    <h3 class="metric-value" id="diskUsage">-</h3>
+                    <p class="metric-label">磁盘使用率</p>
+                    <div class="metric-change">
+                        <span id="diskDetails">- / -</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="metric-card">
+                    <div class="metric-icon metric-info">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <h3 class="metric-value" id="dbSize">-</h3>
+                    <p class="metric-label">数据库大小</p>
+                    <div class="metric-change">
+                        <span id="dbTables">- 表</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主要功能标签页 -->
+        <div class="tab-section">
+            <ul class="nav nav-tabs" id="systemTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="performance-tab" data-bs-toggle="tab" data-bs-target="#performance" 
+                            type="button" role="tab" onclick="showPerformanceTab()">
+                        <i class="fas fa-chart-line"></i> 性能监控
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="maintenance-tab" data-bs-toggle="tab" data-bs-target="#maintenance" 
+                            type="button" role="tab" onclick="showMaintenanceTab()">
+                        <i class="fas fa-tools"></i> 系统维护
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#config" 
+                            type="button" role="tab" onclick="showConfigTab()">
+                        <i class="fas fa-cog"></i> 系统配置
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" 
+                            type="button" role="tab" onclick="showLogsTab()">
+                        <i class="fas fa-file-alt"></i> 系统日志
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="backup-tab" data-bs-toggle="tab" data-bs-target="#backup" 
+                            type="button" role="tab" onclick="showBackupTab()">
+                        <i class="fas fa-archive"></i> 备份管理
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="systemTabsContent">
+                <!-- 性能监控标签页 -->
+                <div class="tab-pane fade show active" id="performance" role="tabpanel">
+                    <div class="row">
+                        <!-- 实时性能图表 -->
+                        <div class="col-md-6 mb-4">
+                            <h5><i class="fas fa-chart-area"></i> CPU & 内存使用趋势</h5>
+                            <div class="performance-chart">
+                                <canvas id="performanceChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-4">
+                            <h5><i class="fas fa-chart-bar"></i> 磁盘I/O统计</h5>
+                            <div class="performance-chart">
+                                <canvas id="diskIOChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- 进程列表 -->
+                        <div class="col-md-12">
+                            <h5><i class="fas fa-list"></i> 系统进程 (Top 10)</h5>
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>PID</th>
+                                            <th>进程名</th>
+                                            <th>CPU使用率</th>
+                                            <th>内存使用率</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="processTableBody">
+                                        <tr>
+                                            <td colspan="4" class="text-center">
+                                                <div class="spinner-border spinner-border-sm" role="status">
+                                                    <span class="visually-hidden">加载中...</span>
+                                                </div>
+                                                正在加载进程信息...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统维护标签页 -->
+                <div class="tab-pane fade" id="maintenance" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-12 mb-4">
+                            <h5><i class="fas fa-broom"></i> 系统清理工具</h5>
+                            <p class="text-muted">定期清理系统可以释放存储空间并提高性能</p>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="action-card" onclick="performCleanup('temp_files')">
+                                <div class="action-icon">
+                                    <i class="fas fa-trash-alt"></i>
+                                </div>
+                                <h6>清理临时文件</h6>
+                                <p class="text-muted small">删除超过1小时的临时文件</p>
+                                <button class="btn btn-outline-primary btn-sm">开始清理</button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="action-card" onclick="performCleanup('orphaned_files')">
+                                <div class="action-icon">
+                                    <i class="fas fa-unlink"></i>
+                                </div>
+                                <h6>清理孤立文件</h6>
+                                <p class="text-muted small">删除数据库中不存在的文件</p>
+                                <button class="btn btn-outline-warning btn-sm">开始清理</button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="action-card" onclick="performCleanup('cache')">
+                                <div class="action-icon">
+                                    <i class="fas fa-memory"></i>
+                                </div>
+                                <h6>清理内存缓存</h6>
+                                <p class="text-muted small">释放Python垃圾回收</p>
+                                <button class="btn btn-outline-success btn-sm">开始清理</button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="action-card" onclick="performCleanup('logs')">
+                                <div class="action-icon">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <h6>清理日志文件</h6>
+                                <p class="text-muted small">清空系统日志文件</p>
+                                <button class="btn btn-outline-info btn-sm">开始清理</button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="action-card" onclick="performCleanup('thumbnails')">
+                                <div class="action-icon">
+                                    <i class="fas fa-images"></i>
+                                </div>
+                                <h6>清理缩略图</h6>
+                                <p class="text-muted small">删除所有缩略图缓存</p>
+                                <button class="btn btn-outline-secondary btn-sm">开始清理</button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="action-card" onclick="optimizeDatabase()">
+                                <div class="action-icon">
+                                    <i class="fas fa-database"></i>
+                                </div>
+                                <h6>优化数据库</h6>
+                                <p class="text-muted small">执行VACUUM和重建索引</p>
+                                <button class="btn btn-outline-primary btn-sm">开始优化</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 清理结果 -->
+                    <div id="cleanupResults" class="mt-4" style="display: none;">
+                        <h5><i class="fas fa-check-circle text-success"></i> 清理结果</h5>
+                        <div id="cleanupResultsContent"></div>
+                    </div>
+                </div>
+
+                <!-- 系统配置标签页 -->
+                <div class="tab-pane fade" id="config" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="config-section">
+                                <h6><i class="fas fa-database"></i> 数据库配置</h6>
+                                <div id="databaseConfig">
+                                    <div class="text-center py-3">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">加载中...</span>
+                                        </div>
+                                        正在加载配置...
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="config-section">
+                                <h6><i class="fas fa-upload"></i> 上传配置</h6>
+                                <div id="uploadConfig">
+                                    <div class="text-center py-3">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">加载中...</span>
+                                        </div>
+                                        正在加载配置...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="config-section">
+                                <h6><i class="fas fa-key"></i> JWT配置</h6>
+                                <div id="jwtConfig">
+                                    <div class="text-center py-3">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">加载中...</span>
+                                        </div>
+                                        正在加载配置...
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="config-section">
+                                <h6><i class="fas fa-robot"></i> AI配置</h6>
+                                <div id="aiConfig">
+                                    <div class="text-center py-3">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">加载中...</span>
+                                        </div>
+                                        正在加载配置...
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="config-section">
+                                <h6><i class="fas fa-cogs"></i> 应用配置</h6>
+                                <div id="appConfig">
+                                    <div class="text-center py-3">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">加载中...</span>
+                                        </div>
+                                        正在加载配置...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统日志标签页 -->
+                <div class="tab-pane fade" id="logs" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5><i class="fas fa-file-alt"></i> 系统日志</h5>
+                                <div class="btn-group">
+                                    <select class="form-select form-select-sm" id="logTypeSelect" onchange="loadLogs()">
+                                        <option value="application">应用日志</option>
+                                        <option value="error">错误日志</option>
+                                        <option value="access">访问日志</option>
+                                    </select>
+                                    <select class="form-select form-select-sm" id="logLinesSelect" onchange="loadLogs()">
+                                        <option value="50">最近50行</option>
+                                        <option value="100" selected>最近100行</option>
+                                        <option value="200">最近200行</option>
+                                        <option value="500">最近500行</option>
+                                    </select>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="loadLogs()">
+                                        <i class="fas fa-sync-alt"></i> 刷新
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-12">
+                            <div class="log-container" id="logContainer">
+                                <div class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm text-light" role="status">
+                                        <span class="visually-hidden">加载中...</span>
+                                    </div>
+                                    正在加载日志...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 备份管理标签页 -->
+                <div class="tab-pane fade" id="backup" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-12 mb-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5><i class="fas fa-archive"></i> 备份管理</h5>
+                                <button class="btn btn-success" onclick="createBackup()">
+                                    <i class="fas fa-plus"></i> 创建新备份
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-12">
+                            <div id="backupsList">
+                                <div class="text-center py-5">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">加载中...</span>
+                                    </div>
+                                    <p class="mt-2">正在加载备份列表...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载遮罩 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+            <h5 id="loadingText">处理中...</h5>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 全局变量
+        let performanceChart = null;
+        let diskIOChart = null;
+        let refreshInterval = null;
+        let systemInfo = null;
+        let performanceData = [];
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            initializeSystem();
+            
+            // 设置自动刷新 (每30秒)
+            refreshInterval = setInterval(refreshMetrics, 30000);
+        });
+
+        // 检查用户权限
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/check');
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+                    return;
+                }
+                
+                if (data.user.role !== 'admin' && data.user.role !== 'moderator') {
+                    alert('您没有管理员权限');
+                    window.location.href = '/';
+                    return;
+                }
+            } catch (error) {
+                console.error('权限检查失败:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // 初始化系统
+        async function initializeSystem() {
+            try {
+                await loadSystemInfo();
+                await loadPerformanceMetrics();
+                await loadDatabaseStats();
+                
+                // 初始化图表
+                initializeCharts();
+                
+                console.log('✅ 系统监控初始化完成');
+            } catch (error) {
+                console.error('❌ 系统初始化失败:', error);
+                showError('系统初始化失败');
+            }
+        }
+
+        // 加载系统信息
+        async function loadSystemInfo() {
+            try {
+                const response = await fetch('/api/admin/system/info');
+                const data = await response.json();
+                
+                if (data.success) {
+                    systemInfo = data.data;
+                    updateSystemMetrics(data.data);
+                } else {
+                    showError('加载系统信息失败');
+                }
+            } catch (error) {
+                console.error('加载系统信息失败:', error);
+                showError('网络错误');
+            }
+        }
+
+        // 加载性能指标
+        async function loadPerformanceMetrics() {
+            try {
+                const response = await fetch('/api/admin/system/performance');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updatePerformanceData(data.data);
+                } else {
+                    showError('加载性能数据失败');
+                }
+            } catch (error) {
+                console.error('加载性能数据失败:', error);
+            }
+        }
+
+        // 加载数据库统计
+        async function loadDatabaseStats() {
+            try {
+                const response = await fetch('/api/admin/system/database-stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateDatabaseMetrics(data.data);
+                } else {
+                    showError('加载数据库统计失败');
+                }
+            } catch (error) {
+                console.error('加载数据库统计失败:', error);
+            }
+        }
+
+        // 更新系统指标显示
+        function updateSystemMetrics(data) {
+            // CPU使用率
+            document.getElementById('cpuUsage').textContent = `${data.system.cpu_percent.toFixed(1)}%`;
+            document.getElementById('cpuCores').textContent = `${data.system.cpu_count} 核心`;
+            
+            // 内存使用率
+            document.getElementById('memoryUsage').textContent = `${data.memory.percent.toFixed(1)}%`;
+            document.getElementById('memoryDetails').textContent = 
+                `${data.memory.used_gb.toFixed(1)}GB / ${data.memory.total_gb.toFixed(1)}GB`;
+            
+            // 磁盘使用率
+            document.getElementById('diskUsage').textContent = `${data.disk.percent.toFixed(1)}%`;
+            document.getElementById('diskDetails').textContent = 
+                `${data.disk.used_gb.toFixed(1)}GB / ${data.disk.total_gb.toFixed(1)}GB`;
+            
+            // 上传目录大小
+            if (data.upload_directory && data.upload_directory.size_gb) {
+                document.getElementById('dbSize').textContent = `${data.upload_directory.size_gb.toFixed(2)}GB`;
+                document.getElementById('dbTables').textContent = `${data.upload_directory.file_count} 文件`;
+            }
+            
+            // 更新指标卡片颜色
+            updateMetricCardColors(data);
+        }
+
+        // 更新性能数据
+        function updatePerformanceData(data) {
+            // 更新进程列表
+            updateProcessList(data.top_processes);
+            
+            // 添加到性能数据历史
+            const timestamp = new Date().toLocaleTimeString();
+            performanceData.push({
+                timestamp: timestamp,
+                cpu: data.cpu.percent,
+                memory: data.memory.virtual.percent,
+                disk_read: data.disk_io ? data.disk_io.read_bytes : 0,
+                disk_write: data.disk_io ? data.disk_io.write_bytes : 0
+            });
+            
+            // 保持最近20个数据点
+            if (performanceData.length > 20) {
+                performanceData.shift();
+            }
+            
+            // 更新图表
+            updatePerformanceChart();
+            updateDiskIOChart();
+        }
+
+        // 继续下一部分...
+        // 更新数据库指标
+        function updateDatabaseMetrics(data) {
+            if (data.database_file) {
+                document.getElementById('dbSize').textContent = `${data.database_file.size_mb}MB`;
+                document.getElementById('dbTables').textContent = `${data.table_stats.users + data.table_stats.images} 记录`;
+            }
+        }
+
+        // 更新指标卡片颜色
+        function updateMetricCardColors(data) {
+            // CPU颜色
+            const cpuCard = document.querySelector('#cpuUsage').closest('.metric-card').querySelector('.metric-icon');
+            if (data.system.cpu_percent > 80) {
+                cpuCard.className = 'metric-icon metric-danger';
+            } else if (data.system.cpu_percent > 60) {
+                cpuCard.className = 'metric-icon metric-warning';
+            } else {
+                cpuCard.className = 'metric-icon metric-primary';
+            }
+            
+            // 内存颜色
+            const memCard = document.querySelector('#memoryUsage').closest('.metric-card').querySelector('.metric-icon');
+            if (data.memory.percent > 85) {
+                memCard.className = 'metric-icon metric-danger';
+            } else if (data.memory.percent > 70) {
+                memCard.className = 'metric-icon metric-warning';
+            } else {
+                memCard.className = 'metric-icon metric-success';
+            }
+            
+            // 磁盘颜色
+            const diskCard = document.querySelector('#diskUsage').closest('.metric-card').querySelector('.metric-icon');
+            if (data.disk.percent > 90) {
+                diskCard.className = 'metric-icon metric-danger';
+            } else if (data.disk.percent > 75) {
+                diskCard.className = 'metric-icon metric-warning';
+            } else {
+                diskCard.className = 'metric-icon metric-warning';
+            }
+        }
+
+        // 更新进程列表
+        function updateProcessList(processes) {
+            const tbody = document.getElementById('processTableBody');
+            
+            if (processes.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">没有进程数据</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = processes.map(proc => `
+                <tr>
+                    <td><code>${proc.pid}</code></td>
+                    <td>${proc.name}</td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                <div class="progress-bar bg-primary" style="width: ${(proc.cpu_percent || 0)}%"></div>
+                            </div>
+                            <small>${(proc.cpu_percent || 0).toFixed(1)}%</small>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                <div class="progress-bar bg-success" style="width: ${(proc.memory_percent || 0)}%"></div>
+                            </div>
+                            <small>${(proc.memory_percent || 0).toFixed(1)}%</small>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 初始化图表
+        function initializeCharts() {
+            // 性能监控图表
+            const perfCtx = document.getElementById('performanceChart');
+            if (perfCtx) {
+                performanceChart = new Chart(perfCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            {
+                                label: 'CPU使用率',
+                                data: [],
+                                borderColor: '#007bff',
+                                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                                tension: 0.4,
+                                fill: false
+                            },
+                            {
+                                label: '内存使用率',
+                                data: [],
+                                borderColor: '#28a745',
+                                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                                tension: 0.4,
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                }
+                            }
+                        },
+                        animation: {
+                            duration: 750
+                        }
+                    }
+                });
+            }
+            
+            // 磁盘I/O图表
+            const diskCtx = document.getElementById('diskIOChart');
+            if (diskCtx) {
+                diskIOChart = new Chart(diskCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            {
+                                label: '读取 (MB)',
+                                data: [],
+                                backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: '写入 (MB)',
+                                data: [],
+                                backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + ' MB';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // 更新性能图表
+        function updatePerformanceChart() {
+            if (!performanceChart || performanceData.length === 0) return;
+            
+            const labels = performanceData.map(d => d.timestamp);
+            const cpuData = performanceData.map(d => d.cpu);
+            const memoryData = performanceData.map(d => d.memory);
+            
+            performanceChart.data.labels = labels;
+            performanceChart.data.datasets[0].data = cpuData;
+            performanceChart.data.datasets[1].data = memoryData;
+            performanceChart.update('none');
+        }
+
+        // 更新磁盘I/O图表
+        function updateDiskIOChart() {
+            if (!diskIOChart || performanceData.length === 0) return;
+            
+            const labels = performanceData.slice(-10).map(d => d.timestamp);
+            const readData = performanceData.slice(-10).map(d => (d.disk_read / (1024*1024)).toFixed(2));
+            const writeData = performanceData.slice(-10).map(d => (d.disk_write / (1024*1024)).toFixed(2));
+            
+            diskIOChart.data.labels = labels;
+            diskIOChart.data.datasets[0].data = readData;
+            diskIOChart.data.datasets[1].data = writeData;
+            diskIOChart.update('none');
+        }
+
+        // 标签页切换函数
+        function showPerformanceTab() {
+            console.log('切换到性能监控标签页');
+            // 图表已经在初始化时创建，这里只需要刷新数据
+            setTimeout(() => {
+                if (performanceChart) performanceChart.resize();
+                if (diskIOChart) diskIOChart.resize();
+            }, 100);
+        }
+
+        function showMaintenanceTab() {
+            console.log('切换到系统维护标签页');
+            // 清理结果重置
+            document.getElementById('cleanupResults').style.display = 'none';
+        }
+
+        async function showConfigTab() {
+            console.log('切换到系统配置标签页');
+            await loadSystemConfig();
+        }
+
+        async function showLogsTab() {
+            console.log('切换到系统日志标签页');
+            await loadLogs();
+        }
+
+        async function showBackupTab() {
+            console.log('切换到备份管理标签页');
+            await loadBackups();
+        }
+
+        // 系统清理功能
+        async function performCleanup(cleanupType) {
+            const typeNames = {
+                'temp_files': '临时文件',
+                'orphaned_files': '孤立文件',
+                'cache': '内存缓存',
+                'logs': '日志文件',
+                'thumbnails': '缩略图'
+            };
+            
+            const typeName = typeNames[cleanupType] || cleanupType;
+            
+            if (!confirm(`确定要清理${typeName}吗？\n\n此操作不可撤销。`)) {
+                return;
+            }
+            
+            try {
+                showLoading(`正在清理${typeName}...`);
+                
+                const response = await fetch(`/api/admin/system/cleanup?cleanup_type=${cleanupType}`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showCleanupResults(result.data);
+                    showSuccess(`${typeName}清理完成`);
+                    
+                    // 刷新系统信息
+                    setTimeout(loadSystemInfo, 1000);
+                } else {
+                    showError(`清理${typeName}失败`);
+                }
+            } catch (error) {
+                console.error('清理失败:', error);
+                showError('网络错误：' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 显示清理结果
+        function showCleanupResults(data) {
+            const resultsDiv = document.getElementById('cleanupResults');
+            const contentDiv = document.getElementById('cleanupResultsContent');
+            
+            let resultHtml = `
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-check-circle"></i> 清理完成</h6>
+                    <ul class="mb-0">
+                        <li>清理类型: ${data.type}</li>
+                        <li>删除文件数: ${data.files_removed}</li>
+                        <li>释放空间: ${formatFileSize(data.space_freed)}</li>
+                    </ul>
+                </div>
+            `;
+            
+            if (data.details && data.details.length > 0) {
+                resultHtml += `
+                    <div class="mt-3">
+                        <h6>清理详情:</h6>
+                        <div class="bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">
+                            ${data.details.map(detail => `<div class="small text-muted">• ${detail}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (data.errors && data.errors.length > 0) {
+                resultHtml += `
+                    <div class="mt-3">
+                        <h6 class="text-warning">警告:</h6>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            ${data.errors.map(error => `<div class="small text-warning">• ${error}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            contentDiv.innerHTML = resultHtml;
+            resultsDiv.style.display = 'block';
+        }
+
+        // 数据库优化
+        async function optimizeDatabase() {
+            if (!confirm('确定要优化数据库吗？\n\n这可能需要几分钟时间，期间系统可能会稍慢。')) {
+                return;
+            }
+            
+            try {
+                showLoading('正在优化数据库...');
+                
+                const response = await fetch('/api/admin/system/optimize-database', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    let message = '数据库优化完成\n\n';
+                    
+                    data.operations.forEach(op => {
+                        message += `• ${op}\n`;
+                    });
+                    
+                    if (data.space_saved > 0) {
+                        message += `\n释放空间: ${formatFileSize(data.space_saved)}`;
+                    }
+                    
+                    alert(message);
+                    showSuccess('数据库优化完成');
+                    
+                    // 刷新系统信息
+                    setTimeout(loadDatabaseStats, 1000);
+                } else {
+                    showError('数据库优化失败');
+                }
+            } catch (error) {
+                console.error('数据库优化失败:', error);
+                showError('网络错误：' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 加载系统配置
+        async function loadSystemConfig() {
+            try {
+                const response = await fetch('/api/admin/system/config');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displaySystemConfig(data.data);
+                } else {
+                    showError('加载系统配置失败');
+                }
+            } catch (error) {
+                console.error('加载系统配置失败:', error);
+                showError('网络错误');
+            }
+        }
+
+        // 显示系统配置
+        function displaySystemConfig(config) {
+            // 数据库配置
+            document.getElementById('databaseConfig').innerHTML = `
+                <div class="config-item">
+                    <span class="config-label">数据库类型</span>
+                    <span class="config-value">${config.database.type}</span>
+                </div>
+                <div class="config-item">
+                    <span class="config-label">连接URL</span>
+                    <span class="config-value">${config.database.url_pattern || '未配置'}</span>
+                </div>
+            `;
+            
+            // 上传配置
+            document.getElementById('uploadConfig').innerHTML = `
+                <div class="config-item">
+                    <span class="config-label">上传目录</span>
+                    <span class="config-value">${config.upload.directory}</span>
+                </div>
+                <div class="config-item">
+                    <span class="config-label">最大文件大小</span>
+                    <span class="config-value">${config.upload.max_file_size_mb}MB</span>
+                </div>
+            `;
+            
+            // JWT配置
+            document.getElementById('jwtConfig').innerHTML = `
+                <div class="config-item">
+                    <span class="config-label">加密算法</span>
+                    <span class="config-value">${config.jwt.algorithm}</span>
+                </div>
+                <div class="config-item">
+                    <span class="config-label">令牌有效期</span>
+                    <span class="config-value">${config.jwt.expire_minutes}分钟</span>
+                </div>
+                <div class="config-item">
+                    <span class="config-label">密钥配置</span>
+                    <span class="config-value">
+                        <span class="badge bg-${config.jwt.secret_key_configured ? 'success' : 'danger'}">
+                            ${config.jwt.secret_key_configured ? '已配置' : '未配置'}
+                        </span>
+                    </span>
+                </div>
+            `;
+            
+            // AI配置
+            document.getElementById('aiConfig').innerHTML = `
+                <div class="config-item">
+                    <span class="config-label">OpenAI API</span>
+                    <span class="config-value">
+                        <span class="badge bg-${config.ai.openai_configured ? 'success' : 'warning'}">
+                            ${config.ai.openai_configured ? '已配置' : '未配置'}
+                        </span>
+                    </span>
+                </div>
+            `;
+            
+            // 应用配置
+            document.getElementById('appConfig').innerHTML = `
+                <div class="config-item">
+                    <span class="config-label">运行环境</span>
+                    <span class="config-value">${config.application.environment}</span>
+                </div>
+                <div class="config-item">
+                    <span class="config-label">调试模式</span>
+                    <span class="config-value">
+                        <span class="badge bg-${config.application.debug ? 'warning' : 'success'}">
+                            ${config.application.debug ? '启用' : '禁用'}
+                        </span>
+                    </span>
+                </div>
+                <div class="config-item">
+                    <span class="config-label">应用版本</span>
+                    <span class="config-value">${config.application.version}</span>
+                </div>
+            `;
+        }
+
+        // 加载系统日志
+        async function loadLogs() {
+            const logType = document.getElementById('logTypeSelect').value;
+            const lines = document.getElementById('logLinesSelect').value;
+            
+            try {
+                const response = await fetch(`/api/admin/system/logs?log_type=${logType}&lines=${lines}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayLogs(data.data);
+                } else {
+                    showError('加载日志失败');
+                }
+            } catch (error) {
+                console.error('加载日志失败:', error);
+                showError('网络错误');
+            }
+        }
+
+        // 显示日志
+        function displayLogs(logData) {
+            const container = document.getElementById('logContainer');
+            
+            if (logData.content.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-3 text-muted">
+                        <i class="fas fa-file-alt fa-2x mb-2"></i>
+                        <p>日志文件为空或不存在</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const logHtml = logData.content.map(line => {
+                // 简单的日志级别检测
+                let logClass = '';
+                if (line.toLowerCase().includes('error')) {
+                    logClass = 'log-level-error';
+                } else if (line.toLowerCase().includes('warning')) {
+                    logClass = 'log-level-warning';
+                } else if (line.toLowerCase().includes('info')) {
+                    logClass = 'log-level-info';
+                }
+                
+                return `<div class="log-line ${logClass}">${escapeHtml(line)}</div>`;
+            }).join('');
+            
+            container.innerHTML = logHtml;
+            
+            // 自动滚动到底部
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // 备份管理功能
+        async function loadBackups() {
+            try {
+                const response = await fetch('/api/admin/system/backups');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayBackups(data.data);
+                } else {
+                    showError('加载备份列表失败');
+                }
+            } catch (error) {
+                console.error('加载备份列表失败:', error);
+                showError('网络错误');
+            }
+        }
+
+        // 显示备份列表
+        function displayBackups(backupData) {
+            const container = document.getElementById('backupsList');
+            
+            if (backupData.backups.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-archive fa-3x text-muted mb-3"></i>
+                        <h5>暂无备份</h5>
+                        <p class="text-muted">点击上方按钮创建第一个备份</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const backupsHtml = `
+                <div class="mb-3">
+                    <small class="text-muted">
+                        共 ${backupData.count} 个备份，总大小 ${formatFileSize(backupData.total_size)}
+                    </small>
+                </div>
+                ${backupData.backups.map(backup => `
+                    <div class="backup-item">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h6 class="mb-1">
+                                    <i class="fas fa-archive"></i> ${backup.name}
+                                </h6>
+                                <small class="text-muted">
+                                    创建时间: ${backup.timestamp !== 'unknown' ? formatTimestamp(backup.timestamp) : '未知'}
+                                </small>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="fw-bold">${formatFileSize(backup.size)}</div>
+                                    <small class="text-muted">${backup.files ? backup.files.length : 0} 个文件</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-end">
+                                <button class="btn btn-outline-info btn-sm me-2" onclick="viewBackupDetails('${backup.name}')">
+                                    <i class="fas fa-info-circle"></i> 详情
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="deleteBackup('${backup.name}')">
+                                    <i class="fas fa-trash"></i> 删除
+                                </button>
+                            </div>
+                        </div>
+                        ${backup.files && backup.files.length > 0 ? `
+                        <div class="mt-2">
+                            <small class="text-muted">包含文件:</small>
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                ${backup.files.slice(0, 5).map(file => `
+                                    <span class="badge bg-light text-dark">${file.name}</span>
+                                `).join('')}
+                                ${backup.files.length > 5 ? `<span class="badge bg-secondary">+${backup.files.length - 5}</span>` : ''}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `).join('')}
+            `;
+            
+            container.innerHTML = backupsHtml;
+        }
+
+        // 创建备份
+        async function createBackup() {
+            const includeUploads = confirm('是否包含上传文件？\n\n确定 = 包含上传文件（备份较大）\n取消 = 仅备份数据库和配置');
+            
+            try {
+                showLoading('正在创建备份...');
+                
+                const response = await fetch(`/api/admin/system/backup?include_uploads=${includeUploads}`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess(`备份创建成功: ${result.data.name}`);
+                    loadBackups(); // 刷新备份列表
+                } else {
+                    showError('创建备份失败');
+                }
+            } catch (error) {
+                console.error('创建备份失败:', error);
+                showError('网络错误：' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 查看备份详情
+        function viewBackupDetails(backupName) {
+            alert(`备份详情功能开发中...\n备份名称: ${backupName}`);
+        }
+
+        // 删除备份
+        function deleteBackup(backupName) {
+            if (confirm(`确定要删除备份 "${backupName}" 吗？\n\n此操作不可撤销。`)) {
+                alert(`删除备份功能开发中...\n备份名称: ${backupName}`);
+            }
+        }
+
+        // 刷新所有数据
+        async function refreshAllData() {
+            try {
+                showLoading('正在刷新系统数据...');
+                
+                await Promise.all([
+                    loadSystemInfo(),
+                    loadPerformanceMetrics(),
+                    loadDatabaseStats()
+                ]);
+                
+                showSuccess('系统数据已刷新');
+            } catch (error) {
+                console.error('刷新数据失败:', error);
+                showError('刷新数据失败');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 定期刷新指标
+        async function refreshMetrics() {
+            try {
+                await loadPerformanceMetrics();
+                console.log('📊 性能指标已自动刷新');
+            } catch (error) {
+                console.error('自动刷新失败:', error);
+            }
+        }
+
+        // 辅助函数
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function formatTimestamp(timestamp) {
+            if (!timestamp || timestamp === 'unknown') return '未知';
+            
+            // 如果是YYYYMMDD_HHMMSS格式
+            if (timestamp.includes('_')) {
+                const [datePart, timePart] = timestamp.split('_');
+                const year = datePart.substring(0, 4);
+                const month = datePart.substring(4, 6);
+                const day = datePart.substring(6, 8);
+                const hour = timePart.substring(0, 2);
+                const minute = timePart.substring(2, 4);
+                const second = timePart.substring(4, 6);
+                
+                return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+            }
+            
+            return timestamp;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showLoading(text = '处理中...') {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 5000);
+        }
+
+        function showError(message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 8000);
+        }
+
+        // 页面卸载时清理定时器
+        window.addEventListener('beforeunload', function() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>

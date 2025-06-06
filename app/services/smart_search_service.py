@@ -1,5 +1,5 @@
 """
-智能搜索服务 - 基于GPT-4o
+智能搜索服务 - 添加相似图片推荐功能
 """
 import json
 from typing import List, Dict, Any, Optional
@@ -18,6 +18,211 @@ class SmartSearchService:
         self.db = db
         self.db_service = DatabaseService(db)
     
+    async def find_similar_images(self, image_id: int, similarity_type: str = "tags", limit: int = 6) -> Dict[str, Any]:
+        """查找相似图片"""
+        try:
+            # 获取目标图片
+            target_image = self.db_service.get_image_by_id(image_id)
+            if not target_image:
+                return {"success": False, "error": "图片不存在"}
+            
+            # 根据相似度类型查找
+            if similarity_type == "tags":
+                similar_images = await self._find_similar_by_tags(target_image, limit)
+            elif similarity_type == "style":
+                similar_images = await self._find_similar_by_style(target_image, limit)
+            elif similarity_type == "mood":
+                similar_images = await self._find_similar_by_mood(target_image, limit)
+            elif similarity_type == "ai":
+                similar_images = await self._find_similar_by_ai(target_image, limit)
+            else:
+                similar_images = await self._find_similar_by_tags(target_image, limit)
+            
+            return {
+                "success": True,
+                "target_image_id": image_id,
+                "similarity_type": similarity_type,
+                "similar_images": similar_images,
+                "total": len(similar_images)
+            }
+            
+        except Exception as e:
+            print(f"❌ 查找相似图片失败: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def _find_similar_by_tags(self, target_image: Image, limit: int) -> List[Dict[str, Any]]:
+        """基于标签查找相似图片"""
+        # 获取目标图片的标签
+        target_tags = self.db_service.get_image_tags(target_image.id)
+        if not target_tags:
+            return []
+        
+        target_tag_names = [tag.name for tag in target_tags]
+        
+        # 查找有相同标签的图片
+        similar_images_query = self.db.query(Image).join(ImageTag).join(Tag).filter(
+            and_(
+                Image.is_active == True,
+                Image.id != target_image.id,
+                Tag.name.in_(target_tag_names)
+            )
+        ).group_by(Image.id).order_by(
+            func.count(Tag.id).desc(),  # 按匹配标签数量排序
+            Image.view_count.desc()
+        ).limit(limit)
+        
+        similar_images = similar_images_query.all()
+        return await self._format_similar_images(similar_images, target_tag_names)
+    
+    async def _find_similar_by_style(self, target_image: Image, limit: int) -> List[Dict[str, Any]]:
+        """基于风格查找相似图片"""
+        target_style = getattr(target_image, 'ai_style', None)
+        if not target_style:
+            return await self._find_similar_by_tags(target_image, limit)
+        
+        # 查找相同风格的图片
+        similar_images = self.db.query(Image).filter(
+            and_(
+                Image.is_active == True,
+                Image.id != target_image.id,
+                Image.ai_style.contains(target_style)
+            )
+        ).order_by(
+            Image.ai_confidence.desc(),
+            Image.view_count.desc()
+        ).limit(limit).all()
+        
+        return await self._format_similar_images(similar_images, [target_style])
+    
+    async def _find_similar_by_mood(self, target_image: Image, limit: int) -> List[Dict[str, Any]]:
+        """基于氛围查找相似图片"""
+        target_mood = getattr(target_image, 'ai_mood', None)
+        if not target_mood:
+            return await self._find_similar_by_tags(target_image, limit)
+        
+        # 查找相同氛围的图片
+        similar_images = self.db.query(Image).filter(
+            and_(
+                Image.is_active == True,
+                Image.id != target_image.id,
+                Image.ai_mood.contains(target_mood)
+            )
+        ).order_by(
+            Image.ai_confidence.desc(),
+            Image.view_count.desc()
+        ).limit(limit).all()
+        
+        return await self._format_similar_images(similar_images, [target_mood])
+    
+    async def _find_similar_by_ai(self, target_image: Image, limit: int) -> List[Dict[str, Any]]:
+        """基于AI关键词查找相似图片"""
+        target_keywords = []
+        if hasattr(target_image, 'ai_searchable_keywords') and target_image.ai_searchable_keywords:
+            try:
+                if isinstance(target_image.ai_searchable_keywords, str):
+                    target_keywords = json.loads(target_image.ai_searchable_keywords)
+                else:
+                    target_keywords = target_image.ai_searchable_keywords
+            except:
+                pass
+        
+        if not target_keywords:
+            return await self._find_similar_by_tags(target_image, limit)
+        
+        # 构建搜索条件
+        keyword_conditions = []
+        for keyword in target_keywords[:3]:  # 只使用前3个关键词
+            keyword_conditions.append(Image.ai_searchable_keywords.contains(f'"{keyword}"'))
+        
+        if not keyword_conditions:
+            return await self._find_similar_by_tags(target_image, limit)
+        
+        # 查找相似图片
+        similar_images = self.db.query(Image).filter(
+            and_(
+                Image.is_active == True,
+                Image.id != target_image.id,
+                or_(*keyword_conditions)
+            )
+        ).order_by(
+            Image.ai_confidence.desc(),
+            Image.view_count.desc()
+        ).limit(limit).all()
+        
+        return await self._format_similar_images(similar_images, target_keywords)
+    
+    async def _format_similar_images(self, images: List[Image], reference_terms: List[str]) -> List[Dict[str, Any]]:
+        """格式化相似图片结果"""
+        result_images = []
+        
+        for image in images:
+            # 获取标签
+            tags = self.db_service.get_image_tags(image.id)
+            
+            # 解析搜索关键词
+            searchable_keywords = []
+            if hasattr(image, 'ai_searchable_keywords') and image.ai_searchable_keywords:
+                try:
+                    if isinstance(image.ai_searchable_keywords, str):
+                        searchable_keywords = json.loads(image.ai_searchable_keywords)
+                    else:
+                        searchable_keywords = image.ai_searchable_keywords
+                except:
+                    pass
+            
+            # 计算相似度得分（简化计算）
+            similarity_score = self._calculate_similarity_score(
+                image, tags, searchable_keywords, reference_terms
+            )
+            
+            result_images.append({
+                "id": image.id,
+                "filename": image.filename,
+                "url": f"/uploads/{image.file_path.split('/')[-1]}",
+                "width": image.width,
+                "height": image.height,
+                "description": image.ai_description or "",
+                "confidence": image.ai_confidence or 0.0,
+                "mood": getattr(image, 'ai_mood', ''),
+                "style": getattr(image, 'ai_style', ''),
+                "upload_time": image.upload_time.isoformat(),
+                "view_count": image.view_count,
+                "uploader": image.uploader,
+                "tags": [{"name": tag.name, "category": tag.category} for tag in tags],
+                "searchable_keywords": searchable_keywords,
+                "similarity_score": similarity_score
+            })
+        
+        # 按相似度排序
+        result_images.sort(key=lambda x: x["similarity_score"], reverse=True)
+        
+        return result_images
+    
+    def _calculate_similarity_score(self, image: Image, tags: List[Tag], 
+                                  searchable_keywords: List[str], reference_terms: List[str]) -> float:
+        """计算相似度得分"""
+        score = 0.0
+        
+        # 标签匹配度 (40%)
+        tag_names = [tag.name for tag in tags]
+        tag_matches = len(set(tag_names) & set(reference_terms))
+        tag_score = tag_matches / max(len(reference_terms), 1) * 0.4
+        
+        # 关键词匹配度 (30%)
+        keyword_matches = len(set(searchable_keywords) & set(reference_terms))
+        keyword_score = keyword_matches / max(len(reference_terms), 1) * 0.3
+        
+        # AI置信度 (20%)
+        confidence_score = (image.ai_confidence or 0.0) * 0.2
+        
+        # 流行度 (10%)
+        popularity_score = min(image.view_count / 100, 1.0) * 0.1
+        
+        score = tag_score + keyword_score + confidence_score + popularity_score
+        
+        return min(score, 1.0)
+    
+    # 保持原有的搜索功能...
     async def search_with_gpt4o(self, query: str, limit: int = 20) -> Dict[str, Any]:
         """使用GPT-4o进行智能搜索"""
         try:

@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理 - AI姿势参考图库</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        
+        .admin-header {
+            background: white;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .filter-section {
+            background: white;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .stats-cards {
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .batch-actions-bar {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 1rem;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .role-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .role-user { background: #e3f2fd; color: #1565c0; }
+        .role-moderator { background: #fff3e0; color: #e65100; }
+        .role-admin { background: #ffebee; color: #c62828; }
+        
+        .activity-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+        
+        .activity-today { background: #4caf50; }
+        .activity-week { background: #ff9800; }
+        .activity-month { background: #2196f3; }
+        .activity-older { background: #9e9e9e; }
+        .activity-never { background: #f44336; }
+        
+        .selected-row {
+            background-color: rgba(40, 167, 69, 0.1) !important;
+        }
+        
+        .stats-mini {
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            display: none;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .admin-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .filter-section .row > div {
+                margin-bottom: 1rem;
+            }
+            
+            .table-responsive {
+                font-size: 0.875rem;
+            }
+            
+            .user-avatar {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+{% include "components/admin_nav.html" %}
+
+    <div class="container-fluid py-4">
+        <!-- 页面标题 -->
+        <div class="admin-header">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="mb-0">
+                        <i class="fas fa-users text-success"></i> 用户管理
+                    </h1>
+                    <p class="text-muted mb-0">管理系统用户和权限</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <button class="btn btn-success" onclick="showCreateUserModal()">
+                        <i class="fas fa-user-plus"></i> 创建用户
+                    </button>
+                    <button class="btn btn-primary" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i> 刷新数据
+                    </button>
+                    <button class="btn btn-info" onclick="showAnalytics()">
+                        <i class="fas fa-chart-bar"></i> 用户分析
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="row stats-cards">
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-users fa-2x text-primary"></i>
+                        </div>
+                        <div class="ms-3">
+                            <div class="text-muted small">总用户数</div>
+                            <h4 class="mb-0" id="totalUsers">-</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-user-check fa-2x text-success"></i>
+                        </div>
+                        <div class="ms-3">
+                            <div class="text-muted small">活跃用户</div>
+                            <h4 class="mb-0" id="activeUsers">-</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-clock fa-2x text-warning"></i>
+                        </div>
+                        <div class="ms-3">
+                            <div class="text-muted small">今日活跃</div>
+                            <h4 class="mb-0" id="todayActive">-</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-user-shield fa-2x text-danger"></i>
+                        </div>
+                        <div class="ms-3">
+                            <div class="text-muted small">管理员</div>
+                            <h4 class="mb-0" id="adminUsers">-</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 筛选和搜索 -->
+        <div class="filter-section">
+            <div class="row align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label">角色筛选</label>
+                    <select class="form-select" id="roleFilter" onchange="loadUsers()">
+                        <option value="">全部角色</option>
+                        <option value="user">普通用户</option>
+                        <option value="moderator">版主</option>
+                        <option value="admin">管理员</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">状态筛选</label>
+                    <select class="form-select" id="statusFilter" onchange="loadUsers()">
+                        <option value="">全部状态</option>
+                        <option value="active">活跃</option>
+                        <option value="inactive">禁用</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">验证状态</label>
+                    <select class="form-select" id="verifiedFilter" onchange="loadUsers()">
+                        <option value="">全部</option>
+                        <option value="true">已验证</option>
+                        <option value="false">未验证</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">搜索</label>
+                    <input type="text" class="form-control" id="searchInput" 
+                           placeholder="搜索用户名、邮箱..." onkeyup="searchUsers(event)">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">操作</label>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary" onclick="toggleBatchActions()">
+                            <i class="fas fa-tasks"></i> 批量操作
+                        </button>
+                        <button class="btn btn-outline-success" onclick="exportData()">
+                            <i class="fas fa-download"></i> 导出
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 批量操作栏 -->
+        <div class="batch-actions-bar" id="batchActionsBar">
+            <div class="row align-items-center">
+                <div class="col-md-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                        <label class="form-check-label text-white">全选</label>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-outline-light btn-sm" onclick="batchAction('activate')">
+                            <i class="fas fa-check"></i> 激活
+                        </button>
+                        <button class="btn btn-outline-light btn-sm" onclick="batchAction('deactivate')">
+                            <i class="fas fa-ban"></i> 禁用
+                        </button>
+                        <button class="btn btn-outline-light btn-sm" onclick="batchAction('verify')">
+                            <i class="fas fa-certificate"></i> 验证
+                        </button>
+                        <select class="form-select form-select-sm text-dark" id="batchRoleSelect" style="width: auto;">
+                            <option value="">批量设置角色</option>
+                            <option value="user">普通用户</option>
+                            <option value="moderator">版主</option>
+                            <option value="admin">管理员</option>
+                        </select>
+                        <button class="btn btn-outline-light btn-sm" onclick="batchChangeRole()">
+                            <i class="fas fa-user-cog"></i> 应用角色
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-2 text-end">
+                    <span id="selectedCount" class="text-white">已选择 0 项</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 用户列表 -->
+        <div class="table-container">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="50" class="select-column" style="display: none;">
+                                <input type="checkbox" id="selectAllHeader" onchange="toggleSelectAll()">
+                            </th>
+                            <th width="80">头像</th>
+                            <th>用户信息</th>
+                            <th>角色</th>
+                            <th>状态</th>
+                            <th>活跃度</th>
+                            <th>统计</th>
+                            <th>注册时间</th>
+                            <th width="120">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">加载中...</span>
+                                </div>
+                                <p class="mt-2 text-muted">正在加载用户数据...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <div class="d-flex justify-content-between align-items-center p-3 border-top">
+                <div>
+                    <span class="text-muted" id="pageInfo">显示 0 - 0 条，共 0 条记录</span>
+                </div>
+                <nav>
+                    <ul class="pagination mb-0" id="pagination">
+                        <!-- 分页按钮将在这里动态生成 -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载遮罩 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+            <h5 id="loadingText">处理中...</h5>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 全局变量
+        let currentPage = 1;
+        let totalPages = 1;
+        let selectedUsers = new Set();
+        let batchActionsVisible = false;
+        let currentData = null;
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            loadStats();
+            loadUsers();
+            
+            // 设置自动刷新
+            setInterval(loadStats, 60000); // 1分钟刷新统计
+        });
+
+        // 检查用户权限
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/check');
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+                    return;
+                }
+                
+                if (data.user.role !== 'admin' && data.user.role !== 'moderator') {
+                    alert('您没有管理员权限');
+                    window.location.href = '/';
+                    return;
+                }
+            } catch (error) {
+                console.error('权限检查失败:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // 加载统计数据
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/admin/stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('totalUsers').textContent = data.data.overview.total_users || 0;
+                    document.getElementById('activeUsers').textContent = data.data.overview.active_users || 0;
+                    document.getElementById('todayActive').textContent = data.data.today.active_users || 0;
+                    document.getElementById('adminUsers').textContent = data.data.overview.admin_users || 0;
+                }
+            } catch (error) {
+                console.error('加载统计失败:', error);
+            }
+        }
+
+        // 加载用户列表
+        async function loadUsers(page = 1) {
+            try {
+                const role = document.getElementById('roleFilter').value;
+                const status = document.getElementById('statusFilter').value;
+                const verified = document.getElementById('verifiedFilter').value;
+                const search = document.getElementById('searchInput').value;
+                
+                const params = new URLSearchParams({
+                    page: page,
+                    per_page: 20,
+                    sort_by: 'created_at',
+                    sort_order: 'desc'
+                });
+                
+                if (role) params.append('role', role);
+                if (status) params.append('status', status);
+                if (verified) params.append('verified', verified);
+                if (search) params.append('search', search);
+                
+                const response = await fetch(`/api/admin/users/list?${params}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentData = data.data;
+                    displayUsers(data.data.users);
+                    updatePagination(data.data.pagination);
+                    currentPage = page;
+                    totalPages = data.data.pagination.pages;
+                } else {
+                    showError('加载用户列表失败');
+                }
+            } catch (error) {
+                console.error('加载用户失败:', error);
+                showError('网络错误');
+            }
+        }
+
+        // 显示用户列表
+        function displayUsers(users) {
+            const tbody = document.getElementById('userTableBody');
+            
+            if (users.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="text-center py-5">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">没有找到用户</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = users.map(user => {
+                const isSelected = selectedUsers.has(user.id);
+                const activityClass = getActivityClass(user.last_login);
+                const activityText = getActivityText(user.last_login);
+                
+                return `
+                    <tr id="row_${user.id}" class="${isSelected ? 'selected-row' : ''}">
+                        <td class="select-column" style="display: ${batchActionsVisible ? 'table-cell' : 'none'};">
+                            <input type="checkbox" class="form-check-input user-checkbox" 
+                                   value="${user.id}" onchange="toggleUserSelection(${user.id})"
+                                   ${isSelected ? 'checked' : ''}>
+                        </td>
+                        <td>
+                            <div class="user-avatar" title="${user.full_name || user.username}">
+                                ${(user.full_name || user.username).charAt(0).toUpperCase()}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-bold">${user.username}</div>
+                            <div class="text-muted small">${user.email}</div>
+                            ${user.full_name ? `<div class="text-secondary small">${user.full_name}</div>` : ''}
+                        </td>
+                        <td>
+                            <span class="role-badge role-${user.role}">
+                                ${getRoleText(user.role)}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column">
+                                <span class="badge bg-${user.is_active ? 'success' : 'danger'} mb-1">
+                                    ${user.is_active ? '活跃' : '禁用'}
+                                </span>
+                                <span class="badge bg-${user.is_verified ? 'info' : 'secondary'}">
+                                    ${user.is_verified ? '已验证' : '未验证'}
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="activity-indicator activity-${activityClass}"></div>
+                                <small>${activityText}</small>
+                            </div>
+                            <div class="stats-mini">
+                                最近: ${user.stats.recent_uploads} 张
+                            </div>
+                        </td>
+                        <td>
+                            <div class="stats-mini">
+                                <div>上传: ${user.stats.total_uploads} 张</div>
+                                <div>大小: ${formatFileSize(user.stats.total_size)}</div>
+                                <div>置信度: ${user.stats.avg_confidence}%</div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="small">${formatDate(user.created_at)}</div>
+                        </td>
+                        <td>
+                            <div class="btn-group-vertical btn-group-sm">
+                                <button class="btn btn-outline-primary btn-sm" onclick="viewUserDetails(${user.id})" title="详情">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                                <button class="btn btn-outline-success btn-sm" onclick="editUser(${user.id})" title="编辑">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-warning btn-sm" onclick="showUserActions(${user.id})" title="更多">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        // 更新分页
+        function updatePagination(pagination) {
+            const paginationEl = document.getElementById('pagination');
+            const pageInfo = document.getElementById('pageInfo');
+            
+            // 更新页面信息
+            const start = (pagination.page - 1) * pagination.per_page + 1;
+            const end = Math.min(pagination.page * pagination.per_page, pagination.total);
+            pageInfo.textContent = `显示 ${start} - ${end} 条，共 ${pagination.total} 条记录`;
+            
+            // 生成分页按钮
+            let paginationHtml = '';
+            
+            // 上一页
+            if (pagination.page > 1) {
+                paginationHtml += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="loadUsers(${pagination.page - 1})">上一页</a>
+                    </li>
+                `;
+            }
+            
+            // 页码
+            const startPage = Math.max(1, pagination.page - 2);
+            const endPage = Math.min(pagination.pages, pagination.page + 2);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHtml += `
+                    <li class="page-item ${i === pagination.page ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="loadUsers(${i})">${i}</a>
+                    </li>
+                `;
+            }
+            
+            // 下一页
+            if (pagination.page < pagination.pages) {
+                paginationHtml += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="loadUsers(${pagination.page + 1})">下一页</a>
+                    </li>
+                `;
+            }
+            
+            paginationEl.innerHTML = paginationHtml;
+        }
+
+        // 搜索功能
+        function searchUsers(event) {
+            if (event.key === 'Enter') {
+                loadUsers(1);
+            }
+        }
+
+        // 批量操作功能
+        function toggleBatchActions() {
+            batchActionsVisible = !batchActionsVisible;
+            const batchBar = document.getElementById('batchActionsBar');
+            const selectColumns = document.querySelectorAll('.select-column');
+            
+            if (batchActionsVisible) {
+                batchBar.style.display = 'block';
+                selectColumns.forEach(col => col.style.display = 'table-cell');
+            } else {
+                batchBar.style.display = 'none';
+                selectColumns.forEach(col => col.style.display = 'none');
+                selectedUsers.clear();
+                updateSelectedCount();
+                clearSelections();
+            }
+        }
+
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAll') || document.getElementById('selectAllHeader');
+            const checkboxes = document.querySelectorAll('.user-checkbox');
+            
+            if (selectAllCheckbox.checked) {
+                checkboxes.forEach(checkbox => {
+                    const userId = parseInt(checkbox.value);
+                    selectedUsers.add(userId);
+                    checkbox.checked = true;
+                    document.getElementById(`row_${userId}`).classList.add('selected-row');
+                });
+            } else {
+                selectedUsers.clear();
+                checkboxes.forEach(checkbox => {
+                    const userId = parseInt(checkbox.value);
+                    checkbox.checked = false;
+                    document.getElementById(`row_${userId}`).classList.remove('selected-row');
+                });
+            }
+            
+            updateSelectedCount();
+        }
+
+        function toggleUserSelection(userId) {
+            const checkbox = document.querySelector(`input[value="${userId}"]`);
+            const row = document.getElementById(`row_${userId}`);
+            
+            if (selectedUsers.has(userId)) {
+                selectedUsers.delete(userId);
+                row.classList.remove('selected-row');
+            } else {
+                selectedUsers.add(userId);
+                row.classList.add('selected-row');
+            }
+            
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const countElement = document.getElementById('selectedCount');
+            if (countElement) {
+                countElement.textContent = `已选择 ${selectedUsers.size} 项`;
+            }
+        }
+
+        function clearSelections() {
+            document.querySelectorAll('.user-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            document.querySelectorAll('.selected-row').forEach(row => {
+                row.classList.remove('selected-row');
+            });
+        }
+
+        // 批量操作执行
+        async function batchAction(action) {
+            if (selectedUsers.size === 0) {
+                alert('请先选择要操作的用户');
+                return;
+            }
+            
+            let confirmMessage = '';
+            
+            switch (action) {
+                case 'activate':
+                    confirmMessage = `确定要激活选中的 ${selectedUsers.size} 个用户吗？`;
+                    break;
+                case 'deactivate':
+                    confirmMessage = `确定要禁用选中的 ${selectedUsers.size} 个用户吗？`;
+                    break;
+                case 'verify':
+                    confirmMessage = `确定要验证选中的 ${selectedUsers.size} 个用户的邮箱吗？`;
+                    break;
+                default:
+                    return;
+            }
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            try {
+                showLoading('正在执行批量操作...');
+                
+                const response = await fetch('/api/admin/users/batch-update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_ids: Array.from(selectedUsers),
+                        action: action
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess(`批量操作成功：${result.message}`);
+                    selectedUsers.clear();
+                    loadUsers(currentPage);
+                    loadStats();
+                    toggleBatchActions();
+                } else {
+                    showError(`批量操作失败：${result.detail || '未知错误'}`);
+                }
+            } catch (error) {
+                console.error('批量操作失败:', error);
+                showError('网络错误：' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function batchChangeRole() {
+            const newRole = document.getElementById('batchRoleSelect').value;
+            
+            if (!newRole) {
+                alert('请选择要设置的角色');
+                return;
+            }
+            
+            if (selectedUsers.size === 0) {
+                alert('请先选择要操作的用户');
+                return;
+            }
+            
+            if (!confirm(`确定要将选中的 ${selectedUsers.size} 个用户设置为 ${getRoleText(newRole)} 吗？`)) {
+                return;
+            }
+            
+            try {
+                showLoading('正在更新用户角色...');
+                
+                const response = await fetch('/api/admin/users/batch-update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_ids: Array.from(selectedUsers),
+                        action: 'change_role',
+                        value: newRole
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess(`角色更新成功：${result.message}`);
+                    selectedUsers.clear();
+                    loadUsers(currentPage);
+                    toggleBatchActions();
+                    document.getElementById('batchRoleSelect').value = '';
+                } else {
+                    showError(`角色更新失败：${result.detail || '未知错误'}`);
+                }
+            } catch (error) {
+                console.error('角色更新失败:', error);
+                showError('网络错误：' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 单个用户操作
+        async function viewUserDetails(userId) {
+            try {
+                showLoading('正在加载用户详情...');
+                
+                const response = await fetch(`/api/admin/users/${userId}/details`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    showUserDetailsModal(result.data);
+                } else {
+                    showError('获取用户详情失败');
+                }
+            } catch (error) {
+                console.error('获取用户详情失败:', error);
+                showError('网络错误：' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function editUser(userId) {
+            try {
+                const response = await fetch(`/api/admin/users/${userId}/details`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    showEditUserModal(result.data.user);
+                } else {
+                    showError('获取用户信息失败');
+                }
+            } catch (error) {
+                console.error('获取用户信息失败:', error);
+                showError('网络错误：' + error.message);
+            }
+        }
+
+        function showUserActions(userId) {
+            const actionsModalHtml = `
+                <div class="modal fade" id="userActionsModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-user-cog"></i> 用户操作
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary" onclick="sendMessageToUser(${userId}); bootstrap.Modal.getInstance(document.getElementById('userActionsModal')).hide();">
+                                        <i class="fas fa-envelope"></i> 发送消息
+                                    </button>
+                                    <button class="btn btn-outline-warning" onclick="resetUserPassword(${userId}); bootstrap.Modal.getInstance(document.getElementById('userActionsModal')).hide();">
+                                        <i class="fas fa-key"></i> 重置密码
+                                    </button>
+                                    <button class="btn btn-outline-info" onclick="viewUserImages(${userId}); bootstrap.Modal.getInstance(document.getElementById('userActionsModal')).hide();">
+                                        <i class="fas fa-images"></i> 查看图片
+                                    </button>
+                                    <hr>
+                                    <button class="btn btn-outline-danger" onclick="deleteUser(${userId}); bootstrap.Modal.getInstance(document.getElementById('userActionsModal')).hide();">
+                                        <i class="fas fa-trash"></i> 删除用户
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            removeModal('userActionsModal');
+            document.body.insertAdjacentHTML('beforeend', actionsModalHtml);
+            
+            const modal = new bootstrap.Modal(document.getElementById('userActionsModal'));
+            modal.show();
+        }
+
+        // 显示用户详情模态框
+        function showUserDetailsModal(data) {
+            const user = data.user;
+            const stats = data.image_stats;
+            
+            const modalHtml = `
+                <div class="modal fade" id="userDetailsModal" tabindex="-1">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-user"></i> 用户详细信息
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="text-center mb-4">
+                                            <div class="user-avatar mx-auto mb-3" style="width: 120px; height: 120px; font-size: 3rem;">
+                                                ${(user.full_name || user.username).charAt(0).toUpperCase()}
+                                            </div>
+                                            <h4>${user.username}</h4>
+                                            <p class="text-muted">${user.email}</p>
+                                            <span class="role-badge role-${user.role}">${getRoleText(user.role)}</span>
+                                        </div>
+                                        
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0"><i class="fas fa-info-circle"></i> 基本信息</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <table class="table table-sm">
+                                                    <tr><th>ID</th><td>${user.id}</td></tr>
+                                                    <tr><th>真实姓名</th><td>${user.full_name || '未设置'}</td></tr>
+                                                    <tr><th>角色</th><td>${getRoleText(user.role)}</td></tr>
+                                                    <tr><th>状态</th><td><span class="badge bg-${user.is_active ? 'success' : 'danger'}">${user.is_active ? '活跃' : '禁用'}</span></td></tr>
+                                                    <tr><th>邮箱验证</th><td><span class="badge bg-${user.is_verified ? 'info' : 'secondary'}">${user.is_verified ? '已验证' : '未验证'}</span></td></tr>
+                                                    <tr><th>注册时间</th><td>${formatDate(user.created_at)}</td></tr>
+                                                    <tr><th>最后登录</th><td>${user.last_login ? formatDate(user.last_login) : '从未登录'}</td></tr>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-8">
+                                        <!-- 统计信息 -->
+                                        <div class="row mb-4">
+                                            <div class="col-md-3">
+                                                <div class="card text-center">
+                                                    <div class="card-body">
+                                                        <h4 class="text-primary">${stats.total_count}</h4>
+                                                        <small class="text-muted">总上传量</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="card text-center">
+                                                    <div class="card-body">
+                                                        <h4 class="text-success">${stats.active_count}</h4>
+                                                        <small class="text-muted">活跃图片</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="card text-center">
+                                                    <div class="card-body">
+                                                        <h4 class="text-info">${formatFileSize(stats.total_size)}</h4>
+                                                        <small class="text-muted">总存储</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="card text-center">
+                                                    <div class="card-body">
+                                                        <h4 class="text-warning">${stats.avg_confidence}%</h4>
+                                                        <small class="text-muted">平均置信度</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- AI状态分布 -->
+                                        ${data.ai_stats.length > 0 ? `
+                                        <div class="card mb-4">
+                                            <div class="card-header">
+                                                <h6 class="mb-0"><i class="fas fa-chart-pie"></i> AI分析状态</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <canvas id="userAIStatusChart" width="400" height="200"></canvas>
+                                            </div>
+                                        </div>
+                                        ` : ''}
+                                        
+                                        <!-- 最近活动 -->
+                                        ${data.recent_activity.length > 0 ? `
+                                        <div class="card mb-4">
+                                            <div class="card-header">
+                                                <h6 class="mb-0"><i class="fas fa-chart-line"></i> 最近30天活动</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <canvas id="userActivityChart" width="400" height="150"></canvas>
+                                            </div>
+                                        </div>
+                                        ` : ''}
+                                        
+                                        <!-- 最近图片 -->
+                                        ${data.recent_images.length > 0 ? `
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0"><i class="fas fa-images"></i> 最近上传图片</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>文件名</th>
+                                                                <th>上传时间</th>
+                                                                <th>AI状态</th>
+                                                                <th>状态</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            ${data.recent_images.map(img => `
+                                                                <tr>
+                                                                    <td>${img.filename}</td>
+                                                                    <td>${formatDate(img.upload_time)}</td>
+                                                                    <td><span class="status-badge status-${img.ai_analysis_status}">${getStatusText(img.ai_analysis_status)}</span></td>
+                                                                    <td><span class="badge bg-${img.is_active ? 'success' : 'danger'}">${img.is_active ? '活跃' : '禁用'}</span></td>
+                                                                </tr>
+                                                            `).join('')}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" onclick="editUser(${user.id}); bootstrap.Modal.getInstance(document.getElementById('userDetailsModal')).hide();">
+                                    <i class="fas fa-edit"></i> 编辑用户
+                                </button>
+                                <button type="button" class="btn btn-info" onclick="sendMessageToUser(${user.id}); bootstrap.Modal.getInstance(document.getElementById('userDetailsModal')).hide();">
+                                    <i class="fas fa-envelope"></i> 发送消息
+                                </button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            removeModal('userDetailsModal');
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
+            modal.show();
+            
+            // 绘制图表
+            setTimeout(() => {
+                if (data.ai_stats.length > 0) {
+                    drawUserAIStatusChart(data.ai_stats);
+                }
+                if (data.recent_activity.length > 0) {
+                    drawUserActivityChart(data.recent_activity);
+                }
+            }, 500);
+        }
+
+        // 显示编辑用户模态框
+        function showEditUserModal(user) {
+            const modalHtml = `
+                <div class="modal fade" id="editUserModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-edit"></i> 编辑用户
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="editUserForm">
+                                    <input type="hidden" id="editUserId" value="${user.id}">
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">用户名</label>
+                                        <input type="text" class="form-control" value="${user.username}" readonly>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">邮箱</label>
+                                        <input type="email" class="form-control" value="${user.email}" readonly>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">真实姓名</label>
+                                        <input type="text" class="form-control" id="editUserFullName" 
+                                               value="${user.full_name || ''}" placeholder="输入真实姓名">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">角色</label>
+                                        <select class="form-select" id="editUserRole">
+                                            <option value="user" ${user.role === 'user' ? 'selected' : ''}>普通用户</option>
+                                            <option value="moderator" ${user.role === 'moderator' ? 'selected' : ''}>版主</option>
+                                            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>管理员</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">账户状态</label>
+                                                <select class="form-select" id="editUserActive">
+                                                    <option value="true" ${user.is_active ? 'selected' : ''}>活跃</option>
+                                                    <option value="false" ${!user.is_active ? 'selected' : ''}>禁用</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">邮箱验证</label>
+                                                <select class="form-select" id="editUserVerified">
+                                                    <option value="true" ${user.is_verified ? 'selected' : ''}>已验证</option>
+                                                    <option value="false" ${!user.is_verified ? 'selected' : ''}>未验证</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <button type="button" class="btn btn-primary" onclick="saveUserEdit()">
+                                    <i class="fas fa-save"></i> 保存更改
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            removeModal('editUserModal');
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+            modal.show();
+        }
+
+        // 保存用户编辑
+        async function saveUserEdit() {
+            const userId = document.getElementById('editUserId').value;
+            const fullName = document.getElementById('editUserFullName').value;
+            const role = document.getElementById('editUserRole').value;
+            const isActive = document.getElementById('editUserActive').value === 'true';
+            const isVerified = document.getElementById('editUserVerified').value === 'true';
+            
+            try {
+                showLoading('正在保存更改...');
+                
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        full_name: fullName,
+                        role: role,
+                        is_active: isActive,
+                        is_verified: isVerified
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess('用户信息更新成功');
+                    
+                    // 关闭模态框
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
+                    modal.hide();
+                    
+                    // 刷新列表
+                    loadUsers(currentPage);
+                    loadStats();
+                } else {
+                    showError('更新失败：' + (result.detail || '未知错误'));
+                }
+            } catch (error) {
+                console.error('保存用户编辑失败:', error);
+                showError('网络错误：' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 创建用户功能
+        function showCreateUserModal() {
+            const modalHtml = `
+                <div class="modal fade" id="createUserModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-user-plus"></i> 创建新用户
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="createUserForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">用户名 <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="createUsername" 
+                                               placeholder="输入用户名" required>
+                                        <div class="form-text">用户名只能包含字母、数字和下划线</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">邮箱 <span class="text-danger">*</span></label>
+                                        <input type="email" class="form-control" id="createEmail" 
+                                               placeholder="输入邮箱地址" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">密码 <span class="text-danger">*</span></label>
+                                        <input type="password" class="form-control" id="createPassword" 
+                                               placeholder="输入密码" required>
+                                        <div class="form-text">密码至少6位</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">真实姓名</label>
+                                        <input type="text" class="form-control" id="createFullName" 
+                                               placeholder="输入真实姓名（可选）">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">角色</label>
+                                        <select class="form-select" id="createRole">
+                                            <option value="user">普通用户</option>
+                                            <option value="moderator">版主</option>
+                                            <option value="admin">管理员</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="createActive" checked>
+                                                <label class="form-check-label">激活账户</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="createVerified">
+                                                <label class="form-check-label">验证邮箱</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <button type="button" class="btn btn-success" onclick="createUser()">
+                                    <i class="fas fa-plus"></i> 创建用户
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            removeModal('createUserModal');
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            const modal = new bootstrap.Modal(document.getElementById('createUserModal'));
+            modal.show();
+        }
+
+        async function createUser() {
+            const username = document.getElementById('createUsername').value.trim();
+            const email = document.getElementById('createEmail').value.trim();
+            const password = document.getElementById('createPassword').value;
+            const fullName = document.getElementById('createFullName').value.trim();
+            const role = document.getElementById('createRole').value;
+            const isActive = document.getElementById('createActive').checked;
+            const isVerified = document.getElementById('createVerified').checked;
+            
+            // 基本验证
+            if (!username || !email || !password) {
+                alert('请填写所有必填字段');
+                return;
+            }
+            
+            if (password.length < 6) {
+                alert('密码至少6位');
+                return;
+            }
+            
+            try {
+                showLoading('正在创建用户...');
+                
+                const response = await fetch('/api/admin/users/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        email: email,
+                        password: password,
+                        full_name: fullName || null,
+                        role: role,
+                        is_active: isActive,
+                        is_verified: isVerified
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess(`用户创建成功！用户ID: ${result.user_id}`);
+                    
+                    // 关闭模态框
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('createUserModal'));
+                    modal.hide();
+                    
+                    // 刷新列表
+                    loadUsers(1);
+                    loadStats();
+                } else {
+                    showError('创建失败：' + (result.detail || '未知错误'));
+                }
+            } catch (error) {
+                console.error('创建用户失败:', error);
+                showError('网络错误：' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 发送消息功能
+        async function sendMessageToUser(userId) {
+            const modalHtml = `
+                <div class="modal fade" id="sendMessageModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-envelope"></i> 发送消息
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="sendMessageForm">
+                                    <input type="hidden" id="messageUserId" value="${userId}">
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">主题 <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="messageSubject" 
+                                               placeholder="输入消息主题" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">消息内容 <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" id="messageContent" rows="6" 
+                                                  placeholder="输入消息内容..." required></textarea>
+                                    </div>
+                                    
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i>
+                                        <strong>说明：</strong>消息将通过邮件发送给用户，请确保内容准确无误。
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <button type="button" class="btn btn-primary" onclick="sendMessage()">
+                                    <i class="fas fa-paper-plane"></i> 发送消息
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            removeModal('sendMessageModal');
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            const modal = new bootstrap.Modal(document.getElementById('sendMessageModal'));
+            modal.show();
+        }
+
+        async function sendMessage() {
+            const userId = document.getElementById('messageUserId').value;
+            const subject = document.getElementById('messageSubject').value.trim();
+            const content = document.getElementById('messageContent').value.trim();
+            
+            if (!subject || !content) {
+                alert('请填写主题和消息内容');
+                return;
+            }
+            
+            try {
+                showLoading('正在发送消息...');
+                
+                const response = await fetch(`/api/admin/users/${userId}/send-message`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        subject: subject,
+                        message: content
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess('消息发送成功');
+                    
+                    // 关闭模态框
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('sendMessageModal'));
+                    modal.hide();
+                } else {
+                    showError('发送失败：' + (result.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('发送消息失败:', error);
+                showError('网络错误：' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 重置密码功能
+        async function resetUserPassword(userId) {
+            const newPassword = prompt('请输入新密码（至少6位）：');
+            
+            if (!newPassword) {
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                alert('密码至少6位');
+                return;
+            }
+            
+            const sendNotification = confirm('是否发送密码重置通知邮件给用户？');
+            
+            try {
+                showLoading('正在重置密码...');
+                
+                const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        new_password: newPassword,
+                        send_notification: sendNotification
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess(result.message);
+                } else {
+                    showError('重置失败：' + (result.detail || '未知错误'));
+                }
+            } catch (error) {
+                console.error('重置密码失败:', error);
+                showError('网络错误：' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 删除用户功能
+        async function deleteUser(userId) {
+            const transferImages = confirm('选择图片处理方式：\n\n确定 = 转移图片到当前管理员\n取消 = 禁用用户的图片');
+            
+            if (!confirm(`确定要删除这个用户吗？\n用户的图片将${transferImages ? '转移到您的账户' : '被禁用'}。`)) {
+                return;
+            }
+            
+            try {
+                showLoading('正在删除用户...');
+                
+                const response = await fetch(`/api/admin/users/${userId}?transfer_images=${transferImages}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess(`${result.message}（影响 ${result.affected_images} 张图片）`);
+                    loadUsers(currentPage);
+                    loadStats();
+                } else {
+                    showError('删除失败：' + (result.detail || '未知错误'));
+                }
+            } catch (error) {
+                console.error('删除用户失败:', error);
+                showError('网络错误：' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 查看用户图片
+        function viewUserImages(userId) {
+            // 跳转到图片管理页面，预填充该用户的筛选条件
+            window.open(`/admin/images?uploader=${encodeURIComponent(userId)}`, '_blank');
+        }
+
+        // 继续下一部分...
+        // 用户分析功能
+        async function showAnalytics() {
+            try {
+                showLoading('正在加载用户分析数据...');
+                
+                const response = await fetch('/api/admin/users/analytics');
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAnalyticsModal(data.data);
+                } else {
+                    showError('加载分析数据失败');
+                }
+            } catch (error) {
+                console.error('加载分析失败:', error);
+                showError('网络错误：' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function showAnalyticsModal(data) {
+            const modalHtml = `
+                <div class="modal fade" id="analyticsModal" tabindex="-1">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-chart-bar"></i> 用户数据分析报告
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <!-- 注册趋势 -->
+                                    <div class="col-md-6 mb-4">
+                                        <h6><i class="fas fa-chart-line"></i> 用户注册趋势（近30天）</h6>
+                                        <canvas id="registrationTrendChart" width="400" height="200"></canvas>
+                                    </div>
+                                    
+                                    <!-- 活跃度分布 -->
+                                    <div class="col-md-6 mb-4">
+                                        <h6><i class="fas fa-chart-pie"></i> 用户活跃度分布</h6>
+                                        <canvas id="activityDistChart" width="400" height="200"></canvas>
+                                    </div>
+                                    
+                                    <!-- 角色分布 -->
+                                    <div class="col-md-6 mb-4">
+                                        <h6><i class="fas fa-chart-doughnut"></i> 角色分布</h6>
+                                        <canvas id="roleDistChart" width="400" height="200"></canvas>
+                                    </div>
+                                    
+                                    <!-- 上传活跃度 -->
+                                    <div class="col-md-6 mb-4">
+                                        <h6><i class="fas fa-chart-bar"></i> 上传活跃度分布</h6>
+                                        <canvas id="uploadDistChart" width="400" height="200"></canvas>
+                                    </div>
+                                    
+                                    <!-- 最活跃用户排行 -->
+                                    <div class="col-md-12">
+                                        <h6><i class="fas fa-trophy"></i> 最活跃用户排行榜</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>排名</th>
+                                                        <th>用户名</th>
+                                                        <th>上传数量</th>
+                                                        <th>总存储大小</th>
+                                                        <th>平均置信度</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${data.top_uploaders.map((user, index) => `
+                                                        <tr>
+                                                            <td><span class="badge bg-${getRankBadgeClass(index)}">#${index + 1}</span></td>
+                                                            <td>${user.username}</td>
+                                                            <td><span class="badge bg-primary">${user.upload_count}</span></td>
+                                                            <td>${formatFileSize(user.total_size)}</td>
+                                                            <td>${user.avg_confidence}%</td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-success" onclick="exportAnalyticsReport()">
+                                    <i class="fas fa-download"></i> 导出报告
+                                </button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            removeModal('analyticsModal');
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            const modal = new bootstrap.Modal(document.getElementById('analyticsModal'));
+            modal.show();
+            
+            // 等待模态框显示后绘制图表
+            setTimeout(() => {
+                drawRegistrationTrendChart(data.registration_trend);
+                drawActivityDistChart(data.activity_distribution);
+                drawRoleDistChart(data.role_distribution);
+                drawUploadDistChart(data.upload_distribution);
+            }, 500);
+        }
+
+        // 导出数据
+        async function exportData() {
+            const includeStats = confirm('是否包含详细统计数据？\n\n确定 = 包含统计\n取消 = 仅基本信息');
+            const format = prompt('选择导出格式：\n\n1 = CSV格式\n2 = JSON格式', '1');
+            
+            if (!format || !['1', '2'].includes(format)) {
+                return;
+            }
+            
+            const exportFormat = format === '1' ? 'csv' : 'json';
+            
+            try {
+                showLoading('正在导出用户数据...');
+                
+                const response = await fetch(`/api/admin/users/export?format=${exportFormat}&include_stats=${includeStats}`);
+                
+                if (response.ok) {
+                    // 创建下载链接
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `users_export_${new Date().toISOString().slice(0,10)}.${exportFormat}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    showSuccess('用户数据导出成功');
+                } else {
+                    showError('导出数据失败');
+                }
+            } catch (error) {
+                console.error('导出失败:', error);
+                showError('网络错误：' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 刷新数据
+        function refreshData() {
+            loadStats();
+            loadUsers(currentPage);
+            showSuccess('数据已刷新');
+        }
+
+        // 辅助函数
+        function getRoleText(role) {
+            const roleMap = {
+                'user': '普通用户',
+                'moderator': '版主',
+                'admin': '管理员'
+            };
+            return roleMap[role] || role;
+        }
+
+        function getActivityClass(lastLogin) {
+            if (!lastLogin) return 'never';
+            
+            const now = new Date();
+            const loginDate = new Date(lastLogin);
+            const diffMs = now - loginDate;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return 'today';
+            if (diffDays <= 7) return 'week';
+            if (diffDays <= 30) return 'month';
+            return 'older';
+        }
+
+        function getActivityText(lastLogin) {
+            if (!lastLogin) return '从未登录';
+            
+            const now = new Date();
+            const loginDate = new Date(lastLogin);
+            const diffMs = now - loginDate;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return '今天活跃';
+            if (diffDays === 1) return '昨天活跃';
+            if (diffDays <= 7) return `${diffDays}天前`;
+            if (diffDays <= 30) return `${diffDays}天前`;
+            return `${Math.floor(diffDays / 30)}个月前`;
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '待分析',
+                'completed': '已完成',
+                'failed': '分析失败'
+            };
+            return statusMap[status] || status;
+        }
+
+        function getRankBadgeClass(index) {
+            if (index === 0) return 'warning';
+            if (index === 1) return 'secondary';
+            if (index === 2) return 'dark';
+            return 'light';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+        }
+
+        function removeModal(modalId) {
+            const existingModal = document.getElementById(modalId);
+            if (existingModal) {
+                existingModal.remove();
+            }
+        }
+
+        function showLoading(text = '处理中...') {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 5000);
+        }
+
+        function showError(message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 8000);
+        }
+
+        // 图表绘制函数
+        function drawRegistrationTrendChart(data) {
+            const ctx = document.getElementById('registrationTrendChart');
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(item => item.date),
+                    datasets: [{
+                        label: '每日注册数',
+                        data: data.map(item => item.count),
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function drawActivityDistChart(data) {
+            const ctx = document.getElementById('activityDistChart');
+            if (!ctx) return;
+            
+            const activityLabels = {
+                'today': '今天',
+                'week': '本周',
+                'month': '本月',
+                'older': '更早',
+                'never': '从未'
+            };
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.map(item => activityLabels[item.activity] || item.activity),
+                    datasets: [{
+                        data: data.map(item => item.count),
+                        backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#6c757d', '#dc3545'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function drawRoleDistChart(data) {
+            const ctx = document.getElementById('roleDistChart');
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.map(item => getRoleText(item.role)),
+                    datasets: [{
+                        data: data.map(item => item.count),
+                        backgroundColor: ['#007bff', '#fd7e14', '#dc3545'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function drawUploadDistChart(data) {
+            const ctx = document.getElementById('uploadDistChart');
+            if (!ctx) return;
+            
+            const levelLabels = {
+                'none': '无上传',
+                'low': '低活跃(1-5)',
+                'medium': '中活跃(6-20)',
+                'high': '高活跃(21-100)',
+                'very_high': '超活跃(100+)'
+            };
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(item => levelLabels[item.level] || item.level),
+                    datasets: [{
+                        label: '用户数量',
+                        data: data.map(item => item.count),
+                        backgroundColor: ['#6c757d', '#17a2b8', '#28a745', '#ffc107', '#fd7e14'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function drawUserAIStatusChart(data) {
+            const ctx = document.getElementById('userAIStatusChart');
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.map(item => getStatusText(item.status)),
+                    datasets: [{
+                        data: data.map(item => item.count),
+                        backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function drawUserActivityChart(data) {
+            const ctx = document.getElementById('userActivityChart');
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(item => item.date),
+                    datasets: [{
+                        label: '上传数量',
+                        data: data.map(item => item.count),
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 占位函数
+        function exportAnalyticsReport() {
+            alert('导出分析报告功能开发中...');
+        }
+        // 继续实现其他功能...
+        // 由于篇幅限制，我先提交这部分，然后继续完善剩余功能
+    </script>
+</body>
+</html>

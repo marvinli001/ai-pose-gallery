@@ -3,6 +3,7 @@
 """
 import os
 from functools import lru_cache
+from typing import Optional
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
@@ -70,6 +71,17 @@ class Settings(BaseSettings):
     debug: bool = True
     host: str = "0.0.0.0"
     port: int = 8000
+
+    # 邮件服务配置
+    smtp_server: Optional[str] = None
+    smtp_port: int = 587
+    smtp_username: Optional[str] = None
+    smtp_password: Optional[str] = None
+    from_email: Optional[str] = None
+    frontend_url: str = "http://localhost:8000"
+    
+    class Config:
+        env_file = ".env"
     
     class Config:
         env_file = ".env"

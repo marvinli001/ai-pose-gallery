@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}登录 - AI姿势参考图库{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h3 class="mb-0">
+                        <i class="fas fa-sign-in-alt"></i> 用户登录
+                    </h3>
+                </div>
+                <div class="card-body p-5">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">
+                                <i class="fas fa-user"></i> 用户名或邮箱
+                            </label>
+                            <input type="text" class="form-control" id="username" 
+                                   placeholder="请输入用户名或邮箱" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock"></i> 密码
+                            </label>
+                            <input type="password" class="form-control" id="password" 
+                                   placeholder="请输入密码" required>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">
+                                记住我
+                            </label>
+                        </div>
+                        
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt"></i> 登录
+                            </button>
+                        </div>
+                        
+                        <div class="text-center">
+                            <p class="mb-0">
+                                还没有账号？ 
+                                <a href="/register" class="text-decoration-none">立即注册</a>
+                            </p>
+                        </div>
+                    </form>
+                    
+                    <!-- 登录结果提示 -->
+                    <div id="loginResult" class="mt-3" style="display: none;"></div>
+                </div>
+            </div>
+            
+            <!-- 测试账号提示 -->
+            <div class="card mt-3">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">测试账号</h6>
+                    <p class="mb-2">
+                        <strong>管理员:</strong> admin / admin123<br>
+                        <strong>普通用户:</strong> marvinli001 / 123456
+                    </p>
+                    <small class="text-muted">
+                        点击可快速填充
+                    </small>
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-outline-secondary me-2" onclick="fillLogin('admin', 'admin123')">
+                            管理员登录
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="fillLogin('marvinli001', '123456')">
+                            用户登录
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.card {
+    border-radius: 1rem;
+}
+
+.card-header {
+    border-radius: 1rem 1rem 0 0 !important;
+}
+
+.form-control {
+    border-radius: 0.5rem;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+}
+
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.25);
+}
+
+.btn-primary {
+    border-radius: 0.5rem;
+    font-weight: 600;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.alert {
+    border-radius: 0.5rem;
+    border: none;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 检查是否已登录
+    checkAuthStatus();
+    
+    // 登录表单提交
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        performLogin();
+    });
+});
+
+async function checkAuthStatus() {
+    try {
+        const response = await fetch('/api/auth/check');
+        const data = await response.json();
+        
+        if (data.authenticated) {
+            // 已登录，重定向到首页
+            window.location.href = '/';
+        }
+    } catch (error) {
+        console.error('检查登录状态失败:', error);
+    }
+}
+
+async function performLogin() {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const resultDiv = document.getElementById('loginResult');
+    
+    if (!username || !password) {
+        showResult('请填写完整的登录信息', 'danger');
+        return;
+    }
+    
+    // 显示加载状态
+    const submitBtn = document.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登录中...';
+    submitBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showResult('登录成功！正在跳转...', 'success');
+            
+            // 存储访问令牌
+            if (data.access_token) {
+                localStorage.setItem('access_token', data.access_token);
+            }
+            
+            // 延迟跳转
+            setTimeout(() => {
+                // 根据用户角色跳转
+                if (data.user.role === 'admin' || data.user.role === 'moderator') {
+                    window.location.href = '/admin';
+                } else {
+                    window.location.href = '/';
+                }
+            }, 1500);
+        } else {
+            showResult(data.detail || '登录失败', 'danger');
+        }
+    } catch (error) {
+        showResult('网络错误，请重试', 'danger');
+        console.error('登录失败:', error);
+    } finally {
+        // 恢复按钮状态
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+function showResult(message, type) {
+    const resultDiv = document.getElementById('loginResult');
+    resultDiv.innerHTML = `
+        <div class="alert alert-${type}" role="alert">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+            ${message}
+        </div>
+    `;
+    resultDiv.style.display = 'block';
+    
+    // 自动隐藏成功消息
+    if (type === 'success') {
+        setTimeout(() => {
+            resultDiv.style.display = 'none';
+        }, 3000);
+    }
+}
+
+function fillLogin(username, password) {
+    document.getElementById('username').value = username;
+    document.getElementById('password').value = password;
+}
+</script>
+{% endblock %}

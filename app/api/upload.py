@@ -1,5 +1,5 @@
 """
-图片上传API - 支持云存储和GPT-4o分析
+图片上传API - 需要用户登录
 """
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, BackgroundTasks
 from fastapi.responses import JSONResponse
@@ -12,6 +12,8 @@ from app.services.storage_service import storage_manager
 from app.services.gpt4o_service import gpt4o_analyzer
 from app.services.database_service import DatabaseService
 from app.models.image import Image
+from app.models.user import User
+from app.auth.dependencies import require_user
 
 router = APIRouter()
 
@@ -141,12 +143,12 @@ async def _process_gpt4o_tags(db_service: DatabaseService, image_id: int, analys
 @router.post("/upload")
 async def upload_image(
     background_tasks: BackgroundTasks,
+    current_user: User = Depends(require_user),  # 要求用户登录
     file: UploadFile = File(...),
-    uploader: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
-    上传图片到云存储并进行GPT-4o分析
+    上传图片到云存储并进行GPT-4o分析（需要登录）
     """
     try:
         # 读取文件内容
@@ -158,7 +160,7 @@ async def upload_image(
         if not upload_result.get("success"):
             raise HTTPException(status_code=400, detail=upload_result.get("error", "上传失败"))
         
-        # 创建数据库记录
+        # 创建数据库记录（使用当前用户信息）
         db_service = DatabaseService(db)
         image = db_service.create_image(
             filename=upload_result["original_filename"],
@@ -166,10 +168,14 @@ async def upload_image(
             file_size=upload_result["file_size"],
             width=upload_result["width"],
             height=upload_result["height"],
-            uploader=uploader or "匿名用户",
+            uploader=current_user.username,  # 使用登录用户的用户名
             ai_analysis_status="pending",
             ai_model="gpt-4o"
         )
+        
+        # 更新用户上传统计
+        current_user.upload_count += 1
+        db.commit()
         
         # 启动GPT-4o分析任务
         is_cloud_storage = upload_result["storage_type"] in ["oss", "s3"]
@@ -192,6 +198,7 @@ async def upload_image(
                 "height": upload_result["height"],
                 "url": upload_result["url"],
                 "upload_time": image.upload_time.isoformat(),
+                "uploader": current_user.username,
                 "ai_analysis_status": image.ai_analysis_status,
                 "analyzer": "gpt-4o",
                 "storage_type": upload_result["storage_type"]
@@ -206,13 +213,21 @@ async def upload_image(
 
 
 @router.get("/upload/status/{image_id}")
-async def get_upload_status(image_id: int, db: Session = Depends(get_db)):
+async def get_upload_status(
+    image_id: int, 
+    current_user: User = Depends(require_user),  # 要求用户登录
+    db: Session = Depends(get_db)
+):
     """获取图片GPT-4o分析状态"""
     db_service = DatabaseService(db)
     image = db_service.get_image_by_id(image_id)
     
     if not image:
         raise HTTPException(status_code=404, detail="图片不存在")
+    
+    # 检查用户权限（只能查看自己上传的图片状态，管理员可以查看所有）
+    if image.uploader != current_user.username and current_user.role.value not in ['admin', 'moderator']:
+        raise HTTPException(status_code=403, detail="没有权限查看此图片状态")
     
     # 获取标签
     tags = db_service.get_image_tags(image_id)
@@ -255,13 +270,21 @@ async def get_upload_status(image_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/upload/{image_id}")
-async def delete_image(image_id: int, db: Session = Depends(get_db)):
+async def delete_image(
+    image_id: int, 
+    current_user: User = Depends(require_user),  # 要求用户登录
+    db: Session = Depends(get_db)
+):
     """删除图片（包括云存储文件）"""
     db_service = DatabaseService(db)
     image = db_service.get_image_by_id(image_id)
     
     if not image:
         raise HTTPException(status_code=404, detail="图片不存在")
+    
+    # 检查用户权限（只能删除自己上传的图片，管理员可以删除所有）
+    if image.uploader != current_user.username and current_user.role.value not in ['admin', 'moderator']:
+        raise HTTPException(status_code=403, detail="没有权限删除此图片")
     
     try:
         # 删除云存储文件
@@ -270,6 +293,11 @@ async def delete_image(image_id: int, db: Session = Depends(get_db)):
         # 软删除数据库记录
         image.is_active = False
         db.commit()
+        
+        # 更新用户上传统计
+        if current_user.username == image.uploader:
+            current_user.upload_count = max(0, current_user.upload_count - 1)
+            db.commit()
         
         return {"success": True, "message": "图片删除成功"}
         
