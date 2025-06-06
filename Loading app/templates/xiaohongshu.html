@@ -1,0 +1,547 @@
+{% extends "base.html" %}
+
+{% block title %}小红书数据源管理 - AI姿势参考图库{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- 页头 -->
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="fas fa-heart text-danger"></i> 小红书数据源管理</h2>
+            <p class="text-muted">从小红书导入高质量的姿势参考内容，使用GPT-4o进行智能分析和筛选</p>
+        </div>
+    </div>
+    
+    <!-- 统计卡片 -->
+    <div class="row mb-4" id="statsCards">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">总内容数</h6>
+                            <h3 id="totalContent">-</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-file-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">活跃内容</h6>
+                            <h3 id="activeContent">-</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">已处理</h6>
+                            <h3 id="processedContent">-</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-cogs fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">平均质量分</h6>
+                            <h3 id="avgQuality">-</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-star fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 功能区域 -->
+    <div class="row mb-4">
+        <!-- 导入配置 -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-download"></i> 批量导入内容</h5>
+                </div>
+                <div class="card-body">
+                    <form id="importForm">
+                        <div class="mb-3">
+                            <label for="keywords" class="form-label">搜索关键词</label>
+                            <textarea class="form-control" id="keywords" rows="3" 
+                                placeholder="请输入搜索关键词，每行一个，例如：&#10;姿势参考&#10;人物姿势&#10;拍照姿势"></textarea>
+                            <div class="form-text">每行输入一个关键词，系统将逐个搜索并导入</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="limitPerKeyword" class="form-label">每个关键词搜索数量</label>
+                            <select class="form-select" id="limitPerKeyword">
+                                <option value="5">5个</option>
+                                <option value="10" selected>10个</option>
+                                <option value="20">20个</option>
+                                <option value="30">30个</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-play"></i> 开始导入
+                        </button>
+                    </form>
+                    
+                    <div id="importResult" class="mt-3" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 实时搜索 -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-search"></i> 实时搜索预览</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="searchKeyword" class="form-label">搜索关键词</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="searchKeyword" 
+                                placeholder="输入关键词进行实时搜索">
+                            <button class="btn btn-outline-primary" type="button" id="searchBtn">
+                                <i class="fas fa-search"></i> 搜索
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="searchResult" class="search-result" style="max-height: 300px; overflow-y: auto;">
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-search fa-2x mb-2"></i>
+                            <p>输入关键词开始搜索</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 内容列表 -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list"></i> 已导入内容</h5>
+                <div>
+                    <select class="form-select form-select-sm" id="keywordFilter" style="width: auto; display: inline-block;">
+                        <option value="">所有关键词</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadContent()">
+                        <i class="fas fa-refresh"></i> 刷新
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="contentList">
+                <div class="text-center py-4">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                    <p class="mt-2">正在加载内容...</p>
+                </div>
+            </div>
+            
+            <!-- 分页 -->
+            <nav id="pagination" style="display: none;">
+                <ul class="pagination justify-content-center" id="paginationList">
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.search-result {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    background-color: #f8f9fa;
+}
+
+.content-item {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: white;
+}
+
+.content-item:hover {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.score-badge {
+    font-size: 0.75rem;
+}
+
+.image-preview {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 0.25rem;
+    margin-right: 0.5rem;
+}
+
+.quality-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: #e9ecef;
+    overflow: hidden;
+}
+
+.quality-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化页面
+    loadStats();
+    loadContent();
+    
+    // 导入表单提交
+    document.getElementById('importForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        startImport();
+    });
+    
+    // 搜索按钮
+    document.getElementById('searchBtn').addEventListener('click', function() {
+        performSearch();
+    });
+    
+    // 关键词过滤
+    document.getElementById('keywordFilter').addEventListener('change', function() {
+        loadContent();
+    });
+});
+
+async function loadStats() {
+    try {
+        const response = await fetch('/api/xiaohongshu/stats');
+        const data = await response.json();
+        
+        if (data.success) {
+            const stats = data.data;
+            document.getElementById('totalContent').textContent = stats.total_content;
+            document.getElementById('activeContent').textContent = stats.active_content;
+            document.getElementById('processedContent').textContent = stats.processed_content;
+            document.getElementById('avgQuality').textContent = (stats.avg_quality_score * 100).toFixed(1) + '%';
+            
+            // 更新关键词过滤器
+            const keywordFilter = document.getElementById('keywordFilter');
+            keywordFilter.innerHTML = '<option value="">所有关键词</option>';
+            
+            stats.keyword_distribution.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.keyword;
+                option.textContent = `${item.keyword} (${item.count})`;
+                keywordFilter.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('加载统计失败:', error);
+    }
+}
+
+async function startImport() {
+    const keywordsText = document.getElementById('keywords').value.trim();
+    const limitPerKeyword = document.getElementById('limitPerKeyword').value;
+    
+    if (!keywordsText) {
+        alert('请输入搜索关键词');
+        return;
+    }
+    
+    const keywords = keywordsText.split('\n').map(k => k.trim()).filter(k => k);
+    
+    if (keywords.length === 0) {
+        alert('请输入有效的关键词');
+        return;
+    }
+    
+    const importResult = document.getElementById('importResult');
+    importResult.innerHTML = `
+        <div class="alert alert-info">
+            <i class="fas fa-spinner fa-spin"></i> 正在启动导入任务...
+            <br><small>关键词: ${keywords.join(', ')}</small>
+        </div>
+    `;
+    importResult.style.display = 'block';
+    
+    try {
+        const params = new URLSearchParams();
+        keywords.forEach(keyword => params.append('keywords', keyword));
+        params.append('limit_per_keyword', limitPerKeyword);
+        
+        const response = await fetch(`/api/xiaohongshu/import?${params}`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            importResult.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="fas fa-check"></i> ${data.message}
+                    <br><small>请等待后台处理完成，可以刷新页面查看进度</small>
+                </div>
+            `;
+            
+            // 5秒后开始轮询更新统计
+            setTimeout(() => {
+                const interval = setInterval(() => {
+                    loadStats();
+                    loadContent();
+                }, 3000);
+                
+                // 30秒后停止轮询
+                setTimeout(() => clearInterval(interval), 30000);
+            }, 5000);
+            
+        } else {
+            importResult.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> 导入失败: ${data.detail || '未知错误'}
+                </div>
+            `;
+        }
+    } catch (error) {
+        importResult.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> 导入失败: ${error.message}
+            </div>
+        `;
+    }
+}
+
+async function performSearch() {
+    const keyword = document.getElementById('searchKeyword').value.trim();
+    const searchResult = document.getElementById('searchResult');
+    
+    if (!keyword) {
+        alert('请输入搜索关键词');
+        return;
+    }
+    
+    searchResult.innerHTML = `
+        <div class="text-center py-3">
+            <div class="spinner-border spinner-border-sm" role="status"></div>
+            <p class="mt-2 mb-0">正在搜索 "${keyword}"...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch(`/api/xiaohongshu/search?keyword=${encodeURIComponent(keyword)}&limit=5`);
+        const data = await response.json();
+        
+        if (data.success && data.data.results.length > 0) {
+            const results = data.data.results;
+            let html = '';
+            
+            results.forEach(item => {
+                html += `
+                    <div class="border-bottom py-2">
+                        <h6 class="mb-1">${item.title}</h6>
+                        <p class="small text-muted mb-1">${item.description}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">作者: ${item.author}</small>
+                            <div>
+                                <span class="badge bg-primary me-1">❤️ ${item.like_count}</span>
+                                <span class="badge bg-secondary">💬 ${item.comment_count}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            searchResult.innerHTML = html;
+        } else {
+            searchResult.innerHTML = `
+                <div class="text-center py-3 text-muted">
+                    <i class="fas fa-search fa-2x mb-2"></i>
+                    <p>没有找到相关内容</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        searchResult.innerHTML = `
+            <div class="text-center py-3 text-danger">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                <p>搜索失败: ${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+async function loadContent(page = 1) {
+    const keyword = document.getElementById('keywordFilter').value;
+    const contentList = document.getElementById('contentList');
+    
+    try {
+        let url = `/api/xiaohongshu/content?page=${page}&per_page=10`;
+        if (keyword) {
+            url += `&keyword=${encodeURIComponent(keyword)}`;
+        }
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.success) {
+            const contents = data.data.contents;
+            const pagination = data.data.pagination;
+            
+            if (contents.length === 0) {
+                contentList.innerHTML = `
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <h5>暂无内容</h5>
+                        <p>开始导入小红书内容吧！</p>
+                    </div>
+                `;
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+            
+            // 渲染内容列表
+            let html = '';
+            contents.forEach(content => {
+                const qualityPercent = (content.ai_quality_score || 0) * 100;
+                const relevancePercent = (content.ai_relevance_score || 0) * 100;
+                
+                html += `
+                    <div class="content-item">
+                        <div class="row">
+                            <div class="col-md-2">
+                                ${content.image_urls && content.image_urls.length > 0 ? 
+                                    content.image_urls.slice(0, 3).map(url => 
+                                        `<img src="${url}" class="image-preview" alt="预览图">`
+                                    ).join('') : 
+                                    '<div class="image-preview bg-light d-flex align-items-center justify-content-center"><i class="fas fa-image text-muted"></i></div>'
+                                }
+                            </div>
+                            <div class="col-md-7">
+                                <h6>${content.title}</h6>
+                                <p class="text-muted small mb-2">${content.description}</p>
+                                <div class="mb-2">
+                                    <small class="text-muted">作者: ${content.author} | 关键词: ${content.import_keyword}</small>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    ${content.ai_suggested_tags ? content.ai_suggested_tags.map(tag => 
+                                        `<span class="badge bg-light text-dark">${tag}</span>`
+                                    ).join('') : ''}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-2">
+                                    <small>质量评分</small>
+                                    <div class="quality-bar">
+                                        <div class="quality-fill bg-success" style="width: ${qualityPercent}%"></div>
+                                    </div>
+                                    <small class="text-muted">${qualityPercent.toFixed(1)}%</small>
+                                </div>
+                                <div class="mb-2">
+                                    <small>相关性评分</small>
+                                    <div class="quality-bar">
+                                        <div class="quality-fill bg-info" style="width: ${relevancePercent}%"></div>
+                                    </div>
+                                    <small class="text-muted">${relevancePercent.toFixed(1)}%</small>
+                                </div>
+                                <div class="d-flex gap-1">
+                                    <span class="badge bg-danger score-badge">❤️ ${content.like_count}</span>
+                                    <span class="badge bg-secondary score-badge">💬 ${content.comment_count}</span>
+                                    <span class="badge bg-warning score-badge">📤 ${content.share_count}</span>
+                                </div>
+                                <div class="mt-2">
+                                    <a href="${content.source_url}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-external-link-alt"></i> 查看原文
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            contentList.innerHTML = html;
+            
+            // 渲染分页
+            renderPagination(pagination);
+        }
+    } catch (error) {
+        console.error('加载内容失败:', error);
+        contentList.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> 加载失败: ${error.message}
+            </div>
+        `;
+    }
+}
+
+function renderPagination(pagination) {
+    const paginationElement = document.getElementById('pagination');
+    const paginationList = document.getElementById('paginationList');
+    
+    if (pagination.pages <= 1) {
+        paginationElement.style.display = 'none';
+        return;
+    }
+    
+    let html = '';
+    
+    // 上一页
+    if (pagination.page > 1) {
+        html += `<li class="page-item"><a class="page-link" href="#" onclick="loadContent(${pagination.page - 1})">上一页</a></li>`;
+    }
+    
+    // 页码
+    const startPage = Math.max(1, pagination.page - 2);
+    const endPage = Math.min(pagination.pages, pagination.page + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        html += `<li class="page-item ${i === pagination.page ? 'active' : ''}">
+            <a class="page-link" href="#" onclick="loadContent(${i})">${i}</a>
+        </li>`;
+    }
+    
+    // 下一页
+    if (pagination.page < pagination.pages) {
+        html += `<li class="page-item"><a class="page-link" href="#" onclick="loadContent(${pagination.page + 1})">下一页</a></li>`;
+    }
+    
+    paginationList.innerHTML = html;
+    paginationElement.style.display = 'block';
+}
+</script>
+{% endblock %}
