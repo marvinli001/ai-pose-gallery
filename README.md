@@ -466,15 +466,9 @@ python debug_env_conflict.py
 - [SQLAlchemy](https://www.sqlalchemy.org/) - Python SQL 工具包
 - [Chart.js](https://www.chartjs.org/) - 漂亮的图表库
 
-## 📞 联系方式
-
-- 项目主页：[GitHub Repository]
-- 问题反馈：[GitHub Issues]
-- 邮箱：your-email@example.com
-
 ## 🔮 未来计划
 
-- [ ] 支持更多外部数据源（Instagram、Pinterest等）
+- [ ] 支持更多外部数据源（小红书、Pinterest等）
 - [ ] 增加视频姿势分析功能
 - [ ] 实现AI姿势生成功能
 - [ ] 增加移动端APP
