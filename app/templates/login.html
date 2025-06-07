@@ -122,16 +122,249 @@
 
 {% block scripts %}
 <script>
+console.log('🚀 登录页面JavaScript已加载');
+
 document.addEventListener('DOMContentLoaded', function() {
-    // 检查是否已登录
-    checkAuthStatus();
+    console.log('📄 DOM加载完成');
     
-    // 登录表单提交
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        performLogin();
+    const form = document.getElementById('loginForm');
+    // 修复：获取正确的提交按钮
+    const submitBtn = document.querySelector('button[type="submit"]');
+    
+    console.log('🔍 查找表单元素:', {
+        form: !!form,
+        submitBtn: !!submitBtn
     });
+    
+    if (form) {
+        // 绑定表单提交事件
+        form.addEventListener('submit', handleLogin);
+        console.log('✅ 表单提交事件已绑定');
+    } else {
+        console.error('❌ 未找到登录表单');
+    }
+    
+    if (submitBtn) {
+        // 额外绑定按钮点击事件（双重保险）
+        submitBtn.addEventListener('click', function(event) {
+            console.log('🖱️ 登录按钮被点击');
+            // 如果是submit类型按钮，不需要手动处理
+            if (submitBtn.type === 'submit') {
+                // 让表单正常提交，handleLogin会处理
+                return;
+            } else {
+                // 如果不是submit按钮，手动触发
+                event.preventDefault();
+                handleLogin(event);
+            }
+        });
+        console.log('✅ 按钮点击事件已绑定');
+    }
+    
+    // 检查URL参数中的消息
+    const urlParams = new URLSearchParams(window.location.search);
+    const message = urlParams.get('message');
+    
+    if (message) {
+        showMessage(decodeURIComponent(message), 'info');
+        
+        // 清除URL参数
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+    }
+    
+    console.log('✅ 登录页面初始化完成');
 });
+
+async function handleLogin(event) {
+    console.log('🔄 handleLogin 函数被调用，事件类型:', event.type);
+    event.preventDefault();
+    
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    // 修复：获取正确的提交按钮
+    const submitBtn = document.querySelector('button[type="submit"]');
+    
+    console.log('📝 登录信息:', {
+        username: username,
+        passwordLength: password ? password.length : 0,
+        submitBtn: !!submitBtn
+    });
+    
+    if (!username || !password) {
+        console.log('❌ 用户名或密码为空');
+        showError('请输入用户名和密码');
+        return;
+    }
+    
+    // 修复：检查按钮是否存在
+    if (!submitBtn) {
+        console.error('❌ 未找到提交按钮');
+        showError('页面错误，请刷新重试');
+        return;
+    }
+    
+    // 显示加载状态
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登录中...';
+    submitBtn.disabled = true;
+    
+    try {
+        console.log('🔄 正在发送登录请求...');
+        
+        const formData = new FormData();
+        formData.append('username', username);
+        formData.append('password', password);
+        
+        console.log('📡 发送POST请求到 /api/auth/login');
+        
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            body: formData
+        });
+        
+        console.log('📡 响应状态:', response.status, response.statusText);
+        
+        let data;
+        try {
+            data = await response.json();
+            console.log('📥 登录响应:', data);
+        } catch (parseError) {
+            console.error('❌ 响应解析失败:', parseError);
+            const responseText = await response.text();
+            console.error('❌ 原始响应:', responseText);
+            throw new Error('服务器响应格式错误');
+        }
+        
+        if (response.ok && data.success) {
+            console.log('✅ 登录成功');
+            showSuccess('登录成功！正在跳转...');
+            
+            // 等待一段时间确保cookie设置完成
+            setTimeout(async () => {
+                try {
+                    console.log('🔍 检查登录状态...');
+                    const checkResponse = await fetch('/api/auth/check');
+                    const checkData = await checkResponse.json();
+                    
+                    console.log('🔍 登录状态检查结果:', checkData);
+                    
+                    if (checkData.authenticated) {
+                        console.log('✅ 登录状态确认，跳转到管理后台');
+                        
+                        // 获取重定向URL
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const redirectUrl = urlParams.get('redirect') || '/admin';
+                        
+                        console.log('🔄 跳转到:', redirectUrl);
+                        window.location.href = redirectUrl;
+                    } else {
+                        console.error('❌ 登录状态验证失败:', checkData);
+                        showError('登录状态验证失败，请重试');
+                        resetButton();
+                    }
+                } catch (error) {
+                    console.error('❌ 登录状态检查失败:', error);
+                    showError('登录状态检查失败，请重试');
+                    resetButton();
+                }
+            }, 1000);
+            
+        } else {
+            // 处理登录失败
+            let errorMessage = '登录失败';
+            
+            if (data && data.detail) {
+                if (typeof data.detail === 'string') {
+                    errorMessage = data.detail;
+                } else if (Array.isArray(data.detail)) {
+                    errorMessage = data.detail.map(err => err.msg || err).join(', ');
+                } else {
+                    errorMessage = '登录请求格式错误';
+                }
+            } else if (data && data.message) {
+                errorMessage = data.message;
+            }
+            
+            console.error('❌ 登录失败:', errorMessage);
+            showError(errorMessage);
+            resetButton();
+        }
+    } catch (error) {
+        console.error('❌ 登录请求失败:', error);
+        showError('网络错误，请检查连接: ' + error.message);
+        resetButton();
+    }
+    
+    function resetButton() {
+        if (submitBtn) {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    }
+}
+
+// 清除之前的错误消息
+function clearMessages() {
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(alert => {
+        if (alert.parentNode) {
+            alert.parentNode.removeChild(alert);
+        }
+    });
+}
+
+function showMessage(message, type = 'info') {
+    const alertClass = type === 'error' ? 'alert-danger' : 
+                      type === 'success' ? 'alert-success' : 'alert-info';
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert ${alertClass} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i> 
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // 修复：找到正确的插入位置
+    const cardBody = document.querySelector('.card-body');
+    if (cardBody) {
+        // 插入到卡片内容的顶部
+        cardBody.insertBefore(alertDiv, cardBody.firstChild);
+    } else {
+        // 备选方案：插入到容器顶部
+        const container = document.querySelector('.container');
+        if (container) {
+            container.insertBefore(alertDiv, container.firstChild);
+        } else {
+            document.body.insertBefore(alertDiv, document.body.firstChild);
+        }
+    }
+    
+    // 自动消失
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 5000);
+}
+
+function showSuccess(message) {
+    console.log('✅ 显示成功消息:', message);
+    showMessage(message, 'success');
+}
+
+function showError(message) {
+    console.error('❌ 显示错误消息:', message);
+    showMessage(message, 'error');
+}
+
+// 测试函数 - 在浏览器控制台中可以手动调用
+function testLogin() {
+    console.log('🧪 测试登录函数');
+    const event = new Event('submit');
+    handleLogin(event);
+}
 
 async function checkAuthStatus() {
     try {
@@ -224,6 +457,15 @@ function showResult(message, type) {
         }, 3000);
     }
 }
+
+// 全局错误捕获
+window.addEventListener('error', function(event) {
+    console.error('❌ 全局JavaScript错误:', event.error);
+});
+
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('❌ 未处理的Promise拒绝:', event.reason);
+});
 
 function fillLogin(username, password) {
     document.getElementById('username').value = username;

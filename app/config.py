@@ -41,7 +41,12 @@ class Settings(BaseSettings):
     oss_region: str = "oss-cn-hangzhou"
     oss_custom_domain: str = ""  # 自定义域名
     oss_folder_prefix: str = "ai-pose-gallery/"  # 文件夹前缀
-    
+
+    # JWT配置
+    secret_key: str = "ai-pose-gallery-secret-key-2024-very-secure-change-in-production"
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 1440  # 24小时
+
     # AWS S3配置 (预留)
     s3_enabled: bool = False
     s3_access_key: str = ""
@@ -108,6 +113,20 @@ class Settings(BaseSettings):
 def get_settings():
     """获取设置单例"""
     return Settings()
+
+# 验证配置
+def verify_settings():
+    """验证配置是否正确"""
+    s = get_settings()
+    print(f"✅ 配置验证:")
+    print(f"  - secret_key: {'✅' if hasattr(s, 'secret_key') and s.secret_key else '❌'}")
+    print(f"  - algorithm: {'✅' if hasattr(s, 'algorithm') and s.algorithm else '❌'}")
+    print(f"  - access_token_expire_minutes: {'✅' if hasattr(s, 'access_token_expire_minutes') else '❌'}")
+    print(f"  - database_url: {'✅' if hasattr(s, 'database_url') and s.database_url else '❌'}")
+    return s
+
+if __name__ == "__main__":
+    verify_settings()
 
 
 def create_directories():

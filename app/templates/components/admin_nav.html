@@ -1,51 +1,313 @@
-<!-- 管理员导航组件 -->
+<!-- 管理员顶部导航栏组件 -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
+        <!-- 品牌Logo -->
         <a class="navbar-brand" href="/admin">
             <i class="fas fa-cogs"></i> 管理后台
         </a>
         
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar">
+        <!-- 移动端切换按钮 -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar" 
+                aria-controls="adminNavbar" aria-expanded="false" aria-label="切换导航">
             <span class="navbar-toggler-icon"></span>
         </button>
         
+        <!-- 导航内容 -->
         <div class="collapse navbar-collapse" id="adminNavbar">
+            <!-- 主导航菜单 -->
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.url.path == '/admin' else '' }}" href="/admin">
-                        <i class="fas fa-chart-line"></i> 统计面板
+                    <a class="nav-link" href="/admin" id="nav-dashboard">
+                        <i class="fas fa-chart-line"></i> 
+                        <span class="d-lg-inline d-none">统计面板</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if '/admin/images' in request.url.path else '' }}" href="/admin/images">
-                        <i class="fas fa-images"></i> 图片管理
+                    <a class="nav-link" href="/admin/images" id="nav-images">
+                        <i class="fas fa-images"></i> 
+                        <span class="d-lg-inline d-none">图片管理</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if '/admin/users' in request.url.path else '' }}" href="/admin/users">
-                        <i class="fas fa-users"></i> 用户管理
+                    <a class="nav-link" href="/admin/users" id="nav-users">
+                        <i class="fas fa-users"></i> 
+                        <span class="d-lg-inline d-none">用户管理</span>
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ 'active' if '/admin/system' in request.url.path else '' }}" href="/admin/system">
-                        <i class="fas fa-server"></i> 系统设置
+                <li class="nav-item" id="nav-system-item">
+                    <a class="nav-link" href="/admin/system" id="nav-system">
+                        <i class="fas fa-server"></i> 
+                        <span class="d-lg-inline d-none">系统设置</span>
                     </a>
                 </li>
             </ul>
             
+            <!-- 右侧用户菜单 -->
             <ul class="navbar-nav">
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-shield"></i> {{ current_user.username }}
+                <!-- 快捷操作 -->
+                <li class="nav-item">
+                    <a class="nav-link" href="/" title="前台首页">
+                        <i class="fas fa-home"></i>
+                        <span class="d-lg-inline d-none">前台</span>
                     </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="/profile"><i class="fas fa-user"></i> 个人资料</a></li>
-                        <li><a class="dropdown-item" href="/"><i class="fas fa-home"></i> 前台首页</a></li>
+                </li>
+                
+                <!-- 用户下拉菜单 -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" 
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user-shield"></i>
+                        <span id="currentUsername">{{ current_user.username if current_user else 'Guest' }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <!-- 用户信息 -->
+                        <li>
+                            <h6 class="dropdown-header">
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar-small me-2">
+                                        {{ current_user.username[0].upper() if current_user else 'G' }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ current_user.username if current_user else 'Guest' }}</div>
+                                        <small class="text-muted">{{ current_user.role.value if current_user else 'No Role' }}</small>
+                                    </div>
+                                </div>
+                            </h6>
+                        </li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt"></i> 退出登录</a></li>
+                        
+                        <!-- 菜单项 -->
+                        <li>
+                            <a class="dropdown-item" href="/profile">
+                                <i class="fas fa-user"></i> 个人资料
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="/settings">
+                                <i class="fas fa-cog"></i> 账户设置
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        
+                        <!-- 退出登录 -->
+                        <li>
+                            <a class="dropdown-item text-danger" href="#" onclick="logout()" id="logoutBtn">
+                                <i class="fas fa-sign-out-alt"></i> 退出登录
+                            </a>
+                        </li>
                     </ul>
                 </li>
             </ul>
         </div>
     </div>
 </nav>
+
+<!-- 导航栏样式 -->
+<style>
+.user-avatar-small {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.navbar-nav .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 0.25rem;
+}
+
+.dropdown-header {
+    padding: 0.75rem 1rem;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.dropdown-item.text-danger:hover {
+    background-color: #f8d7da;
+    color: #721c24 !important;
+}
+
+@media (max-width: 991px) {
+    .navbar-nav .nav-link {
+        padding: 0.75rem 1rem;
+    }
+    
+    .dropdown-menu {
+        position: static !important;
+        float: none;
+        width: auto;
+        margin-top: 0;
+        background-color: transparent;
+        border: 0;
+        box-shadow: none;
+    }
+    
+    .dropdown-item {
+        color: rgba(255, 255, 255, 0.75);
+    }
+    
+    .dropdown-item:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+}
+</style>
+
+<!-- 导航栏JavaScript -->
+<script>
+// 设置当前页面的导航高亮
+document.addEventListener('DOMContentLoaded', function() {
+    setActiveNavigation();
+    checkUserRole();
+});
+
+function setActiveNavigation() {
+    const currentPath = window.location.pathname;
+    const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+    
+    // 移除所有active类
+    navLinks.forEach(link => link.classList.remove('active'));
+    
+    // 根据当前路径设置active类
+    const pathToNavMap = {
+        '/admin': 'nav-dashboard',
+        '/admin/images': 'nav-images',
+        '/admin/users': 'nav-users',
+        '/admin/system': 'nav-system'
+    };
+    
+    const activeNavId = pathToNavMap[currentPath];
+    if (activeNavId) {
+        const activeNav = document.getElementById(activeNavId);
+        if (activeNav) {
+            activeNav.classList.add('active');
+        }
+    }
+}
+
+async function checkUserRole() {
+    try {
+        const response = await fetch('/api/auth/check');
+        const data = await response.json();
+        
+        if (data.authenticated && data.user) {
+            // 更新用户名显示
+            const usernameElement = document.getElementById('currentUsername');
+            if (usernameElement) {
+                usernameElement.textContent = data.user.username;
+            }
+            
+            // 根据用户角色显示/隐藏系统设置
+            const systemNavItem = document.getElementById('nav-system-item');
+            if (systemNavItem) {
+                if (data.user.role === 'admin') {
+                    systemNavItem.style.display = 'block';
+                } else {
+                    systemNavItem.style.display = 'none';
+                }
+            }
+        }
+    } catch (error) {
+        console.error('检查用户角色失败:', error);
+    }
+}
+
+// 退出登录函数
+async function logout() {
+    if (!confirm('确定要退出登录吗？')) {
+        return;
+    }
+    
+    try {
+        // 显示加载状态
+        const logoutBtn = document.getElementById('logoutBtn');
+        const originalText = logoutBtn.innerHTML;
+        logoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 退出中...';
+        logoutBtn.style.pointerEvents = 'none';
+        
+        const response = await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // 显示成功消息
+            showLogoutSuccess('退出登录成功');
+            
+            // 清除本地存储的用户信息
+            localStorage.removeItem('user_info');
+            sessionStorage.removeItem('user_info');
+            
+            // 延迟跳转到登录页面
+            setTimeout(() => {
+                window.location.href = '/login?message=' + encodeURIComponent('已退出登录');
+            }, 1000);
+        } else {
+            throw new Error(result.message || '退出登录失败');
+        }
+    } catch (error) {
+        console.error('退出登录失败:', error);
+        showLogoutError('退出登录失败: ' + error.message);
+        
+        // 恢复按钮状态
+        const logoutBtn = document.getElementById('logoutBtn');
+        logoutBtn.innerHTML = originalText;
+        logoutBtn.style.pointerEvents = 'auto';
+    }
+}
+
+// 显示退出成功消息
+function showLogoutSuccess(message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
+    alertDiv.innerHTML = `
+        <i class="fas fa-check-circle"></i> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 3000);
+}
+
+// 显示退出错误消息
+function showLogoutError(message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
+    alertDiv.innerHTML = `
+        <i class="fas fa-exclamation-triangle"></i> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 5000);
+}
+</script>
