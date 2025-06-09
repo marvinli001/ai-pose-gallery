@@ -5,6 +5,7 @@ import os
 import uuid
 import asyncio
 from typing import Optional, Tuple, Dict, Any
+from typing import Optional, Tuple, Dict, Any, List
 from pathlib import Path
 from PIL import Image
 import aiofiles
@@ -164,6 +165,41 @@ class OSSStorageService(StorageService):
             print(f"❌ 生成OSS签名URL失败: {e}")
             return self.get_file_url(oss_key)
 
+    async def list_objects(self, prefix: str = "", max_keys: int = 1000) -> List[Dict[str, Any]]:
+        """列出OSS存储桶中的对象"""
+        try:
+            def _list_objects():
+                return self.bucket.list_objects_v2(prefix=prefix, max_keys=max_keys)
+            
+            result = await asyncio.get_event_loop().run_in_executor(None, _list_objects)
+            
+            objects = []
+            for obj in result.object_list:
+                # 只返回图片文件
+                if any(obj.key.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp']):
+                    objects.append({
+                        'key': obj.key,
+                        'size': obj.size,
+                        'last_modified': obj.last_modified,
+                        'etag': obj.etag
+                    })
+            
+            return objects
+        except Exception as e:
+            print(f"❌ 列出OSS对象失败: {e}")
+            return []
+
+    async def get_object_content(self, oss_key: str) -> bytes:
+        """获取OSS对象内容"""
+        try:
+            def _get_object():
+                return self.bucket.get_object(oss_key)
+            
+            result = await asyncio.get_event_loop().run_in_executor(None, _get_object)
+            return result.read()
+        except Exception as e:
+            print(f"❌ 获取OSS对象内容失败: {e}")
+            return b""
 
 class S3StorageService(StorageService):
     """AWS S3存储服务"""

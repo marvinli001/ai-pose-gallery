@@ -664,6 +664,35 @@ async def scan_directory_task(directory_path: str, uploader: str, auto_analyze: 
     
     print(f"📁 目录扫描完成 - 导入: {imported_count}, 跳过: {skipped_count}")
 
+@router.post("/scan-oss")
+async def scan_oss_directory(
+    background_tasks: BackgroundTasks,
+    oss_prefix: str = Query("", description="OSS前缀路径"),
+    auto_analyze: bool = Query(True, description="是否自动分析新图片"),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """扫描OSS存储桶并导入新图片"""
+    try:
+        # 检查OSS是否启用
+        if not get_settings().use_oss_storage:
+            raise HTTPException(status_code=400, detail="OSS存储未启用")
+        
+        # 启动OSS扫描任务
+        background_tasks.add_task(
+            scan_oss_task,
+            oss_prefix,
+            current_user.username,
+            auto_analyze
+        )
+        
+        return {
+            "success": True,
+            "message": f"已启动OSS扫描任务: {oss_prefix or '根目录'}"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"启动OSS扫描失败: {str(e)}")
 
 @router.get("/users")
 async def get_admin_users(
