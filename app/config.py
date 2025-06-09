@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     mysql_user: str = "root"
     mysql_password: str = "password"
     mysql_database: str = "ai_pose_gallery"
+
+    # Redis配置（添加这部分）
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_password: str = ""
+    redis_db: int = 0
     
     # OpenAI GPT-4o 配置
     openai_api_key: str = ""
