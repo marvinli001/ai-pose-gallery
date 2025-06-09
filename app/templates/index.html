@@ -3,74 +3,614 @@
 {% block title %}AI姿势参考图库 - 智能姿势搜索{% endblock %}
 
 {% block content %}
-<div class="hero-section">
+<style>
+/* 全新Hero区域样式 */
+.hero-section-new {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.hero-section-new::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%);
+    z-index: 1;
+}
+
+.hero-section-new .container {
+    position: relative;
+    z-index: 2;
+}
+
+/* 左侧内容样式 */
+.hero-content {
+    color: white;
+    padding-right: 2rem;
+}
+
+.hero-badge {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+}
+
+.badge-text {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.5rem 1.5rem;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.hero-title-new {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.title-accent {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: 0.5rem;
+}
+
+.hero-description {
+    font-size: 1.2rem;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.95);
+    margin-bottom: 2.5rem;
+}
+
+.hero-description strong {
+    color: #fff;
+    font-weight: 600;
+}
+
+/* 按钮样式 */
+.hero-actions {
+    margin-bottom: 3rem;
+}
+
+.btn-primary-new {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    border: none;
+    color: white;
+    padding: 1rem 2.5rem;
+    font-weight: 600;
+    border-radius: 50px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 30px rgba(255, 107, 107, 0.3);
+}
+
+.btn-primary-new:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(255, 107, 107, 0.4);
+    background: linear-gradient(135deg, #ff5252 0%, #d63031 100%);
+}
+
+.btn-outline-new {
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    color: white;
+    padding: 1rem 2.5rem;
+    font-weight: 600;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.btn-outline-new:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: white;
+    color: white;
+    transform: translateY(-3px);
+}
+
+/* 统计数据样式 */
+.hero-stats-new {
+    display: flex;
+    gap: 3rem;
+    margin-top: 2rem;
+}
+
+.stat-item-new {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: white;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+}
+
+/* 右侧功能展示 */
+.features-showcase-new {
+    position: relative;
+    padding: 2rem;
+}
+
+.feature-card-new {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 2rem;
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card-new::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+.feature-primary::before {
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+.feature-secondary::before {
+    background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+}
+
+.feature-card-new:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.15);
+}
+
+.feature-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.feature-secondary .feature-icon {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    box-shadow: 0 10px 30px rgba(245, 87, 108, 0.3);
+}
+
+.feature-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    line-height: 1.3;
+}
+
+.feature-desc {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: #5a6c7d;
+    margin-bottom: 1.5rem;
+}
+
+.feature-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tag {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    color: #495057;
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid #dee2e6;
+}
+
+.search-demo {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 1rem 1.5rem;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border: 1px solid #dee2e6;
+    margin-top: 1rem;
+}
+
+.search-demo i {
+    color: #6c757d;
+}
+
+.search-demo span {
+    color: #495057;
+    font-weight: 500;
+}
+
+/* 装饰元素 */
+.floating-elements {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.float-element {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    animation: float 6s ease-in-out infinite;
+}
+
+.float-1 {
+    width: 100px;
+    height: 100px;
+    top: 10%;
+    right: 10%;
+    animation-delay: 0s;
+}
+
+.float-2 {
+    width: 60px;
+    height: 60px;
+    top: 60%;
+    right: 80%;
+    animation-delay: 2s;
+}
+
+.float-3 {
+    width: 80px;
+    height: 80px;
+    top: 80%;
+    right: 20%;
+    animation-delay: 4s;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translateY(-20px) rotate(180deg);
+        opacity: 0.8;
+    }
+}
+
+/* 响应式设计 */
+@media (max-width: 992px) {
+    .hero-title-new {
+        font-size: 2.8rem;
+    }
+    
+    .title-accent {
+        font-size: 1.3rem;
+    }
+    
+    .hero-description {
+        font-size: 1.1rem;
+    }
+    
+    .features-showcase-new {
+        margin-top: 3rem;
+        padding: 1rem;
+    }
+    
+    .hero-stats-new {
+        gap: 2rem;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-section-new {
+        min-height: 90vh;
+        padding: 2rem 0;
+    }
+    
+    .hero-content {
+        text-align: center;
+        padding-right: 0;
+        margin-bottom: 2rem;
+    }
+    
+    .hero-title-new {
+        font-size: 2.2rem;
+    }
+    
+    .title-accent {
+        font-size: 1.1rem;
+    }
+    
+    .hero-description {
+        font-size: 1rem;
+    }
+    
+    .hero-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center;
+    }
+    
+    .btn-primary-new,
+    .btn-outline-new {
+        width: 80%;
+        max-width: 300px;
+    }
+    
+    .hero-stats-new {
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+    }
+    
+    .feature-card-new {
+        padding: 2rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+    
+    .feature-title {
+        font-size: 1.3rem;
+    }
+    
+    .feature-desc {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .hero-title-new {
+        font-size: 1.8rem;
+    }
+    
+    .title-accent {
+        font-size: 1rem;
+    }
+    
+    .hero-description {
+        font-size: 0.95rem;
+    }
+    
+    .btn-primary-new,
+    .btn-outline-new {
+        width: 100%;
+        padding: 0.8rem 2rem;
+        font-size: 0.9rem;
+    }
+    
+    .hero-stats-new {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .stat-item-new {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 1.8rem;
+        margin-bottom: 0;
+    }
+    
+    .feature-card-new {
+        padding: 1.5rem;
+    }
+    
+    .feature-tags {
+        justify-content: center;
+    }
+    
+    .search-demo {
+        padding: 0.8rem 1.2rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* 暗色模式适配 */
+@media (prefers-color-scheme: dark) {
+    .feature-card-new {
+        background: rgba(30, 30, 30, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .feature-title {
+        color: #f8f9fa;
+    }
+    
+    .feature-desc {
+        color: #adb5bd;
+    }
+    
+    .tag {
+        background: rgba(52, 58, 64, 0.8);
+        color: #adb5bd;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .search-demo {
+        background: rgba(52, 58, 64, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .search-demo span {
+        color: #adb5bd;
+    }
+}
+
+/* 高性能动画 */
+.feature-card-new,
+.btn-primary-new,
+.btn-outline-new {
+    will-change: transform;
+}
+
+/* 无障碍支持 */
+@media (prefers-reduced-motion: reduce) {
+    .feature-card-new,
+    .btn-primary-new,
+    .btn-outline-new,
+    .float-element {
+        animation: none;
+        transition: none;
+    }
+    
+    .feature-card-new:hover,
+    .btn-primary-new:hover,
+    .btn-outline-new:hover {
+        transform: none;
+    }
+}
+
+/* 打印样式 */
+@media print {
+    .hero-section-new {
+        background: white;
+        color: black;
+        min-height: auto;
+    }
+    
+    .feature-card-new {
+        background: white;
+        border: 1px solid #ddd;
+        box-shadow: none;
+    }
+    
+    .floating-elements {
+        display: none;
+    }
+}
+</style>
+<!-- 全新设计的Hero区域 -->
+<div class="hero-section-new">
     <div class="container py-5">
-        <div class="row align-items-center">
-            <div class="col-lg-6">
-                <h1 class="display-4 fw-bold hero-title mb-4">
-                    AI姿势参考图库
-                </h1>
-                <p class="lead hero-subtitle mb-4">
-                    为插画师、摄影师、设计师量身打造的智能姿势参考库。
-                    使用GPT-4o进行图像分析，支持自然语言搜索。
-                </p>
-                <div class="d-flex gap-3 mb-4">
-                    <a href="/upload" class="btn btn-light btn-lg shadow">
-                        <i class="fas fa-upload"></i> 上传图片
-                    </a>
-                    <a href="#search-section" class="btn btn-outline-light btn-lg">
-                        <i class="fas fa-search"></i> 开始搜索
-                    </a>
+        <div class="row align-items-center min-vh-70">
+            <!-- 左侧主要内容 -->
+            <div class="col-lg-6 hero-content">
+                <div class="hero-badge mb-3">
+                    <span class="badge-text">AI驱动的智能图库</span>
                 </div>
-                <div class="row text-center hero-stats">
-                    <div class="col-4">
-                        <div class="stat-item">
-                            <h3 class="hero-stat-number" id="totalImages">-</h3>
-                            <small class="hero-stat-label">张图片</small>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="stat-item">
-                            <h3 class="hero-stat-number" id="totalTags">-</h3>
-                            <small class="hero-stat-label">个标签</small>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="stat-item">
-                            <h3 class="hero-stat-number" id="totalSearches">-</h3>
-                            <small class="hero-stat-label">次搜索</small>
-                        </div>
-                    </div>
+                <h1 class="hero-title-new mb-4">
+                    AI姿势参考图库
+                    <span class="title-accent">让创作更简单</span>
+                </h1>
+                <p class="hero-description mb-4">
+                    为插画师、摄影师、设计师量身打造的智能姿势参考库。
+                    <strong>使用GPT-4o进行图像分析，支持自然语言搜索。</strong>
+                </p>
+                
+                <!-- 行动按钮 -->
+                <div class="hero-actions mb-5">
+                    <a href="/upload" class="btn btn-primary-new btn-lg me-3">
+                        <i class="fas fa-upload me-2"></i>
+                        立即上传
+                    </a>
+                    <a href="#search-section" class="btn btn-outline-new btn-lg">
+                        <i class="fas fa-search me-2"></i>
+                        开始搜索
+                    </a>
                 </div>
             </div>
+            
+            <!-- 右侧功能展示 -->
             <div class="col-lg-6">
-                <div class="feature-showcase">
-                    <!-- 功能卡片1 - GPT-4o智能分析 -->
-                    <div class="card shadow-lg border-0 feature-card">
-                        <div class="card-body p-4">
-                            <h5 class="feature-card-title">
-                                <i class="fas fa-robot text-primary"></i> 
-                                GPT-4o智能分析
-                            </h5>
-                            <p class="feature-card-text">
+                <div class="features-showcase-new">
+                    <!-- AI分析功能卡片 -->
+                    <div class="feature-card-new feature-primary">
+                        <div class="feature-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3 class="feature-title">GPT-4o智能分析</h3>
+                            <p class="feature-desc">
                                 自动识别姿势、表情、场景、光线、角度等特征，
                                 生成精准的标签和描述。
                             </p>
+                            <div class="feature-tags">
+                                <span class="tag">姿势识别</span>
+                                <span class="tag">表情分析</span>
+                                <span class="tag">场景理解</span>
+                            </div>
                         </div>
                     </div>
                     
-                    <!-- 功能卡片2 - 自然语言搜索 -->
-                    <div class="card shadow-lg border-0 mt-3 feature-card">
-                        <div class="card-body p-4">
-                            <h5 class="feature-card-title">
-                                <i class="fas fa-comments text-success"></i> 
-                                自然语言搜索
-                            </h5>
-                            <p class="feature-card-text">
+                    <!-- 搜索功能卡片 -->
+                    <div class="feature-card-new feature-secondary">
+                        <div class="feature-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3 class="feature-title">自然语言搜索</h3>
+                            <p class="feature-desc">
                                 支持"女性坐姿室内"、"男性站立户外"等
                                 自然语言查询方式。
                             </p>
+                            <div class="feature-example">
+                                <div class="search-demo">
+                                    <i class="fas fa-search"></i>
+                                    <span>"女性思考姿势"</span>
+                                </div>
+                            </div>
                         </div>
+                    </div>
+                    
+                    <!-- 装饰元素 -->
+                    <div class="floating-elements">
+                        <div class="float-element float-1"></div>
+                        <div class="float-element float-2"></div>
+                        <div class="float-element float-3"></div>
                     </div>
                 </div>
             </div>
@@ -201,322 +741,7 @@
 {% endblock %}
 
 {% block styles %}
-<style>
-/* 修复首页文字颜色和对比度 */
-.hero-section {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    min-height: 70vh;
-    display: flex;
-    align-items: center;
-    position: relative;
-}
 
-/* Hero区域文字颜色 - 排除功能卡片 */
-.hero-section .hero-title,
-.hero-section .hero-subtitle,
-.hero-section .hero-stat-number,
-.hero-section .hero-stat-label,
-.hero-section .btn {
-    color: white !important;
-}
-
-.hero-stats {
-    margin-top: 2rem;
-}
-
-.hero-stat-number {
-    font-weight: 700;
-    font-size: 2rem;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-}
-
-.hero-stat-label {
-    color: rgba(255,255,255,0.9) !important;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-}
-
-/* ===== 功能卡片样式 - 简化版 ===== */
-.feature-showcase .feature-card {
-    background: white !important;
-    border: none !important;
-    transform: translateY(0);
-    transition: transform 0.3s ease;
-}
-
-.feature-showcase .feature-card:hover {
-    transform: translateY(-5px);
-}
-
-/* 功能卡片内所有文字强制深色 */
-.feature-card,
-.feature-card *,
-.feature-card .card-body,
-.feature-card .card-body *,
-.feature-card h5,
-.feature-card p,
-.feature-card .feature-card-title,
-.feature-card .feature-card-text {
-    color: #333 !important;
-}
-
-/* 功能卡片描述文字 */
-.feature-card .feature-card-text {
-    color: #555 !important;
-}
-
-/* 图标颜色保持 */
-.feature-card .text-primary {
-    color: #0d6efd !important;
-}
-
-.feature-card .text-success {
-    color: #198754 !important;
-}
-
-/* 按钮样式 */
-.btn-light {
-    background-color: white;
-    border-color: white;
-    color: #333 !important;
-    font-weight: 600;
-}
-
-.btn-light:hover {
-    background-color: rgba(255,255,255,0.9);
-    color: #333 !important;
-}
-
-.btn-outline-light {
-    border-color: white;
-    color: white !important;
-    font-weight: 600;
-}
-
-.btn-outline-light:hover {
-    background-color: white;
-    color: #333 !important;
-}
-
-/* 搜索区域样式 */
-.section-title {
-    color: #333 !important;
-    font-weight: 600;
-    margin-bottom: 2rem;
-}
-
-.search-container {
-    position: relative;
-}
-
-.search-input {
-    border: 2px solid #e9ecef;
-    font-size: 1rem;
-    padding: 1rem;
-    color: #333 !important;
-}
-
-.search-input:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.25);
-}
-
-.search-input::placeholder {
-    color: #6c757d !important;
-}
-
-.search-btn {
-    padding: 1rem 2rem;
-    font-weight: 600;
-}
-
-.suggestions-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: white;
-    border: 1px solid #ddd;
-    border-top: none;
-    border-radius: 0 0 0.375rem 0.375rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    z-index: 1000;
-    max-height: 200px;
-    overflow-y: auto;
-    display: none;
-}
-
-.suggestion-item {
-    padding: 0.75rem 1rem;
-    cursor: pointer;
-    border-bottom: 1px solid #eee;
-    color: #333 !important;
-}
-
-.suggestion-item:hover {
-    background-color: #f8f9fa;
-}
-
-/* 热门搜索样式 */
-.popular-title {
-    color: #666 !important;
-    font-weight: 600;
-}
-
-.popular-searches .badge {
-    cursor: pointer;
-    transition: transform 0.2s ease;
-    background-color: #0d6efd !important;
-    color: white !important;
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
-}
-
-.popular-searches .badge:hover {
-    transform: scale(1.05);
-    background-color: #0b5ed7 !important;
-}
-
-/* 高级搜索样式 */
-.advanced-toggle {
-    color: #666 !important;
-    text-decoration: none;
-}
-
-.advanced-toggle:hover {
-    color: #0d6efd !important;
-}
-
-.advanced-card {
-    border: 2px solid #e9ecef;
-    background: white !important;
-}
-
-.filter-label {
-    color: #333 !important;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-.filter-select {
-    border: 1px solid #ced4da;
-    color: #333 !important;
-    background: white !important;
-}
-
-.filter-select:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.25);
-}
-
-.advanced-apply {
-    padding: 0.75rem 2rem;
-    font-weight: 600;
-}
-
-/* 搜索结果样式 */
-.results-title {
-    color: #333 !important;
-    font-weight: 600;
-}
-
-.results-container.grid-view .image-card {
-    margin-bottom: 2rem;
-}
-
-.results-container.list-view .image-card {
-    margin-bottom: 1rem;
-}
-
-.image-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    cursor: pointer;
-    background: white !important;
-}
-
-.image-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.image-thumbnail {
-    width: 100%;
-    height: 250px;
-    object-fit: cover;
-    border-radius: 0.375rem;
-}
-
-.confidence-badge {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    font-size: 0.75rem;
-}
-
-/* 文字颜色确保可读性 */
-.card-text {
-    color: #666 !important;
-}
-
-.card-title {
-    color: #333 !important;
-}
-
-.text-muted {
-    color: #6c757d !important;
-}
-
-.badge.bg-secondary {
-    background-color: #6c757d !important;
-    color: white !important;
-}
-
-.badge.bg-light {
-    background-color: #f8f9fa !important;
-    color: #333 !important;
-}
-
-/* 加载动画 */
-.loading-skeleton {
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-}
-
-@keyframes loading {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-}
-
-/* 响应式优化 */
-@media (max-width: 768px) {
-    .hero-section {
-        min-height: 60vh;
-        text-align: center;
-    }
-    
-    .hero-title {
-        font-size: 2.5rem;
-    }
-    
-    .hero-subtitle {
-        font-size: 1rem;
-    }
-    
-    .feature-showcase {
-        margin-top: 3rem;
-    }
-    
-    .search-input {
-        font-size: 0.9rem;
-        padding: 0.8rem;
-    }
-    
-    .search-btn {
-        padding: 0.8rem 1.5rem;
-    }
-}
-</style>
 {% endblock %}
 
 {% block scripts %}
