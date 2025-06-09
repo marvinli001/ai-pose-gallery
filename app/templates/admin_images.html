@@ -11,137 +11,608 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <style>
+        /* ===== 全局样式 ===== */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+            --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --danger-gradient: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            --shadow-light: 0 2px 10px rgba(0,0,0,0.1);
+            --shadow-medium: 0 5px 20px rgba(0,0,0,0.15);
+            --shadow-heavy: 0 10px 30px rgba(0,0,0,0.2);
+            --border-radius: 15px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            background-color: #f8f9fa;
-        }
-        
-        .admin-header {
-            background: white;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .filter-section {
-            background: white;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border-radius: 1rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .stats-cards {
-            margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            background: white;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .batch-actions-bar {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1rem;
-            border-radius: 1rem;
-            margin-bottom: 1.5rem;
-            display: none;
+            min-height: 100vh;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #2c3e50;
         }
-        
-        .table-container {
-            background: white;
-            border-radius: 1rem;
+
+        /* ===== 容器布局 ===== */
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            margin: 20px;
             overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-heavy);
+            min-height: calc(100vh - 40px);
         }
-        
+
+        /* ===== 页面头部 ===== */
+        .admin-header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 2.5rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .admin-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1.5" fill="white" opacity="0.08"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.12"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        }
+
+        .admin-header .row {
+            position: relative;
+            z-index: 2;
+        }
+
+        .admin-header h1 {
+            font-weight: 700;
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .admin-header p {
+            opacity: 0.85;
+            font-size: 1.1rem;
+        }
+
+        /* ===== 统计卡片 ===== */
+        .stats-cards {
+            padding: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--shadow-medium);
+            transition: var(--transition);
+            height: 100%;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-gradient);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.2);
+        }
+
+        .stat-card .fa-2x {
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 0.5rem 0;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== 筛选区域 ===== */
+        .filter-section {
+            background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+            padding: 2rem;
+            margin: 0 2rem 2rem;
+            border-radius: 20px;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        /* ===== 批量操作栏 ===== */
+        .batch-actions-bar {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 1.5rem 2rem;
+            margin: 0 2rem 2rem;
+            border-radius: 20px;
+            display: none;
+            box-shadow: var(--shadow-medium);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .batch-actions-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255,255,255,0.05) 10px,
+                rgba(255,255,255,0.05) 20px
+            );
+        }
+
+        .batch-actions-bar .row {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===== 表格容器 ===== */
+        .table-container {
+            background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+            border-radius: 20px;
+            margin: 0 2rem 2rem;
+            overflow: hidden;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .table {
+            margin: 0;
+        }
+
+        .table thead {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .table th {
+            border: none;
+            padding: 1.2rem 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.85rem;
+        }
+
+        .table td {
+            border: none;
+            padding: 1rem;
+            vertical-align: middle;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .table tbody tr {
+            transition: var(--transition);
+        }
+
+        .table tbody tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+            transform: scale(1.01);
+        }
+
+        .selected-row {
+            background: rgba(255, 193, 7, 0.15) !important;
+            border-left: 4px solid #ffc107;
+        }
+
+        /* ===== 图片缩略图 ===== */
         .image-thumbnail {
             width: 80px;
             height: 80px;
             object-fit: cover;
-            border-radius: 0.5rem;
+            border-radius: 12px;
             cursor: pointer;
-            transition: transform 0.2s ease;
+            transition: var(--transition);
+            box-shadow: var(--shadow-light);
+            border: 2px solid rgba(102, 126, 234, 0.1);
         }
-        
+
         .image-thumbnail:hover {
-            transform: scale(1.1);
+            transform: scale(1.15) rotate(2deg);
+            box-shadow: var(--shadow-medium);
+            border-color: #667eea;
         }
-        
+
+        /* ===== 状态徽章 ===== */
         .status-badge {
-            padding: 0.4rem 0.8rem;
-            border-radius: 1rem;
-            font-size: 0.75rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
         }
-        
-        .status-pending { background: #fff3cd; color: #856404; }
-        .status-completed { background: #d4edda; color: #155724; }
-        .status-failed { background: #f8d7da; color: #721c24; }
-        
+
+        .status-pending { 
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7); 
+            color: #856404; 
+        }
+
+        .status-completed { 
+            background: linear-gradient(135deg, #d4edda, #a8e6cf); 
+            color: #155724; 
+        }
+
+        .status-failed { 
+            background: linear-gradient(135deg, #f8d7da, #fab1a0); 
+            color: #721c24; 
+        }
+
+        /* ===== 置信度条 ===== */
         .confidence-bar {
             height: 8px;
-            background: #e9ecef;
-            border-radius: 4px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
             overflow: hidden;
+            margin: 0.5rem 0;
         }
-        
+
         .confidence-fill {
             height: 100%;
-            transition: width 0.3s ease;
+            border-radius: 10px;
+            transition: width 0.5s ease;
         }
-        
+
+        .bg-success { background: var(--success-gradient) !important; }
+        .bg-warning { background: var(--warning-gradient) !important; }
+        .bg-danger { background: var(--danger-gradient) !important; }
+
+        /* ===== 标签云 ===== */
         .tag-cloud .badge {
             margin: 0.2rem;
             font-size: 0.75rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            transition: var(--transition);
         }
-        
+
+        .tag-cloud .badge:hover {
+            transform: scale(1.1);
+        }
+
+        /* ===== 操作按钮 ===== */
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
         .action-buttons .btn {
-            margin: 0.2rem 0;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+            transition: var(--transition);
+            border: 2px solid;
         }
-        
-        .selected-row {
-            background-color: rgba(255, 193, 7, 0.1) !important;
+
+        .action-buttons .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
-        
+
+        /* ===== 按钮样式 ===== */
+        .btn {
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: var(--transition);
+            border: none;
+            position: relative;
+            overflow: hidden;
+            font-size: 0.95rem;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: var(--success-gradient);
+            box-shadow: 0 4px 15px rgba(86, 171, 47, 0.3);
+        }
+
+        .btn-info {
+            background: var(--info-gradient);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn-warning {
+            background: var(--warning-gradient);
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+        }
+
+        .btn-danger {
+            background: var(--danger-gradient);
+            box-shadow: 0 4px 15px rgba(255, 65, 108, 0.3);
+        }
+
+        .btn-light {
+            background: rgba(255,255,255,0.9);
+            color: #2c3e50;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-outline-light {
+            border: 2px solid rgba(255,255,255,0.8);
+            color: white;
+            background: transparent;
+        }
+
+        .btn-outline-light:hover {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        /* ===== 表单控件 ===== */
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 2px solid rgba(0,0,0,0.1);
+            padding: 0.75rem 1rem;
+            transition: var(--transition);
+            background: rgba(255,255,255,0.9);
+            font-size: 0.95rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            background: white;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        /* ===== 分页 ===== */
+        .pagination {
+            margin: 0;
+        }
+
+        .page-link {
+            border: none;
+            color: #667eea;
+            padding: 0.75rem 1rem;
+            margin: 0 0.2rem;
+            border-radius: 12px;
+            transition: var(--transition);
+            font-weight: 600;
+        }
+
+        .page-link:hover {
+            background: var(--primary-gradient);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .page-item.active .page-link {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: var(--shadow-light);
+        }
+
+        /* ===== 模态框 ===== */
+        .modal-content {
+            border-radius: 20px;
+            border: none;
+            box-shadow: var(--shadow-heavy);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 1.5rem 2rem;
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .modal-footer {
+            border: none;
+            padding: 1.5rem 2rem;
+            background: rgba(0,0,0,0.02);
+        }
+
+        .btn-close-white {
+            filter: brightness(0) invert(1);
+        }
+
+        /* ===== 加载遮罩 ===== */
         .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.8);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 9999;
             display: none;
+            backdrop-filter: blur(10px);
         }
-        
+
         .loading-content {
             background: white;
-            padding: 2rem;
-            border-radius: 1rem;
+            padding: 3rem;
+            border-radius: 20px;
             text-align: center;
+            box-shadow: var(--shadow-heavy);
+            animation: loadingPulse 2s ease-in-out infinite;
         }
-        
+
+        @keyframes loadingPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* ===== 通知样式 ===== */
+        .alert {
+            border-radius: var(--border-radius);
+            border: none;
+            padding: 1rem 1.5rem;
+            font-weight: 500;
+            box-shadow: var(--shadow-light);
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #d4edda, #a8e6cf);
+            color: #155724;
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, #f8d7da, #fab1a0);
+            color: #721c24;
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, #cce7ff, #a8d8ea);
+            color: #0c5460;
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            color: #856404;
+        }
+
+        /* ===== 图表容器 ===== */
+        .chart-container {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-light);
+            margin-bottom: 1rem;
+        }
+
+        /* ===== 徽章样式 ===== */
+        .badge {
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+        }
+
+        .badge.bg-success {
+            background: var(--success-gradient) !important;
+        }
+
+        .badge.bg-danger {
+            background: var(--danger-gradient) !important;
+        }
+
+        .badge.bg-primary {
+            background: var(--primary-gradient) !important;
+        }
+
+        .badge.bg-warning {
+            background: var(--warning-gradient) !important;
+        }
+
+        .badge.bg-info {
+            background: var(--info-gradient) !important;
+        }
+
+        /* ===== 响应式设计 ===== */
         @media (max-width: 768px) {
-            .admin-header h1 {
-                font-size: 1.5rem;
+            .main-container {
+                margin: 10px;
+                border-radius: 20px;
             }
             
-            .filter-section .row > div {
+            .admin-header {
+                padding: 2rem 1.5rem;
+            }
+            
+            .admin-header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .stats-cards, .filter-section, .batch-actions-bar, .table-container {
+                margin-left: 1rem;
+                margin-right: 1rem;
+                padding: 1.5rem;
+            }
+            
+            .stat-card {
+                padding: 1.5rem;
                 margin-bottom: 1rem;
+            }
+            
+            .stat-number {
+                font-size: 2rem;
             }
             
             .table-responsive {
@@ -151,84 +622,207 @@
             .action-buttons {
                 min-width: 100px;
             }
+
+            .action-buttons .btn {
+                font-size: 0.7rem;
+                padding: 0.3rem 0.6rem;
+            }
+        }
+
+        /* ===== 滚动条样式 ===== */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-gradient);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #5a67d8, #6b46c1);
+        }
+
+        /* ===== 动画增强 ===== */
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== 特殊效果 ===== */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .glow-effect {
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* ===== 工具提示 ===== */
+        [data-tooltip] {
+            position: relative;
+            cursor: help;
+        }
+
+        [data-tooltip]::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        [data-tooltip]:hover::after {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-5px);
         }
     </style>
 </head>
 <body>
     <!-- 顶部导航 -->
-{% include "components/admin_nav.html" %}
+    {% include "components/admin_nav.html" %}
 
-    <div class="container-fluid py-4">
+    <div class="main-container animate-fade-in">
         <!-- 页面标题 -->
         <div class="admin-header">
             <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h1 class="mb-0">
-                        <i class="fas fa-images text-primary"></i> 图片管理
+                <div class="col-md-8">
+                    <h1>
+                        <i class="fas fa-images me-3"></i>图片管理中心
                     </h1>
-                    <p class="text-muted mb-0">管理和分析系统中的所有图片</p>
+                    <p class="mb-0">智能管理和分析系统中的所有图片资源 · 批量操作 · 数据洞察</p>
                 </div>
-                <div class="col-md-6 text-end">
-                    <button class="btn btn-primary" onclick="refreshData()">
-                        <i class="fas fa-sync-alt"></i> 刷新数据
-                    </button>
-                    <button class="btn btn-success" onclick="showAnalytics()">
-                        <i class="fas fa-chart-bar"></i> 数据分析
-                    </button>
+                <div class="col-md-4 text-end">
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-light" onclick="refreshData()" data-tooltip="刷新所有数据">
+                            <i class="fas fa-sync-alt me-2"></i>刷新数据
+                        </button>
+                        <button class="btn btn-success" onclick="showAnalytics()" data-tooltip="查看详细分析">
+                            <i class="fas fa-chart-bar me-2"></i>数据分析
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 统计卡片 -->
-        <div class="row stats-cards">
-            <div class="col-xl-3 col-md-6 mb-3">
-                <div class="stat-card">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-images fa-2x text-primary"></i>
-                        </div>
-                        <div class="ms-3">
-                            <div class="text-muted small">总图片数</div>
-                            <h4 class="mb-0" id="totalImages">-</h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-md-6 mb-3">
-                <div class="stat-card">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-check-circle fa-2x text-success"></i>
-                        </div>
-                        <div class="ms-3">
-                            <div class="text-muted small">已分析</div>
-                            <h4 class="mb-0" id="completedImages">-</h4>
+        <div class="stats-cards">
+            <div class="row">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="stat-card animate-slide-up">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stat-label">总图片数</div>
+                                <div class="stat-number" id="totalImages">-</div>
+                                <div class="small text-muted">
+                                    <i class="fas fa-database me-1"></i>
+                                    系统中的所有图片
+                                </div>
+                            </div>
+                            <div>
+                                <i class="fas fa-images fa-2x"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-xl-3 col-md-6 mb-3">
-                <div class="stat-card">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-clock fa-2x text-warning"></i>
-                        </div>
-                        <div class="ms-3">
-                            <div class="text-muted small">待处理</div>
-                            <h4 class="mb-0" id="pendingImages">-</h4>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="stat-card animate-slide-up" style="animation-delay: 0.1s;">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stat-label">已分析</div>
+                                <div class="stat-number" id="completedImages">-</div>
+                                <div class="small text-success">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    AI分析完成
+                                </div>
+                            </div>
+                            <div>
+                                <i class="fas fa-check-circle fa-2x"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-xl-3 col-md-6 mb-3">
-                <div class="stat-card">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-hdd fa-2x text-info"></i>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="stat-card animate-slide-up" style="animation-delay: 0.2s;">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stat-label">待处理</div>
+                                <div class="stat-number" id="pendingImages">-</div>
+                                <div class="small text-warning">
+                                    <i class="fas fa-clock me-1"></i>
+                                    等待AI分析
+                                </div>
+                            </div>
+                            <div>
+                                <i class="fas fa-clock fa-2x"></i>
+                            </div>
                         </div>
-                        <div class="ms-3">
-                            <div class="text-muted small">总存储</div>
-                            <h4 class="mb-0" id="totalStorage">-</h4>
+                    </div>
+                </div>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="stat-card animate-slide-up" style="animation-delay: 0.3s;">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stat-label">总存储</div>
+                                <div class="stat-number" id="totalStorage">-</div>
+                                <div class="small text-info">
+                                    <i class="fas fa-hdd me-1"></i>
+                                    占用空间大小
+                                </div>
+                            </div>
+                            <div>
+                                <i class="fas fa-hdd fa-2x"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -239,41 +833,53 @@
         <div class="filter-section">
             <div class="row align-items-end">
                 <div class="col-md-2">
-                    <label class="form-label">状态筛选</label>
+                    <label class="form-label">
+                        <i class="fas fa-filter me-1"></i>状态筛选
+                    </label>
                     <select class="form-select" id="statusFilter" onchange="loadImages()">
-                        <option value="active">活跃图片</option>
-                        <option value="deleted">已删除</option>
-                        <option value="all">全部</option>
+                        <option value="active">✅ 活跃图片</option>
+                        <option value="deleted">🗑️ 已删除</option>
+                        <option value="all">📋 全部状态</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label">AI状态</label>
+                    <label class="form-label">
+                        <i class="fas fa-brain me-1"></i>AI状态
+                    </label>
                     <select class="form-select" id="aiStatusFilter" onchange="loadImages()">
-                        <option value="">全部状态</option>
-                        <option value="pending">待分析</option>
-                        <option value="completed">已完成</option>
-                        <option value="failed">分析失败</option>
+                        <option value="">🔄 全部状态</option>
+                        <option value="pending">⏳ 待分析</option>
+                        <option value="completed">✅ 已完成</option>
+                        <option value="failed">❌ 分析失败</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label">上传者</label>
-                    <input type="text" class="form-control" id="uploaderFilter" placeholder="输入用户名" onchange="loadImages()">
+                    <label class="form-label">
+                        <i class="fas fa-user me-1"></i>上传者
+                    </label>
+                    <input type="text" class="form-control" id="uploaderFilter" 
+                           placeholder="输入用户名" onchange="loadImages()">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">搜索</label>
-                    <input type="text" class="form-control" id="searchInput" placeholder="搜索文件名、描述..." onkeyup="searchImages(event)">
+                    <label class="form-label">
+                        <i class="fas fa-search me-1"></i>智能搜索
+                    </label>
+                    <input type="text" class="form-control" id="searchInput" 
+                           placeholder="搜索文件名、描述、标签..." onkeyup="searchImages(event)">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">操作</label>
+                    <label class="form-label">
+                        <i class="fas fa-tools me-1"></i>快速操作
+                    </label>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-outline-primary" onclick="toggleBatchActions()">
-                            <i class="fas fa-tasks"></i> 批量操作
+                        <button class="btn btn-outline-primary" onclick="toggleBatchActions()" data-tooltip="批量管理图片">
+                            <i class="fas fa-tasks me-1"></i>批量操作
                         </button>
-                        <button class="btn btn-outline-warning" onclick="checkDuplicates()">
-                            <i class="fas fa-copy"></i> 重复检查
+                        <button class="btn btn-outline-warning" onclick="checkDuplicates()" data-tooltip="查找重复图片">
+                            <i class="fas fa-copy me-1"></i>重复检查
                         </button>
-                        <button class="btn btn-outline-success" onclick="exportData()">
-                            <i class="fas fa-download"></i> 导出
+                        <button class="btn btn-outline-success" onclick="exportData()" data-tooltip="导出图片数据">
+                            <i class="fas fa-download me-1"></i>导出
                         </button>
                     </div>
                 </div>
@@ -286,27 +892,34 @@
                 <div class="col-md-2">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="selectAll" onchange="toggleSelectAll()">
-                        <label class="form-check-label text-white">全选</label>
+                        <label class="form-check-label text-white fw-bold">
+                            <i class="fas fa-check-square me-1"></i>全选
+                        </label>
                     </div>
                 </div>
                 <div class="col-md-8">
                     <div class="btn-group" role="group">
-                        <button class="btn btn-outline-light btn-sm" onclick="batchAction('activate')">
-                            <i class="fas fa-check"></i> 激活
+                        <button class="btn btn-outline-light btn-sm" onclick="batchAction('activate')" data-tooltip="激活选中图片">
+                            <i class="fas fa-check me-1"></i>激活
                         </button>
-                        <button class="btn btn-outline-light btn-sm" onclick="batchAction('deactivate')">
-                            <i class="fas fa-ban"></i> 禁用
+                        <button class="btn btn-outline-light btn-sm" onclick="batchAction('deactivate')" data-tooltip="禁用选中图片">
+                            <i class="fas fa-ban me-1"></i>禁用
                         </button>
-                        <button class="btn btn-outline-light btn-sm" onclick="showBatchTagModal()">
-                            <i class="fas fa-tag"></i> 添加标签
+                        <button class="btn btn-outline-light btn-sm" onclick="showBatchTagModal()" data-tooltip="批量添加标签">
+                            <i class="fas fa-tag me-1"></i>添加标签
                         </button>
-                        <button class="btn btn-outline-light btn-sm" onclick="batchAction('delete')">
-                            <i class="fas fa-trash"></i> 删除
+                        <button class="btn btn-outline-light btn-sm" onclick="batchAction('reanalyze')" data-tooltip="重新AI分析">
+                            <i class="fas fa-brain me-1"></i>重新分析
+                        </button>
+                        <button class="btn btn-outline-light btn-sm" onclick="batchAction('delete')" data-tooltip="删除选中图片">
+                            <i class="fas fa-trash me-1"></i>删除
                         </button>
                     </div>
                 </div>
                 <div class="col-md-2 text-end">
-                    <span id="selectedCount" class="text-white">已选择 0 项</span>
+                    <span id="selectedCount" class="text-white fw-bold">
+                        <i class="fas fa-check-circle me-1"></i>已选择 0 项
+                    </span>
                 </div>
             </div>
         </div>
@@ -315,27 +928,42 @@
         <div class="table-container">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
-                    <thead class="table-light">
+                    <thead>
                         <tr>
                             <th width="50" class="select-column" style="display: none;">
                                 <input type="checkbox" id="selectAllHeader" onchange="toggleSelectAll()">
                             </th>
-                            <th width="100">预览</th>
-                            <th>文件信息</th>
-                            <th>上传者</th>
-                            <th>AI分析</th>
-                            <th>标签</th>
-                            <th>描述</th>
-                            <th width="120">操作</th>
+                            <th width="120">
+                                <i class="fas fa-image me-1"></i>预览
+                            </th>
+                            <th>
+                                <i class="fas fa-info-circle me-1"></i>文件信息
+                            </th>
+                            <th>
+                                <i class="fas fa-user me-1"></i>上传者
+                            </th>
+                            <th>
+                                <i class="fas fa-brain me-1"></i>AI分析
+                            </th>
+                            <th>
+                                <i class="fas fa-tags me-1"></i>标签
+                            </th>
+                            <th>
+                                <i class="fas fa-align-left me-1"></i>描述
+                            </th>
+                            <th width="150">
+                                <i class="fas fa-cogs me-1"></i>操作
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="imageTableBody">
                         <tr>
                             <td colspan="8" class="text-center py-5">
-                                <div class="spinner-border text-primary" role="status">
+                                <div class="spinner-border text-primary pulse-animation" role="status" style="width: 3rem; height: 3rem;">
                                     <span class="visually-hidden">加载中...</span>
                                 </div>
-                                <p class="mt-2 text-muted">正在加载图片数据...</p>
+                                <p class="mt-3 text-muted fw-semibold">正在加载图片数据...</p>
+                                <small class="text-muted">请稍候，系统正在处理您的请求</small>
                             </td>
                         </tr>
                     </tbody>
@@ -343,9 +971,11 @@
             </div>
             
             <!-- 分页 -->
-            <div class="d-flex justify-content-between align-items-center p-3 border-top">
+            <div class="d-flex justify-content-between align-items-center p-3 border-top bg-light">
                 <div>
-                    <span class="text-muted" id="pageInfo">显示 0 - 0 条，共 0 条记录</span>
+                    <span class="text-muted fw-semibold" id="pageInfo">
+                        <i class="fas fa-info-circle me-1"></i>显示 0 - 0 条，共 0 条记录
+                    </span>
                 </div>
                 <nav>
                     <ul class="pagination mb-0" id="pagination">
@@ -359,16 +989,14 @@
     <!-- 加载遮罩 -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-content">
-            <div class="spinner-border text-primary mb-3" role="status">
+            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
                 <span class="visually-hidden">加载中...</span>
             </div>
-            <h5 id="loadingText">处理中...</h5>
+            <h5 id="loadingText">系统处理中...</h5>
+            <p class="text-muted mb-0">请稍候，正在执行操作</p>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
     <script>
         // 全局变量
         let currentPage = 1;
@@ -377,16 +1005,29 @@
         let batchActionsVisible = false;
         let currentData = null;
 
-        // 页面加载完成后初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            checkAuth();
-            loadStats();
-            loadImages();
-            
-            // 设置自动刷新
-            setInterval(loadStats, 30000); // 30秒刷新统计
-        });
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 页面DOM加载完成');
+    
+    // 检查关键DOM元素
+    const requiredElements = [
+        'imageTableBody',
+        'totalImages', 
+        'completedImages',
+        'pendingImages',
+        'totalStorage',
+        'statusFilter',
+        'aiStatusFilter'
+    ];
 
+    const missingElements = requiredElements.filter(id => !document.getElementById(id));
+    
+    if (missingElements.length > 0) {
+        console.error('❌ 缺失DOM元素:', missingElements);
+        showError('页面元素缺失，请刷新页面重试');
+        return;
+    }
+
+    console.log('✅ 所有关键DOM元素就绪');
         // 检查用户权限
         async function checkAuth() {
             try {
@@ -399,171 +1040,264 @@
                 }
                 
                 if (data.user.role !== 'admin' && data.user.role !== 'moderator') {
-                    alert('您没有管理员权限');
-                    window.location.href = '/';
+                    showError('您没有管理员权限访问此页面');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
                     return;
                 }
             } catch (error) {
                 console.error('权限检查失败:', error);
-                window.location.href = '/login';
+                showError('权限验证失败，请重新登录');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
             }
         }
 
-        // 加载统计数据
-        async function loadStats() {
-            try {
-                const response = await fetch('/api/admin/stats');
-                const data = await response.json();
-                
-                if (data.success) {
-                    document.getElementById('totalImages').textContent = data.data.overview.total_images || 0;
-                    document.getElementById('completedImages').textContent = data.data.ai_analysis.completed || 0;
-                    document.getElementById('pendingImages').textContent = data.data.ai_analysis.pending || 0;
-                    document.getElementById('totalStorage').textContent = formatFileSize(data.data.overview.total_file_size_mb * 1024 * 1024);
-                }
-            } catch (error) {
-                console.error('加载统计失败:', error);
+// 修复loadStats函数，添加调试信息
+async function loadStats() {
+    try {
+        console.log('🔄 开始加载统计数据...');
+        const response = await fetch('/api/admin/stats');
+        const data = await response.json();
+        
+        console.log('📊 统计数据响应:', data);
+        
+        if (data.success && data.data) {
+            // 使用动画效果更新数字
+            animateNumber('totalImages', data.data.overview?.total_images || 0);
+            animateNumber('completedImages', data.data.ai_analysis?.completed || 0);
+            animateNumber('pendingImages', data.data.ai_analysis?.pending || 0);
+            
+            // 更新存储大小
+            const totalSize = (data.data.overview?.total_file_size_mb || 0) * 1024 * 1024;
+            const storageElement = document.getElementById('totalStorage');
+            if (storageElement) {
+                storageElement.textContent = formatFileSize(totalSize);
             }
+            
+            console.log('✅ 统计数据加载成功');
+        } else {
+            console.error('❌ 统计数据格式错误:', data);
+            showError('统计数据加载失败');
+        }
+    } catch (error) {
+        console.error('❌ 加载统计失败:', error);
+        showError('网络错误：' + error.message);
+    }
+}
+
+        // 数字动画效果
+        function animateNumber(elementId, targetValue) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            const currentValue = parseInt(element.textContent.replace(/[^\d]/g, '')) || 0;
+            const difference = targetValue - currentValue;
+            const duration = 1500;
+            const steps = 30;
+            const stepValue = difference / steps;
+            
+            let currentStep = 0;
+            const timer = setInterval(() => {
+                currentStep++;
+                const newValue = Math.round(currentValue + (stepValue * currentStep));
+                element.textContent = formatNumber(newValue);
+                
+                if (currentStep >= steps) {
+                    element.textContent = formatNumber(targetValue);
+                    clearInterval(timer);
+                }
+            }, duration / steps);
         }
 
-        // 加载图片列表
-        async function loadImages(page = 1) {
-            try {
-                const status = document.getElementById('statusFilter').value;
-                const aiStatus = document.getElementById('aiStatusFilter').value;
-                const uploader = document.getElementById('uploaderFilter').value;
-                const search = document.getElementById('searchInput').value;
-                
-                const params = new URLSearchParams({
-                    page: page,
-                    per_page: 15,
-                    status: status,
-                    sort_by: 'upload_time',
-                    sort_order: 'desc'
-                });
-                
-                if (aiStatus) params.append('ai_status', aiStatus);
-                if (uploader) params.append('uploader', uploader);
-                if (search) params.append('search', search);
-                
-                const response = await fetch(`/api/admin/images/list?${params}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    currentData = data.data;
-                    displayImages(data.data.images);
-                    updatePagination(data.data.pagination);
-                    currentPage = page;
-                    totalPages = data.data.pagination.pages;
-                } else {
-                    showError('加载图片列表失败');
-                }
-            } catch (error) {
-                console.error('加载图片失败:', error);
-                showError('网络错误');
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
             }
+            return num.toString();
         }
+
+// 修复loadImages函数，添加调试信息
+async function loadImages(page = 1) {
+    try {
+        console.log(`🔄 开始加载第${page}页图片...`);
+        
+        const status = document.getElementById('statusFilter')?.value || 'active';
+        const aiStatus = document.getElementById('aiStatusFilter')?.value || '';
+        const uploader = document.getElementById('uploaderFilter')?.value || '';
+        const search = document.getElementById('searchInput')?.value || '';
+        
+        const params = new URLSearchParams({
+            page: page,
+            per_page: 15,
+            status: status,
+            sort_by: 'upload_time',
+            sort_order: 'desc'
+        });
+        
+        if (aiStatus) params.append('ai_status', aiStatus);
+        if (uploader) params.append('uploader', uploader);
+        if (search) params.append('search', search);
+        
+        console.log('📝 请求参数:', params.toString());
+        
+        const response = await fetch(`/api/admin/images/list?${params}`);
+        const data = await response.json();
+        
+        console.log('📋 图片列表响应:', data);
+        
+        if (data.success && data.data) {
+            currentData = data.data;
+            displayImages(data.data.images || []);
+            updatePagination(data.data.pagination || {});
+            currentPage = page;
+            totalPages = data.data.pagination?.pages || 1;
+            
+            console.log(`✅ 成功加载${data.data.images?.length || 0}张图片`);
+        } else {
+            console.error('❌ 图片列表格式错误:', data);
+            showError('加载图片列表失败: ' + (data.detail || '未知错误'));
+        }
+    } catch (error) {
+        console.error('❌ 加载图片失败:', error);
+        showError('网络错误：' + error.message);
+    }
+}
 
         // 显示图片列表
-        function displayImages(images) {
-            const tbody = document.getElementById('imageTableBody');
+function displayImages(images) {
+    const tbody = document.getElementById('imageTableBody');
+    
+    if (images.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-images fa-4x text-muted opacity-50"></i>
+                    </div>
+                    <h5 class="text-muted">没有找到图片</h5>
+                    <p class="text-muted">请尝试调整筛选条件或搜索关键词</p>
+                    <button class="btn btn-primary" onclick="loadImages(1)">
+                        <i class="fas fa-refresh me-1"></i>重新加载
+                    </button>
+                </td>
+            </tr>
+        `;
+        return;
+    }
             
-            if (images.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8" class="text-center py-5">
-                            <i class="fas fa-images fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">没有找到图片</p>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-            
-            tbody.innerHTML = images.map(image => {
-                const isSelected = selectedImages.has(image.id);
-                return `
-                    <tr id="row_${image.id}" class="${isSelected ? 'selected-row' : ''}">
-                        <td class="select-column" style="display: ${batchActionsVisible ? 'table-cell' : 'none'};">
-                            <input type="checkbox" class="form-check-input image-checkbox" 
-                                   value="${image.id}" onchange="toggleImageSelection(${image.id})"
-                                   ${isSelected ? 'checked' : ''}>
-                        </td>
-                        <td>
-                            <div class="position-relative">
-                                <img src="${image.thumbnail_url || image.url}" 
-                                     class="image-thumbnail" 
-                                     alt="${image.filename}"
-                                     onclick="previewImage('${image.url}', '${image.filename}')">
-                                <span class="position-absolute top-0 start-0 badge bg-${image.is_active ? 'success' : 'danger'} rounded-pill">
-                                    ${image.is_active ? '活跃' : '禁用'}
-                                </span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="fw-bold text-truncate" style="max-width: 200px;" title="${image.filename}">
-                                ${image.filename}
-                            </div>
-                            <small class="text-muted">
-                                ${image.width}×${image.height} | ${formatFileSize(image.file_size)}
-                            </small>
-                            <br>
-                            <small class="text-muted">
-                                上传: ${formatDate(image.upload_time)} | 浏览: ${image.view_count || 0}
-                            </small>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-user-circle fa-lg text-secondary me-2"></i>
-                                <div>
-                                    <div class="fw-bold">${image.uploader}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="status-badge status-${image.ai_analysis_status}">
-                                ${getStatusText(image.ai_analysis_status)}
-                            </span>
-                            <div class="confidence-bar mt-1">
-                                <div class="confidence-fill bg-${getConfidenceColor(image.confidence)}" 
-                                     style="width: ${(image.confidence || 0) * 100}%"></div>
-                            </div>
-                            <small class="text-muted">置信度: ${Math.round((image.confidence || 0) * 100)}%</small>
-                        </td>
-                        <td>
-                            <div class="tag-cloud">
-                                ${(image.tags || []).slice(0, 3).map(tag => 
-                                    `<span class="badge bg-secondary">${tag.name}</span>`
-                                ).join('')}
-                                ${image.tags && image.tags.length > 3 ? 
-                                    `<span class="badge bg-light text-dark">+${image.tags.length - 3}</span>` : ''}
-                            </div>
-                        </td>
-                        <td>
-                            <div class="text-truncate" style="max-width: 250px;" title="${image.description || '暂无描述'}">
-                                ${image.description || '<em class="text-muted">暂无描述</em>'}
-                            </div>
-                        </td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="btn btn-outline-primary btn-sm" onclick="viewDetails(${image.id})" title="详情">
-                                    <i class="fas fa-info-circle"></i>
-                                </button>
-                                <button class="btn btn-outline-warning btn-sm" onclick="reanalyzeImage(${image.id})" title="重新分析">
-                                    <i class="fas fa-brain"></i>
-                                </button>
-                                <button class="btn btn-outline-success btn-sm" onclick="editImage(${image.id})" title="编辑">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="deleteImage(${image.id})" title="删除">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
+    tbody.innerHTML = images.map(image => {
+        const isSelected = selectedImages.has(image.id);
+        return `
+            <tr id="row_${image.id}" class="${isSelected ? 'selected-row' : ''}">
+                <td class="select-column" style="display: ${batchActionsVisible ? 'table-cell' : 'none'};">
+                    <input type="checkbox" class="form-check-input image-checkbox" 
+                           value="${image.id}" onchange="toggleImageSelection(${image.id})"
+                           ${isSelected ? 'checked' : ''}>
+                </td>
+                <td>
+                    <div class="position-relative">
+                        <img src="${image.thumbnail_url || image.url}" 
+                             class="img-thumbnail rounded-3 shadow-sm cursor-pointer" 
+                             style="width: 80px; height: 80px; object-fit: cover;"
+                             alt="${image.filename}"
+                             onclick="previewImage('${image.url}', '${image.filename}')"
+                             onerror="this.src='/static/images/placeholder.jpg'">
+                        <span class="position-absolute top-0 start-0 badge bg-primary rounded-pill m-1">
+                            #${image.id}
+                        </span>
+                    </div>
+                </td>
+                <td>
+                    <div class="fw-bold text-truncate mb-1" style="max-width: 200px;" title="${image.filename}">
+                        <i class="fas fa-file-image me-1 text-primary"></i>
+                        ${image.filename}
+                    </div>
+                    <div class="small text-muted mb-1">
+                        <i class="fas fa-expand-arrows-alt me-1"></i>
+                        ${image.width}×${image.height} · 
+                        <i class="fas fa-weight-hanging me-1"></i>
+                        ${formatFileSize(image.file_size)}
+                    </div>
+                    <div class="small text-muted">
+                        <i class="fas fa-calendar me-1"></i>
+                        ${formatDate(image.upload_time)} · 
+                        <i class="fas fa-eye me-1"></i>
+                        ${image.view_count || 0} 次浏览
+                    </div>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="me-2">
+                            <i class="fas fa-user-circle fa-lg text-primary"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold">${image.uploader}</div>
+                            <small class="text-muted">上传者</small>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="mb-2">
+                        <span class="status-badge status-${image.ai_analysis_status}">
+                            ${getStatusIcon(image.ai_analysis_status)}
+                            ${getStatusText(image.ai_analysis_status)}
+                        </span>
+                    </div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill bg-${getConfidenceColor(image.confidence)}" 
+                             style="width: ${(image.confidence || 0) * 100}%"></div>
+                    </div>
+                    <small class="text-muted">
+                        <i class="fas fa-percentage me-1"></i>
+                        置信度: ${Math.round((image.confidence || 0) * 100)}%
+                    </small>
+                </td>
+                <td>
+                    <div class="tag-cloud">
+                        ${(image.tags || []).slice(0, 3).map(tag => 
+                            `<span class="badge bg-secondary me-1 mb-1">${tag.name}</span>`
+                        ).join('')}
+                        ${image.tags && image.tags.length > 3 ? 
+                            `<span class="badge bg-light text-dark">+${image.tags.length - 3}</span>` : ''}
+                    </div>
+                </td>
+                <td>
+                    <div class="text-truncate" style="max-width: 250px;" title="${image.description || '暂无描述'}">
+                        ${image.description ? 
+                            `<i class="fas fa-quote-left me-1 text-muted"></i>${image.description}` : 
+                            '<span class="text-muted"><i class="fas fa-minus me-1"></i>暂无AI描述</span>'
+                        }
+                    </div>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-outline-primary btn-sm mb-1" onclick="viewDetails(${image.id})" 
+                                title="查看详情">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                        <button class="btn btn-outline-warning btn-sm mb-1" onclick="reanalyzeImage(${image.id})" 
+                                title="重新分析">
+                            <i class="fas fa-brain"></i>
+                        </button>
+                        <button class="btn btn-outline-success btn-sm mb-1" onclick="editImage(${image.id})" 
+                                title="编辑">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm mb-1" onclick="deleteImage(${image.id})" 
+                                title="删除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
 
         // 更新分页
         function updatePagination(pagination) {
@@ -573,7 +1307,11 @@
             // 更新页面信息
             const start = (pagination.page - 1) * pagination.per_page + 1;
             const end = Math.min(pagination.page * pagination.per_page, pagination.total);
-            pageInfo.textContent = `显示 ${start} - ${end} 条，共 ${pagination.total} 条记录`;
+            pageInfo.innerHTML = `
+                <i class="fas fa-info-circle me-1"></i>
+                显示 <span class="fw-bold">${start}</span> - <span class="fw-bold">${end}</span> 条，
+                共 <span class="fw-bold text-primary">${pagination.total}</span> 条记录
+            `;
             
             // 生成分页按钮
             let paginationHtml = '';
@@ -582,7 +1320,9 @@
             if (pagination.page > 1) {
                 paginationHtml += `
                     <li class="page-item">
-                        <a class="page-link" href="#" onclick="loadImages(${pagination.page - 1})">上一页</a>
+                        <a class="page-link" href="#" onclick="loadImages(${pagination.page - 1})">
+                            <i class="fas fa-chevron-left me-1"></i>上一页
+                        </a>
                     </li>
                 `;
             }
@@ -603,7 +1343,9 @@
             if (pagination.page < pagination.pages) {
                 paginationHtml += `
                     <li class="page-item">
-                        <a class="page-link" href="#" onclick="loadImages(${pagination.page + 1})">下一页</a>
+                        <a class="page-link" href="#" onclick="loadImages(${pagination.page + 1})">
+                            下一页<i class="fas fa-chevron-right ms-1"></i>
+                        </a>
                     </li>
                 `;
             }
@@ -627,12 +1369,14 @@
             if (batchActionsVisible) {
                 batchBar.style.display = 'block';
                 selectColumns.forEach(col => col.style.display = 'table-cell');
+                showInfo('批量操作模式已启用，请选择要操作的图片');
             } else {
                 batchBar.style.display = 'none';
                 selectColumns.forEach(col => col.style.display = 'none');
                 selectedImages.clear();
                 updateSelectedCount();
                 clearSelections();
+                showInfo('批量操作模式已关闭');
             }
         }
 
@@ -677,7 +1421,10 @@
         function updateSelectedCount() {
             const countElement = document.getElementById('selectedCount');
             if (countElement) {
-                countElement.textContent = `已选择 ${selectedImages.size} 项`;
+                countElement.innerHTML = `
+                    <i class="fas fa-check-circle me-1"></i>
+                    已选择 <span class="badge bg-light text-dark">${selectedImages.size}</span> 项
+                `;
             }
         }
 
@@ -690,10 +1437,10 @@
             });
         }
 
-        // 批量操作执行 (续)
+        // 批量操作执行
         async function batchAction(action) {
             if (selectedImages.size === 0) {
-                alert('请先选择要操作的图片');
+                showError('请先选择要操作的图片');
                 return;
             }
             
@@ -706,6 +1453,9 @@
                     break;
                 case 'deactivate':
                     confirmMessage = `确定要禁用选中的 ${selectedImages.size} 张图片吗？`;
+                    break;
+                case 'reanalyze':
+                    confirmMessage = `确定要重新分析选中的 ${selectedImages.size} 张图片吗？\n\n这将使用AI重新处理这些图片。`;
                     break;
                 case 'delete':
                     const permanent = confirm('选择删除类型：\n\n确定 = 永久删除（无法恢复）\n取消 = 软删除（可恢复）');
@@ -757,7 +1507,7 @@
         // 显示批量标签模态框
         function showBatchTagModal() {
             if (selectedImages.size === 0) {
-                alert('请先选择要添加标签的图片');
+                showError('请先选择要添加标签的图片');
                 return;
             }
             
@@ -805,6 +1555,7 @@
         // 单个图片操作
         async function viewDetails(imageId) {
             try {
+                showLoading('正在加载图片详情...');
                 const response = await fetch(`/api/admin/images/${imageId}/details`);
                 const result = await response.json();
                 
@@ -816,22 +1567,24 @@
             } catch (error) {
                 console.error('获取图片详情失败:', error);
                 showError('网络错误：' + error.message);
+            } finally {
+                hideLoading();
             }
         }
 
         async function reanalyzeImage(imageId) {
-            const useCustomPrompt = confirm('是否使用自定义提示词进行分析？\n\n确定 = 自定义分析\n取消 = 默认分析');
+            const useCustomPrompt = confirm('🤖 是否使用自定义提示词进行AI分析？\n\n✅ 确定 = 自定义分析\n❌ 取消 = 默认分析');
             
             let customPrompt = null;
             if (useCustomPrompt) {
-                customPrompt = prompt('请输入自定义AI分析提示词：\n\n例如：专注分析人物的姿势和表情');
+                customPrompt = prompt('请输入自定义AI分析提示词：\n\n例如：专注分析人物的姿势和表情特征');
                 if (!customPrompt || !customPrompt.trim()) {
                     return;
                 }
             }
             
             try {
-                showLoading('正在启动重新分析...');
+                showLoading('正在启动AI重新分析...');
                 
                 const response = await fetch(`/api/admin/images/${imageId}/reanalyze`, {
                     method: 'POST',
@@ -844,9 +1597,8 @@
                 });
                 
                 const result = await response.json();
-                
-                if (result.success) {
-                    showSuccess('重新分析任务已启动');
+                                if (result.success) {
+                    showSuccess('🧠 AI重新分析任务已启动，请稍候查看结果');
                     loadImages(currentPage);
                 } else {
                     showError('启动重新分析失败：' + (result.detail || '未知错误'));
@@ -861,6 +1613,7 @@
 
         async function editImage(imageId) {
             try {
+                showLoading('正在加载图片信息...');
                 const response = await fetch(`/api/admin/images/${imageId}/details`);
                 const result = await response.json();
                 
@@ -872,13 +1625,15 @@
             } catch (error) {
                 console.error('获取图片信息失败:', error);
                 showError('网络错误：' + error.message);
+            } finally {
+                hideLoading();
             }
         }
 
         async function deleteImage(imageId) {
-            const permanent = confirm('选择删除方式：\n\n确定 = 永久删除（无法恢复）\n取消 = 软删除（可恢复）');
+            const permanent = confirm('⚠️ 选择删除方式：\n\n✅ 确定 = 永久删除（无法恢复）\n❌ 取消 = 软删除（可恢复）');
             
-            if (confirm(`确定要${permanent ? '永久' : '软'}删除这张图片吗？`)) {
+            if (confirm(`🗑️ 确定要${permanent ? '永久' : '软'}删除这张图片吗？\n\n${permanent ? '⚠️ 警告：永久删除无法恢复！' : '💡 提示：软删除可以恢复'}`)) {
                 try {
                     showLoading('正在删除图片...');
                     
@@ -908,20 +1663,28 @@
         function previewImage(imageUrl, filename) {
             const modalHtml = `
                 <div class="modal fade" id="imagePreviewModal" tabindex="-1">
-                    <div class="modal-dialog modal-lg">
+                    <div class="modal-dialog modal-xl">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title">${filename}</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                <h5 class="modal-title">
+                                    <i class="fas fa-image me-2"></i>${filename}
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
-                            <div class="modal-body text-center">
-                                <img src="${imageUrl}" class="img-fluid" alt="${filename}">
+                            <div class="modal-body text-center p-4">
+                                <img src="${imageUrl}" class="img-fluid rounded-3 shadow" alt="${filename}" 
+                                     style="max-height: 70vh; max-width: 100%;">
                             </div>
                             <div class="modal-footer">
                                 <a href="${imageUrl}" target="_blank" class="btn btn-primary">
-                                    <i class="fas fa-external-link-alt"></i> 查看原图
+                                    <i class="fas fa-external-link-alt me-1"></i>在新窗口打开
                                 </a>
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                                <a href="${imageUrl}" download="${filename}" class="btn btn-success">
+                                    <i class="fas fa-download me-1"></i>下载图片
+                                </a>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-1"></i>关闭
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -943,84 +1706,161 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">
-                                    <i class="fas fa-info-circle"></i> 图片详细信息
+                                    <i class="fas fa-info-circle me-2"></i>图片详细信息
                                 </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <div class="text-center mb-3">
-                                            <img src="${image.url}" class="img-fluid rounded" style="max-height: 400px;" alt="${image.filename}">
-                                        </div>
-                                        <div class="text-center">
-                                            <a href="${image.url}" target="_blank" class="btn btn-outline-primary btn-sm">
-                                                <i class="fas fa-external-link-alt"></i> 查看原图
-                                            </a>
+                                        <div class="text-center mb-4">
+                                            <img src="${image.url}" class="img-fluid rounded-3 shadow" 
+                                                 style="max-height: 400px;" alt="${image.filename}">
+                                            <div class="mt-3">
+                                                <div class="badge bg-light text-dark me-2">
+                                                    <i class="fas fa-expand-arrows-alt me-1"></i>
+                                                    ${image.width} × ${image.height}
+                                                </div>
+                                                <div class="badge bg-light text-dark">
+                                                    <i class="fas fa-weight-hanging me-1"></i>
+                                                    ${formatFileSize(image.file_size)}
+                                                </div>
+                                            </div>
+                                            <div class="mt-2">
+                                                <a href="${image.url}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-external-link-alt me-1"></i>查看原图
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <table class="table table-sm">
-                                            <tr><th width="100">ID</th><td>${image.id}</td></tr>
-                                            <tr><th>文件名</th><td>${image.filename}</td></tr>
-                                            <tr><th>上传者</th><td>${image.uploader}</td></tr>
-                                            <tr><th>尺寸</th><td>${image.width} × ${image.height}</td></tr>
-                                            <tr><th>文件大小</th><td>${formatFileSize(image.file_size)}</td></tr>
-                                            <tr><th>上传时间</th><td>${formatDate(image.upload_time)}</td></tr>
-                                            <tr><th>浏览次数</th><td>${image.view_count || 0}</td></tr>
-                                            <tr><th>AI状态</th><td><span class="status-badge status-${image.ai_analysis_status}">${getStatusText(image.ai_analysis_status)}</span></td></tr>
-                                            <tr><th>置信度</th><td>${Math.round((image.confidence || 0) * 100)}%</td></tr>
-                                            <tr><th>AI模型</th><td>${image.ai_model || '未知'}</td></tr>
-                                            <tr><th>状态</th><td><span class="badge bg-${image.is_active ? 'success' : 'danger'}">${image.is_active ? '活跃' : '禁用'}</span></td></tr>
-                                        </table>
+                                        <div class="card border-0 bg-light">
+                                            <div class="card-body">
+                                                <h6 class="card-title">
+                                                    <i class="fas fa-database me-1 text-primary"></i>基本信息
+                                                </h6>
+                                                <table class="table table-sm table-borderless">
+                                                    <tr><th width="120">ID</th><td><span class="badge bg-primary">${image.id}</span></td></tr>
+                                                    <tr><th>文件名</th><td>${image.filename}</td></tr>
+                                                    <tr><th>上传者</th><td>
+                                                        <i class="fas fa-user-circle me-1 text-success"></i>${image.uploader}
+                                                    </td></tr>
+                                                    <tr><th>上传时间</th><td>
+                                                        <i class="fas fa-calendar me-1 text-info"></i>${formatDate(image.upload_time)}
+                                                    </td></tr>
+                                                    <tr><th>浏览次数</th><td>
+                                                        <i class="fas fa-eye me-1 text-warning"></i>${image.view_count || 0} 次
+                                                    </td></tr>
+                                                    <tr><th>AI状态</th><td>
+                                                        <span class="status-badge status-${image.ai_analysis_status}">
+                                                            ${getStatusIcon(image.ai_analysis_status)}
+                                                            ${getStatusText(image.ai_analysis_status)}
+                                                        </span>
+                                                    </td></tr>
+                                                    <tr><th>置信度</th><td>
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="confidence-bar me-2" style="width: 60px;">
+                                                                <div class="confidence-fill bg-${getConfidenceColor(image.confidence)}" 
+                                                                     style="width: ${(image.confidence || 0) * 100}%"></div>
+                                                            </div>
+                                                            <span class="fw-bold">${Math.round((image.confidence || 0) * 100)}%</span>
+                                                        </div>
+                                                    </td></tr>
+                                                    <tr><th>AI模型</th><td>
+                                                        <i class="fas fa-robot me-1 text-primary"></i>${image.ai_model || '未知'}
+                                                    </td></tr>
+                                                    <tr><th>状态</th><td>
+                                                        <span class="badge bg-${image.is_active ? 'success' : 'danger'}">
+                                                            ${image.is_active ? '✅ 活跃' : '❌ 禁用'}
+                                                        </span>
+                                                    </td></tr>
+                                                </table>
+                                            </div>
+                                        </div>
                                         
                                         ${image.description ? `
-                                        <div class="mt-3">
-                                            <h6><i class="fas fa-align-left"></i> AI描述</h6>
-                                            <p class="text-muted border p-2 rounded">${image.description}</p>
-                                        </div>
-                                        ` : ''}
-                                        
-                                        ${image.mood || image.style ? `
-                                        <div class="mt-3">
-                                            <h6><i class="fas fa-palette"></i> 风格信息</h6>
-                                            ${image.mood ? `<p><strong>氛围:</strong> ${image.mood}</p>` : ''}
-                                            ${image.style ? `<p><strong>风格:</strong> ${image.style}</p>` : ''}
-                                        </div>
-                                        ` : ''}
-                                        
-                                        ${image.tags && image.tags.length > 0 ? `
-                                        <div class="mt-3">
-                                            <h6><i class="fas fa-tags"></i> 标签</h6>
-                                            <div class="d-flex flex-wrap gap-1">
-                                                ${image.tags.map(tag => `
-                                                    <span class="badge bg-secondary">${tag.name}</span>
-                                                `).join('')}
+                                        <div class="card border-0 bg-light mt-3">
+                                            <div class="card-body">
+                                                <h6 class="card-title">
+                                                    <i class="fas fa-robot me-1 text-primary"></i>AI描述
+                                                </h6>
+                                                <p class="text-muted mb-0 p-2 bg-white rounded border-start border-primary border-4">
+                                                    <i class="fas fa-quote-left me-1 text-primary"></i>
+                                                    ${image.description}
+                                                </p>
                                             </div>
                                         </div>
                                         ` : ''}
                                         
-                                        ${image.searchable_keywords && image.searchable_keywords.length > 0 ? `
-                                        <div class="mt-3">
-                                            <h6><i class="fas fa-search"></i> 搜索关键词</h6>
-                                            <div class="d-flex flex-wrap gap-1">
-                                                ${image.searchable_keywords.map(keyword => `
-                                                    <span class="badge bg-info">${keyword}</span>
-                                                `).join('')}
+                                        ${image.mood || image.style ? `
+                                        <div class="card border-0 bg-light mt-3">
+                                            <div class="card-body">
+                                                <h6 class="card-title">
+                                                    <i class="fas fa-palette me-1 text-primary"></i>风格信息
+                                                </h6>
+                                                ${image.mood ? `<p class="mb-1"><strong>氛围:</strong> <span class="badge bg-info">${image.mood}</span></p>` : ''}
+                                                ${image.style ? `<p class="mb-0"><strong>风格:</strong> <span class="badge bg-warning">${image.style}</span></p>` : ''}
                                             </div>
                                         </div>
                                         ` : ''}
                                     </div>
                                 </div>
+                                
+                                ${image.tags && image.tags.length > 0 ? `
+                                <div class="row mt-4">
+                                    <div class="col-12">
+                                        <div class="card border-0 bg-light">
+                                            <div class="card-body">
+                                                <h6 class="card-title">
+                                                    <i class="fas fa-tags me-1 text-primary"></i>标签云 
+                                                    <span class="badge bg-primary">${image.tags.length}</span>
+                                                </h6>
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    ${image.tags.map((tag, index) => `
+                                                        <span class="badge bg-${getTagColor(index)} fs-6 px-3 py-2">
+                                                            <i class="fas fa-tag me-1"></i>${tag.name}
+                                                        </span>
+                                                    `).join('')}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                ` : ''}
+                                
+                                ${image.searchable_keywords && image.searchable_keywords.length > 0 ? `
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <div class="card border-0 bg-light">
+                                            <div class="card-body">
+                                                <h6 class="card-title">
+                                                    <i class="fas fa-search me-1 text-primary"></i>搜索关键词
+                                                    <span class="badge bg-info">${image.searchable_keywords.length}</span>
+                                                </h6>
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    ${image.searchable_keywords.map(keyword => `
+                                                        <span class="badge bg-secondary">${keyword}</span>
+                                                    `).join('')}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                ` : ''}
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-primary" onclick="editImage(${image.id}); bootstrap.Modal.getInstance(document.getElementById('imageDetailsModal')).hide();">
-                                    <i class="fas fa-edit"></i> 编辑
+                                    <i class="fas fa-edit me-1"></i>编辑信息
                                 </button>
                                 <button type="button" class="btn btn-warning" onclick="reanalyzeImage(${image.id}); bootstrap.Modal.getInstance(document.getElementById('imageDetailsModal')).hide();">
-                                    <i class="fas fa-brain"></i> 重新分析
+                                    <i class="fas fa-brain me-1"></i>重新分析
                                 </button>
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                                <button type="button" class="btn btn-success" onclick="window.open('${image.url}', '_blank')">
+                                    <i class="fas fa-external-link-alt me-1"></i>查看原图
+                                </button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-1"></i>关闭
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1044,19 +1884,25 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">
-                                    <i class="fas fa-edit"></i> 编辑图片信息
+                                    <i class="fas fa-edit me-2"></i>编辑图片信息
                                 </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
                                 <div class="row">
                                     <div class="col-md-5">
                                         <div class="text-center">
-                                            <img src="${image.url}" class="img-fluid rounded" style="max-height: 300px;" alt="${image.filename}">
-                                            <div class="mt-2">
-                                                <small class="text-muted">
-                                                    ${image.width}×${image.height} | ${formatFileSize(image.file_size)}
-                                                </small>
+                                            <img src="${image.url}" class="img-fluid rounded-3 shadow" 
+                                                 style="max-height: 300px;" alt="${image.filename}">
+                                            <div class="mt-3">
+                                                <div class="badge bg-light text-dark me-2">
+                                                    <i class="fas fa-expand-arrows-alt me-1"></i>
+                                                    ${image.width}×${image.height}
+                                                </div>
+                                                <div class="badge bg-light text-dark">
+                                                    <i class="fas fa-weight-hanging me-1"></i>
+                                                    ${formatFileSize(image.file_size)}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1065,44 +1911,65 @@
                                             <input type="hidden" id="editImageId" value="${image.id}">
                                             
                                             <div class="mb-3">
-                                                <label class="form-label">文件名</label>
+                                                <label class="form-label fw-semibold">
+                                                    <i class="fas fa-file-image me-1"></i>文件名
+                                                </label>
                                                 <input type="text" class="form-control" value="${image.filename}" readonly>
                                             </div>
                                             
                                             <div class="mb-3">
-                                                <label class="form-label">上传者</label>
+                                                <label class="form-label fw-semibold">
+                                                    <i class="fas fa-user me-1"></i>上传者
+                                                </label>
                                                 <input type="text" class="form-control" value="${image.uploader}" readonly>
                                             </div>
                                             
                                             <div class="mb-3">
-                                                <label class="form-label">AI描述</label>
+                                                <label class="form-label fw-semibold">
+                                                    <i class="fas fa-robot me-1"></i>AI描述
+                                                </label>
                                                 <textarea class="form-control" id="editImageDescription" rows="4" 
                                                           placeholder="编辑AI生成的描述...">${image.description || ''}</textarea>
+                                                <div class="form-text">
+                                                    <i class="fas fa-info-circle me-1"></i>修改后需要重新保存
+                                                </div>
                                             </div>
                                             
                                             <div class="mb-3">
-                                                <label class="form-label">状态</label>
+                                                <label class="form-label fw-semibold">
+                                                    <i class="fas fa-toggle-on me-1"></i>图片状态
+                                                </label>
                                                 <select class="form-select" id="editImageStatus">
-                                                    <option value="true" ${image.is_active ? 'selected' : ''}>活跃</option>
-                                                    <option value="false" ${!image.is_active ? 'selected' : ''}>禁用</option>
+                                                    <option value="true" ${image.is_active ? 'selected' : ''}>✅ 活跃（公开可见）</option>
+                                                    <option value="false" ${!image.is_active ? 'selected' : ''}>❌ 禁用（隐藏）</option>
                                                 </select>
                                             </div>
                                             
                                             <div class="mb-3">
-                                                <label class="form-label">自定义标签</label>
+                                                <label class="form-label fw-semibold">
+                                                    <i class="fas fa-tags me-1"></i>自定义标签
+                                                </label>
                                                 <input type="text" class="form-control" id="editImageTags" 
                                                        value="${tagsString}"
-                                                       placeholder="用逗号分隔多个标签，例如：女性,坐姿,室内">
-                                                <div class="form-text">现有标签将被替换</div>
+                                                       placeholder="用逗号分隔，例如：女性,坐姿,室内">
+                                                <div class="form-text">
+                                                    <i class="fas fa-exclamation-triangle me-1 text-warning"></i>
+                                                    现有标签将被完全替换
+                                                </div>
                                             </div>
                                         </form>
                                     </div>
                                 </div>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-1"></i>取消
+                                </button>
+                                <button type="button" class="btn btn-warning" onclick="reanalyzeImage(${image.id}); bootstrap.Modal.getInstance(document.getElementById('editImageModal')).hide();">
+                                    <i class="fas fa-brain me-1"></i>重新分析
+                                </button>
                                 <button type="button" class="btn btn-primary" onclick="saveImageEdit()">
-                                    <i class="fas fa-save"></i> 保存更改
+                                    <i class="fas fa-save me-1"></i>保存更改
                                 </button>
                             </div>
                         </div>
@@ -1145,7 +2012,7 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showSuccess('图片信息更新成功');
+                    showSuccess('图片信息更新成功！');
                     
                     // 关闭模态框
                     const modal = bootstrap.Modal.getInstance(document.getElementById('editImageModal'));
@@ -1193,78 +2060,151 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">
-                                    <i class="fas fa-chart-bar"></i> 图片数据分析报告
+                                    <i class="fas fa-chart-bar me-2"></i>图片数据深度分析报告
                                 </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
                                 <div class="row">
                                     <!-- 上传者统计 -->
                                     <div class="col-md-6 mb-4">
-                                        <h6><i class="fas fa-users"></i> 上传者排行榜</h6>
-                                        <div class="table-responsive" style="max-height: 300px;">
-                                            <table class="table table-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th>排名</th>
-                                                        <th>上传者</th>
-                                                        <th>图片数量</th>
-                                                        <th>平均置信度</th>
-                                                        <th>总存储</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    ${data.uploader_stats.map((stat, index) => `
-                                                        <tr>
-                                                            <td><span class="badge bg-${getRankBadgeClass(index)}">#${index + 1}</span></td>
-                                                            <td>${stat.uploader}</td>
-                                                            <td><span class="badge bg-primary">${stat.count}</span></td>
-                                                            <td>${stat.avg_confidence}%</td>
-                                                            <td>${formatFileSize(stat.total_size)}</td>
-                                                        </tr>
-                                                    `).join('')}
-                                                </tbody>
-                                            </table>
+                                        <div class="card border-0 h-100">
+                                            <div class="card-header bg-primary text-white">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-users me-1"></i>上传者排行榜
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="table-responsive" style="max-height: 300px;">
+                                                    <table class="table table-sm table-hover">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>排名</th>
+                                                                <th>上传者</th>
+                                                                <th>图片数</th>
+                                                                <th>平均置信度</th>
+                                                                <th>存储占用</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            ${data.uploader_stats.map((stat, index) => `
+                                                                <tr>
+                                                                    <td>
+                                                                        <span class="badge bg-${getRankBadgeClass(index)}">
+                                                                            ${getRankIcon(index)} #${index + 1}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td>
+                                                                        <i class="fas fa-user-circle me-1 text-primary"></i>
+                                                                        ${stat.uploader}
+                                                                    </td>
+                                                                    <td>
+                                                                        <span class="badge bg-primary">${stat.count}</span>
+                                                                    </td>
+                                                                    <td>
+                                                                        <div class="d-flex align-items-center">
+                                                                            <div class="confidence-bar me-2" style="width: 30px;">
+                                                                                <div class="confidence-fill bg-${getConfidenceColor(stat.avg_confidence / 100)}" 
+                                                                                     style="width: ${stat.avg_confidence}%"></div>
+                                                                            </div>
+                                                                            <span class="small">${stat.avg_confidence}%</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td>
+                                                                        <span class="badge bg-info">${formatFileSize(stat.total_size)}</span>
+                                                                    </td>
+                                                                </tr>
+                                                            `).join('')}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     
                                     <!-- AI状态分布 -->
                                     <div class="col-md-6 mb-4">
-                                        <h6><i class="fas fa-chart-pie"></i> AI分析状态分布</h6>
-                                        <canvas id="aiStatusChart" width="400" height="200"></canvas>
+                                        <div class="card border-0 h-100">
+                                            <div class="card-header bg-success text-white">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-chart-pie me-1"></i>AI分析状态分布
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="chart-container">
+                                                    <canvas id="aiStatusChart" width="400" height="250"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                     
                                     <!-- 月度上传趋势 -->
                                     <div class="col-md-6 mb-4">
-                                        <h6><i class="fas fa-chart-line"></i> 月度上传趋势</h6>
-                                        <canvas id="monthlyTrendChart" width="400" height="200"></canvas>
+                                        <div class="card border-0 h-100">
+                                            <div class="card-header bg-info text-white">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-chart-line me-1"></i>月度上传趋势
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="chart-container">
+                                                    <canvas id="monthlyTrendChart" width="400" height="250"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                     
                                     <!-- 文件大小分布 -->
                                     <div class="col-md-6 mb-4">
-                                        <h6><i class="fas fa-chart-doughnut"></i> 文件大小分布</h6>
-                                        <canvas id="sizeDistChart" width="400" height="200"></canvas>
+                                        <div class="card border-0 h-100">
+                                            <div class="card-header bg-warning text-white">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-chart-doughnut me-1"></i>文件大小分布
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="chart-container">
+                                                    <canvas id="sizeDistChart" width="400" height="250"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                     
-                                    <!-- 热门标签 -->
+                                    <!-- 热门标签云 -->
                                     <div class="col-md-12 mb-4">
-                                        <h6><i class="fas fa-tags"></i> 热门标签排行</h6>
-                                        <div class="tag-cloud p-3 border rounded">
-                                            ${data.tag_usage.map((tag, index) => `
-                                                <span class="badge bg-${getTagBadgeClass(index)} me-1 mb-1" 
-                                                      style="font-size: ${Math.max(0.75, 1.2 - index * 0.03)}rem;">
-                                                    ${tag.tag} (${tag.count})
-                                                </span>
-                                            `).join('')}
+                                        <div class="card border-0">
+                                            <div class="card-header bg-secondary text-white">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-tags me-1"></i>热门标签排行 
+                                                    <span class="badge bg-light text-dark">${data.tag_usage.length}</span>
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="tag-cloud p-3 bg-light rounded">
+                                                    ${data.tag_usage.map((tag, index) => `
+                                                        <span class="badge bg-${getTagColor(index)} me-2 mb-2 px-3 py-2" 
+                                                              style="font-size: ${Math.max(0.8, 1.4 - index * 0.05)}rem;">
+                                                            <i class="fas fa-tag me-1"></i>
+                                                            ${tag.tag} 
+                                                            <span class="badge bg-light text-dark ms-1">${tag.count}</span>
+                                                        </span>
+                                                    `).join('')}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-success" onclick="exportAnalyticsReport()">
-                                    <i class="fas fa-download"></i> 导出报告
+                                    <i class="fas fa-download me-1"></i>导出详细报告
                                 </button>
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                                <button type="button" class="btn btn-primary" onclick="printAnalytics()">
+                                    <i class="fas fa-print me-1"></i>打印报告
+                                </button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-1"></i>关闭
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1288,7 +2228,7 @@
         // 重复检查
         async function checkDuplicates() {
             try {
-                showLoading('正在检查重复图片...');
+                showLoading('正在智能检查重复图片...');
                 
                 const response = await fetch('/api/admin/images/duplicate-check', {
                     method: 'POST'
@@ -1309,82 +2249,155 @@
         }
 
         function showDuplicatesModal(data) {
+            const totalDuplicates = data.filename_duplicates.length + data.size_duplicates.length + data.dimension_duplicates.length;
+            
             const modalHtml = `
                 <div class="modal fade" id="duplicatesModal" tabindex="-1">
-                    <div class="modal-dialog modal-lg">
+                    <div class="modal-dialog modal-xl">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">
-                                    <i class="fas fa-copy"></i> 重复图片检查结果
+                                    <i class="fas fa-copy me-2"></i>重复图片智能检查结果
+                                    <span class="badge bg-warning ms-2">${totalDuplicates} 组重复</span>
                                 </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>检查完成！</strong> 
+                                    系统发现了 ${totalDuplicates} 组可能的重复图片，建议手动确认后删除以节省存储空间。
+                                </div>
+                                
                                 <div class="row">
                                     <div class="col-md-4">
-                                        <h6><i class="fas fa-file"></i> 文件名重复 (${data.filename_duplicates.length})</h6>
-                                        <div class="list-group" style="max-height: 400px; overflow-y: auto;">
-                                            ${data.filename_duplicates.map(dup => `
-                                                <div class="list-group-item">
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            <strong>${dup.filename}</strong>
-                                                            <br><small class="text-muted">${dup.count} 个重复</small>
+                                        <div class="card border-0 h-100">
+                                            <div class="card-header bg-primary text-white">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-file me-1"></i>文件名重复 
+                                                    <span class="badge bg-light text-dark">${data.filename_duplicates.length}</span>
+                                                </h6>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                                                    ${data.filename_duplicates.map(dup => `
+                                                        <div class="list-group-item">
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <div class="flex-grow-1">
+                                                                    <div class="fw-bold text-truncate" title="${dup.filename}">
+                                                                        <i class="fas fa-file-image me-1 text-primary"></i>
+                                                                        ${dup.filename}
+                                                                    </div>
+                                                                    <small class="text-muted">
+                                                                        <i class="fas fa-copy me-1"></i>
+                                                                        ${dup.count} 个重复文件
+                                                                    </small>
+                                                                </div>
+                                                                <button class="btn btn-sm btn-outline-primary" 
+                                                                        onclick="viewDuplicateImages([${dup.image_ids.join(',')}])"
+                                                                        data-tooltip="查看重复文件">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </button>
+                                                            </div>
                                                         </div>
-                                                        <button class="btn btn-sm btn-outline-primary" 
-                                                                onclick="viewDuplicateImages([${dup.image_ids.join(',')}])">
-                                                            查看
-                                                        </button>
-                                                    </div>
+                                                    `).join('')}
+                                                    ${data.filename_duplicates.length === 0 ? 
+                                                        '<div class="list-group-item text-center text-muted"><i class="fas fa-check-circle me-1"></i>未发现文件名重复</div>' : ''}
                                                 </div>
-                                            `).join('')}
+                                            </div>
                                         </div>
                                     </div>
+                                    
                                     <div class="col-md-4">
-                                        <h6><i class="fas fa-weight-hanging"></i> 大小重复 (${data.size_duplicates.length})</h6>
-                                        <div class="list-group" style="max-height: 400px; overflow-y: auto;">
-                                            ${data.size_duplicates.map(dup => `
-                                                <div class="list-group-item">
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            <strong>${formatFileSize(dup.file_size)}</strong>
-                                                            <br><small class="text-muted">${dup.count} 个重复</small>
+                                        <div class="card border-0 h-100">
+                                            <div class="card-header bg-success text-white">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-weight-hanging me-1"></i>大小重复 
+                                                    <span class="badge bg-light text-dark">${data.size_duplicates.length}</span>
+                                                </h6>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                                                    ${data.size_duplicates.map(dup => `
+                                                        <div class="list-group-item">
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <div class="flex-grow-1">
+                                                                    <div class="fw-bold">
+                                                                        <i class="fas fa-weight-hanging me-1 text-success"></i>
+                                                                        ${formatFileSize(dup.file_size)}
+                                                                    </div>
+                                                                    <small class="text-muted">
+                                                                        <i class="fas fa-copy me-1"></i>
+                                                                        ${dup.count} 个相同大小
+                                                                    </small>
+                                                                </div>
+                                                                <button class="btn btn-sm btn-outline-success" 
+                                                                        onclick="viewDuplicateImages([${dup.image_ids.join(',')}])"
+                                                                        data-tooltip="查看相同大小文件">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </button>
+                                                            </div>
                                                         </div>
-                                                        <button class="btn btn-sm btn-outline-primary" 
-                                                                onclick="viewDuplicateImages([${dup.image_ids.join(',')}])">
-                                                            查看
-                                                        </button>
-                                                    </div>
+                                                    `).join('')}
+                                                    ${data.size_duplicates.length === 0 ? 
+                                                        '<div class="list-group-item text-center text-muted"><i class="fas fa-check-circle me-1"></i>未发现大小重复</div>' : ''}
                                                 </div>
-                                            `).join('')}
+                                            </div>
                                         </div>
                                     </div>
+                                    
                                     <div class="col-md-4">
-                                        <h6><i class="fas fa-expand"></i> 尺寸重复 (${data.dimension_duplicates.length})</h6>
-                                        <div class="list-group" style="max-height: 400px; overflow-y: auto;">
-                                            ${data.dimension_duplicates.map(dup => `
-                                                <div class="list-group-item">
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            <strong>${dup.width}×${dup.height}</strong>
-                                                            <br><small class="text-muted">${dup.count} 个重复</small>
+                                        <div class="card border-0 h-100">
+                                            <div class="card-header bg-info text-white">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-expand me-1"></i>尺寸重复 
+                                                    <span class="badge bg-light text-dark">${data.dimension_duplicates.length}</span>
+                                                </h6>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                                                    ${data.dimension_duplicates.map(dup => `
+                                                        <div class="list-group-item">
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <div class="flex-grow-1">
+                                                                    <div class="fw-bold">
+                                                                        <i class="fas fa-expand-arrows-alt me-1 text-info"></i>
+                                                                        ${dup.width}×${dup.height}
+                                                                    </div>
+                                                                    <small class="text-muted">
+                                                                        <i class="fas fa-copy me-1"></i>
+                                                                        ${dup.count} 个相同尺寸
+                                                                    </small>
+                                                                </div>
+                                                                <button class="btn btn-sm btn-outline-info" 
+                                                                        onclick="viewDuplicateImages([${dup.image_ids.join(',')}])"
+                                                                        data-tooltip="查看相同尺寸文件">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </button>
+                                                            </div>
                                                         </div>
-                                                        <button class="btn btn-sm btn-outline-primary" 
-                                                                onclick="viewDuplicateImages([${dup.image_ids.join(',')}])">
-                                                            查看
-                                                        </button>
-                                                    </div>
+                                                    `).join('')}
+                                                    ${data.dimension_duplicates.length === 0 ? 
+                                                        '<div class="list-group-item text-center text-muted"><i class="fas fa-check-circle me-1"></i>未发现尺寸重复</div>' : ''}
                                                 </div>
-                                            `).join('')}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="modal-footer">
                                 <div class="text-muted me-auto">
-                                    <small>建议：删除重复图片可以节省存储空间</small>
+                                    <small>
+                                        <i class="fas fa-lightbulb me-1 text-warning"></i>
+                                        <strong>建议：</strong>删除重复图片可以显著节省存储空间和提高系统性能
+                                    </small>
                                 </div>
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                                <button type="button" class="btn btn-success" onclick="exportDuplicateReport()">
+                                    <i class="fas fa-download me-1"></i>导出报告
+                                </button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-1"></i>关闭
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1400,13 +2413,25 @@
 
         // 导出数据
         async function exportData() {
-            const format = prompt('选择导出格式：\n\n1 = CSV格式\n2 = JSON格式', '1');
+            const options = [
+                { value: 'csv', text: 'CSV 格式（表格数据）' },
+                { value: 'json', text: 'JSON 格式（完整数据）' },
+                { value: 'xlsx', text: 'Excel 格式（推荐）' }
+            ];
             
-            if (!format || !['1', '2'].includes(format)) {
+            const format = prompt(
+                '📊 选择导出格式：\n\n' + 
+                options.map((opt, index) => `${index + 1}. ${opt.text}`).join('\n') + 
+                '\n\n请输入数字（1-3）：', 
+                '3'
+            );
+            
+            if (!format || !['1', '2', '3'].includes(format)) {
                 return;
             }
             
-            const exportFormat = format === '1' ? 'csv' : 'json';
+            const formatMap = { '1': 'csv', '2': 'json', '3': 'xlsx' };
+            const exportFormat = formatMap[format];
             const status = document.getElementById('statusFilter').value;
             
             try {
@@ -1427,9 +2452,9 @@
                     window.URL.revokeObjectURL(url);
                     document.body.removeChild(a);
                     
-                    showSuccess('数据导出成功');
+                    showSuccess('数据导出成功！文件已开始下载');
                 } else {
-                    showError('导出数据失败');
+                    showError('导出数据失败，请检查网络连接');
                 }
             } catch (error) {
                 console.error('导出失败:', error);
@@ -1443,7 +2468,7 @@
         function refreshData() {
             loadStats();
             loadImages(currentPage);
-            showSuccess('数据已刷新');
+            showSuccess('🔄 数据已刷新！');
         }
 
         // 辅助函数
@@ -1451,9 +2476,20 @@
             const statusMap = {
                 'pending': '待分析',
                 'completed': '已完成',
-                'failed': '分析失败'
+                'failed': '分析失败',
+                'processing': '分析中'
             };
             return statusMap[status] || status;
+        }
+
+        function getStatusIcon(status) {
+            const iconMap = {
+                'pending': '<i class="fas fa-clock"></i>',
+                'completed': '<i class="fas fa-check-circle"></i>',
+                'failed': '<i class="fas fa-exclamation-triangle"></i>',
+                'processing': '<i class="fas fa-spinner fa-spin"></i>'
+            };
+            return iconMap[status] || '<i class="fas fa-question-circle"></i>';
         }
 
         function getConfidenceColor(confidence) {
@@ -1469,22 +2505,41 @@
             return 'light';
         }
 
-        function getTagBadgeClass(index) {
-            const classes = ['primary', 'success', 'info', 'warning', 'secondary', 'dark'];
-            return classes[index % classes.length];
+        function getRankIcon(index) {
+            if (index === 0) return '🥇';
+            if (index === 1) return '🥈';
+            if (index === 2) return '🥉';
+            return '📍';
+        }
+
+        function getTagColor(index) {
+            const colors = ['primary', 'success', 'info', 'warning', 'secondary', 'dark'];
+            return colors[index % colors.length];
         }
 
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 B';
             const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
         function formatDate(dateString) {
             const date = new Date(dateString);
-            return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+            const now = new Date();
+            const diff = now - date;
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            
+            if (days === 0) {
+                return '今天 ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+            } else if (days === 1) {
+                return '昨天 ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+            } else if (days < 7) {
+                return `${days}天前`;
+            } else {
+                return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+            }
         }
 
         function removeModal(modalId) {
@@ -1494,6 +2549,7 @@
             }
         }
 
+        // UI通知系统
         function showLoading(text = '处理中...') {
             document.getElementById('loadingText').textContent = text;
             document.getElementById('loadingOverlay').style.display = 'flex';
@@ -1504,39 +2560,58 @@
         }
 
         function showSuccess(message) {
-            // 简单的成功提示，可以替换为更好的UI组件
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
-            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
-            alertDiv.innerHTML = `
-                <i class="fas fa-check-circle"></i> ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.body.appendChild(alertDiv);
-            
-            setTimeout(() => {
-                if (alertDiv.parentNode) {
-                    alertDiv.parentNode.removeChild(alertDiv);
-                }
-            }, 5000);
+            showNotification(message, 'success', 5000);
         }
 
         function showError(message) {
-            // 简单的错误提示，可以替换为更好的UI组件
+            showNotification(message, 'danger', 8000);
+        }
+
+        function showWarning(message) {
+            showNotification(message, 'warning', 6000);
+        }
+
+        function showInfo(message) {
+            showNotification(message, 'info', 4000);
+        }
+
+        function showNotification(message, type, duration) {
             const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
-            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed animate-slide-up`;
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 350px; max-width: 500px;';
+            
+            const icon = getNotificationIcon(type);
             alertDiv.innerHTML = `
-                <i class="fas fa-exclamation-triangle"></i> ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <div class="d-flex align-items-center">
+                    <div class="me-2">${icon}</div>
+                    <div class="flex-grow-1">${message}</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
             `;
+            
             document.body.appendChild(alertDiv);
             
+            // 自动移除
             setTimeout(() => {
                 if (alertDiv.parentNode) {
-                    alertDiv.parentNode.removeChild(alertDiv);
+                    alertDiv.classList.remove('show');
+                    setTimeout(() => {
+                        if (alertDiv.parentNode) {
+                            alertDiv.parentNode.removeChild(alertDiv);
+                        }
+                    }, 300);
                 }
-            }, 8000);
+            }, duration);
+        }
+
+        function getNotificationIcon(type) {
+            const iconMap = {
+                'success': '<i class="fas fa-check-circle text-success"></i>',
+                'danger': '<i class="fas fa-exclamation-triangle text-danger"></i>',
+                'warning': '<i class="fas fa-exclamation-circle text-warning"></i>',
+                'info': '<i class="fas fa-info-circle text-info"></i>'
+            };
+            return iconMap[type] || '<i class="fas fa-bell"></i>';
         }
 
         // 图表绘制函数
@@ -1550,8 +2625,19 @@
                     labels: data.map(item => getStatusText(item.status)),
                     datasets: [{
                         data: data.map(item => item.count),
-                        backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
-                        borderWidth: 0
+                        backgroundColor: [
+                            'rgba(40, 167, 69, 0.8)',
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(220, 53, 69, 0.8)',
+                            'rgba(23, 162, 184, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(40, 167, 69, 1)',
+                            'rgba(255, 193, 7, 1)',
+                            'rgba(220, 53, 69, 1)',
+                            'rgba(23, 162, 184, 1)'
+                        ],
+                        borderWidth: 2
                     }]
                 },
                 options: {
@@ -1559,7 +2645,20 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                }
+                            }
                         }
                     }
                 }
@@ -1577,10 +2676,15 @@
                     datasets: [{
                         label: '月度上传量',
                         data: data.map(item => item.count),
-                        borderColor: '#007bff',
-                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
                     }]
                 },
                 options: {
@@ -1589,13 +2693,30 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
                         }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
                             ticks: {
                                 stepSize: 1
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
                             }
                         }
                     }
@@ -1608,10 +2729,10 @@
             if (!ctx) return;
             
             const categoryNames = {
-                'small': '小文件(<100KB)',
-                'medium': '中等(100KB-1MB)',
-                'large': '大文件(1MB-5MB)',
-                'xlarge': '超大(>5MB)'
+                'small': '小文件 (<100KB)',
+                'medium': '中等文件 (100KB-1MB)',
+                'large': '大文件 (1MB-5MB)',
+                'xlarge': '超大文件 (>5MB)'
             };
             
             new Chart(ctx, {
@@ -1620,8 +2741,19 @@
                     labels: data.map(item => categoryNames[item.category] || item.category),
                     datasets: [{
                         data: data.map(item => item.count),
-                        backgroundColor: ['#28a745', '#ffc107', '#fd7e14', '#dc3545'],
-                        borderWidth: 0
+                        backgroundColor: [
+                            'rgba(40, 167, 69, 0.8)',
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(253, 126, 20, 0.8)',
+                            'rgba(220, 53, 69, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(40, 167, 69, 1)',
+                            'rgba(255, 193, 7, 1)',
+                            'rgba(253, 126, 20, 1)',
+                            'rgba(220, 53, 69, 1)'
+                        ],
+                        borderWidth: 2
                     }]
                 },
                 options: {
@@ -1629,7 +2761,20 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed} 个文件 (${percentage}%)`;
+                                }
+                            }
                         }
                     }
                 }
@@ -1638,12 +2783,33 @@
 
         // 占位函数（可以后续实现）
         function viewDuplicateImages(imageIds) {
-            alert('查看重复图片功能开发中...\n图片IDs: ' + imageIds.join(', '));
+            showInfo(`查看重复图片功能开发中...\n图片IDs: ${imageIds.join(', ')}`);
         }
 
         function exportAnalyticsReport() {
-            alert('导出分析报告功能开发中...');
+            showInfo('导出分析报告功能开发中...');
         }
-    </script>
-</body>
-</html>
+
+        function printAnalytics() {
+            showInfo('打印分析报告功能开发中...');
+        }
+
+        function exportDuplicateReport() {
+            showInfo('导出重复检查报告功能开发中...');
+        }
+
+        // 初始化完成
+        console.log('🖼️ AI姿势参考图库 - 图片管理中心已就绪');
+        console.log('👤 当前管理员:', 'marvinli001');
+        console.log('🕒 初始化时间:', new Date().toLocaleString('zh-CN'));
+        console.log('📊 页面功能: 图片管理、批量操作、数据分析、重复检查');
+
+            // 开始初始化
+    checkAuth();
+    loadStats();
+    loadImages();
+    
+    // 设置自动刷新
+    setInterval(loadStats, 30000); // 30秒刷新统计
+});
+</script>

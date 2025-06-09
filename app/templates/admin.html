@@ -1,284 +1,830 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>系统概览 - AI姿势参考图库</title>
-
-{% block content %}
-<!-- 顶部导航 -->
-{% include "components/admin_nav.html" %}
+    
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <style>
-/* 通用样式 */
+/* ===== 全局样式 ===== */
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+    --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --danger-gradient: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+    --shadow-light: 0 2px 10px rgba(0,0,0,0.1);
+    --shadow-medium: 0 5px 20px rgba(0,0,0,0.15);
+    --shadow-heavy: 0 10px 30px rgba(0,0,0,0.2);
+    --border-radius: 15px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
-    background-color: #f8f9fa;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #2c3e50;
 }
 
+/* ===== 容器布局 ===== */
+.main-container {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 25px;
+    margin: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow-heavy);
+    min-height: calc(100vh - 40px);
+}
+
+/* ===== 页面头部 ===== */
 .admin-header {
-    background: white;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    border-radius: 1rem;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    background: var(--primary-gradient);
+    color: white;
+    padding: 2.5rem 2rem;
+    position: relative;
+    overflow: hidden;
 }
 
-.filter-section {
-    background: white;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    border-radius: 1rem;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+.admin-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1.5" fill="white" opacity="0.08"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.12"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
 }
 
+.admin-header .row {
+    position: relative;
+    z-index: 2;
+}
+
+.admin-header h1 {
+    font-weight: 700;
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.admin-header p {
+    opacity: 0.85;
+    font-size: 1.1rem;
+}
+
+/* ===== 统计卡片 ===== */
 .stats-cards {
-    margin-bottom: 2rem;
-}
-
-.stat-card {
-    background: white;
-    border-radius: 1rem;
-    padding: 1.5rem;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease;
-    height: 100%;
-}
-
-.stat-card:hover {
-    transform: translateY(-5px);
-}
-
-/* 快速操作卡片 */
-.action-card {
-    background: white;
-    border-radius: 1rem;
-    padding: 1.5rem;
-    border: 2px solid #e9ecef;
-    transition: all 0.3s ease;
-    text-align: center;
-    height: 100%;
-    cursor: pointer;
-}
-
-.action-card:hover {
-    border-color: #007bff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0,123,255,0.1);
-}
-
-.action-icon {
-    font-size: 2.5rem;
+    padding: 2rem;
     margin-bottom: 1rem;
 }
 
-/* 标签内容 */
+.stat-card {
+    background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: var(--shadow-medium);
+    transition: var(--transition);
+    height: 100%;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-gradient);
+}
+
+.stat-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(102, 126, 234, 0.2);
+}
+
+.stat-card .fa-2x {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    margin-bottom: 0.5rem;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0.5rem 0;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-change {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.5rem;
+}
+
+.stat-change.positive {
+    color: #28a745;
+}
+
+.stat-change.negative {
+    color: #dc3545;
+}
+
+/* ===== 快速操作卡片 ===== */
+.quick-actions {
+    padding: 0 2rem 2rem;
+}
+
+.action-card {
+    background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+    border-radius: 20px;
+    padding: 2rem;
+    border: 2px solid rgba(102, 126, 234, 0.1);
+    transition: var(--transition);
+    text-align: center;
+    height: 100%;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.action-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+    transition: left 0.6s ease;
+}
+
+.action-card:hover::before {
+    left: 100%;
+}
+
+.action-card:hover {
+    border-color: #667eea;
+    transform: translateY(-8px) scale(1.03);
+    box-shadow: 0 20px 40px rgba(102, 126, 234, 0.25);
+}
+
+.action-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1.5rem;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.action-card h6 {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+}
+
+.action-card p {
+    color: #6c757d;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* ===== 卡片样式 ===== */
+.card {
+    border: none;
+    border-radius: 20px;
+    box-shadow: var(--shadow-medium);
+    transition: var(--transition);
+    background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+    overflow: hidden;
+    margin: 1rem;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-heavy);
+}
+
+.card-header {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    padding: 1.5rem 2rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+/* ===== 标签页内容 ===== */
 .tab-content {
     display: none;
+    padding: 2rem;
+    animation: fadeInUp 0.4s ease;
 }
 
 .tab-content.active {
     display: block;
 }
 
-/* 日志容器 */
-.log-container {
-    background: #1e1e1e;
-    color: #ffffff;
-    font-family: 'Courier New', monospace;
-    font-size: 0.85rem;
-    max-height: 400px;
-    overflow-y: auto;
-    padding: 1rem;
-    border-radius: 0.5rem;
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-/* 加载遮罩 */
+/* ===== 日志容器 ===== */
+.log-container {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #00ff88;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 0.9rem;
+    max-height: 450px;
+    overflow-y: auto;
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    position: relative;
+    line-height: 1.6;
+}
+
+.log-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 255, 136, 0.03) 2px,
+        rgba(0, 255, 136, 0.03) 4px
+    );
+    pointer-events: none;
+}
+
+.log-entry {
+    margin-bottom: 0.5rem;
+    padding: 0.2rem 0;
+}
+
+.log-timestamp {
+    color: #64748b;
+    margin-right: 0.5rem;
+}
+
+.log-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.log-container::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
+}
+
+.log-container::-webkit-scrollbar-thumb {
+    background: #00ff88;
+    border-radius: 10px;
+    opacity: 0.7;
+}
+
+/* ===== 表单控件 ===== */
+.form-control, .form-select {
+    border-radius: 12px;
+    border: 2px solid rgba(0,0,0,0.1);
+    padding: 0.75rem 1rem;
+    transition: var(--transition);
+    background: rgba(255,255,255,0.9);
+    font-size: 0.95rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    background: white;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+/* ===== 按钮样式 ===== */
+.btn {
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: var(--transition);
+    border: none;
+    position: relative;
+    overflow: hidden;
+    font-size: 0.95rem;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn-primary {
+    background: var(--primary-gradient);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-success {
+    background: var(--success-gradient);
+    box-shadow: 0 4px 15px rgba(86, 171, 47, 0.3);
+}
+
+.btn-info {
+    background: var(--info-gradient);
+    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+}
+
+.btn-warning {
+    background: var(--warning-gradient);
+    box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+}
+
+.btn-danger {
+    background: var(--danger-gradient);
+    box-shadow: 0 4px 15px rgba(255, 65, 108, 0.3);
+}
+
+.btn-light {
+    background: rgba(255,255,255,0.9);
+    color: #2c3e50;
+    backdrop-filter: blur(10px);
+}
+
+.btn-outline-primary {
+    border: 2px solid #667eea;
+    color: #667eea;
+    background: transparent;
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+/* ===== 模态框 ===== */
+.modal-content {
+    border-radius: 20px;
+    border: none;
+    box-shadow: var(--shadow-heavy);
+    overflow: hidden;
+}
+
+.modal-header {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    padding: 1.5rem 2rem;
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.modal-footer {
+    border: none;
+    padding: 1.5rem 2rem;
+    background: rgba(0,0,0,0.02);
+}
+
+.btn-close-white {
+    filter: brightness(0) invert(1);
+}
+
+/* ===== 加载遮罩 ===== */
 .loading-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0,0,0,0.8);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 9999;
     display: none;
+    backdrop-filter: blur(10px);
 }
 
 .loading-content {
     background: white;
-    padding: 2rem;
-    border-radius: 1rem;
+    padding: 3rem;
+    border-radius: 20px;
     text-align: center;
+    box-shadow: var(--shadow-heavy);
+    animation: loadingPulse 2s ease-in-out infinite;
 }
 
-/* 辅助类 */
+@keyframes loadingPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.progress {
+    height: 8px;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    border-radius: 10px;
+    transition: width 0.3s ease;
+}
+
+/* ===== 通知样式 ===== */
+.alert {
+    border-radius: var(--border-radius);
+    border: none;
+    padding: 1rem 1.5rem;
+    font-weight: 500;
+    box-shadow: var(--shadow-light);
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #d4edda, #a8e6cf);
+    color: #155724;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #f8d7da, #fab1a0);
+    color: #721c24;
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #cce7ff, #a8d8ea);
+    color: #0c5460;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    color: #856404;
+}
+
+/* ===== 状态徽章 ===== */
 .status-badge {
-    padding: 0.4rem 0.8rem;
-    border-radius: 1rem;
-    font-size: 0.75rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.status-pending { background: #fff3cd; color: #856404; }
-.status-completed { background: #d4edda; color: #155724; }
-.status-failed { background: #f8d7da; color: #721c24; }
+.status-pending { 
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7); 
+    color: #856404; 
+}
 
-/* 响应式调整 */
+.status-completed { 
+    background: linear-gradient(135deg, #d4edda, #a8e6cf); 
+    color: #155724; 
+}
+
+.status-failed { 
+    background: linear-gradient(135deg, #f8d7da, #fab1a0); 
+    color: #721c24; 
+}
+
+/* ===== 性能监控 ===== */
+.performance-panel {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    color: white;
+    border-radius: 20px;
+    padding: 2rem;
+    margin: 1rem;
+}
+
+.performance-item {
+    margin-bottom: 1.5rem;
+}
+
+.performance-label {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-bottom: 0.5rem;
+}
+
+.performance-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.performance-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.performance-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+/* ===== 工具提示 ===== */
+.tooltip-custom {
+    position: relative;
+    cursor: help;
+}
+
+.tooltip-custom::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.tooltip-custom:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-5px);
+}
+
+/* ===== 响应式设计 ===== */
 @media (max-width: 768px) {
-    .admin-header h1 {
-        font-size: 1.5rem;
+    .main-container {
+        margin: 10px;
+        border-radius: 20px;
     }
     
-    .filter-section .row > div {
+    .admin-header {
+        padding: 2rem 1.5rem;
+    }
+    
+    .admin-header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .stats-cards, .quick-actions, .tab-content {
+        padding: 1.5rem;
+    }
+    
+    .stat-card, .action-card {
+        padding: 1.5rem;
         margin-bottom: 1rem;
     }
     
-    .table-responsive {
-        font-size: 0.875rem;
+    .stat-number {
+        font-size: 2rem;
     }
     
-    .action-buttons {
-        min-width: 100px;
+    .action-icon {
+        font-size: 2.5rem;
     }
+    
+    .card {
+        margin: 0.5rem;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+}
+
+/* ===== 滚动条样式 ===== */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.1);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-gradient);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #5a67d8, #6b46c1);
+}
+
+/* ===== 动画增强 ===== */
+.animate-fade-in {
+    animation: fadeIn 0.6s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.animate-slide-up {
+    animation: slideUp 0.5s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== 特殊效果 ===== */
+.glass-effect {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glow-effect {
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+}
+
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
 </style>
 </head>
 <body>
-<div class="container-fluid py-4">
+{% block content %}
+<!-- 顶部导航 -->
+{% include "components/admin_nav.html" %}
+
+<div class="main-container animate-fade-in">
     <!-- 页面标题 -->
     <div class="admin-header">
         <div class="row align-items-center">
-            <div class="col-md-6">
-                <h1 class="mb-0">
-                    <i class="fas fa-chart-line text-primary"></i> 系统概览
+            <div class="col-md-8">
+                <h1>
+                    <i class="fas fa-chart-line me-3"></i>系统概览仪表盘
                 </h1>
-                <p class="text-muted mb-0">管理员控制面板</p>
+                <p class="mb-0">实时监控系统状态 · 智能管理平台 · 数据驱动决策</p>
             </div>
-            <div class="col-md-6 text-end">
-                <button class="btn btn-primary" onclick="loadStats()">
-                    <i class="fas fa-sync-alt"></i> 刷新数据
-                </button>
-                <button class="btn btn-success" onclick="window.location.href='/'">
-                    <i class="fas fa-home"></i> 返回首页
-                </button>
+            <div class="col-md-4 text-end">
+                <div class="btn-group" role="group">
+                    <button class="btn btn-light" onclick="loadStats()" data-tooltip="刷新所有统计数据">
+                        <i class="fas fa-sync-alt me-2"></i>刷新数据
+                    </button>
+                    <button class="btn btn-success" onclick="window.location.href='/'" data-tooltip="返回网站首页">
+                        <i class="fas fa-home me-2"></i>返回首页
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- 统计卡片 -->
-    <div class="row stats-cards">
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="stat-card">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-images fa-2x text-primary"></i>
-                    </div>
-                    <div class="ms-3">
-                        <div class="text-muted small">总图片数</div>
-                        <h4 class="mb-0" id="totalImages">-</h4>
-                        <div class="small text-muted">今日上传: <span id="todayUploads">-</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="stat-card">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-users fa-2x text-success"></i>
-                    </div>
-                    <div class="ms-3">
-                        <div class="text-muted small">注册用户</div>
-                        <h4 class="mb-0" id="totalUsers">-</h4>
-                        <div class="small text-muted">今日新增: <span id="todayRegistrations">-</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="stat-card">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-brain fa-2x text-warning"></i>
-                    </div>
-                    <div class="ms-3">
-                        <div class="text-muted small">待分析</div>
-                        <h4 class="mb-0" id="pendingAnalysis">-</h4>
-                        <div class="small text-muted">已完成: <span id="completedAnalysis">-</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="stat-card">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-tags fa-2x text-info"></i>
-                    </div>
-                    <div class="ms-3">
-                        <div class="text-muted small">标签数量</div>
-                        <h4 class="mb-0" id="totalTags">-</h4>
-                        <div class="small text-muted">活跃: <span id="activeTags">-</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 快速操作卡片 -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-bolt"></i> 快速操作</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="action-card" onclick="showTab('ai-tools')">
-                                <div class="action-icon">
-                                    <i class="fas fa-robot text-primary"></i>
-                                </div>
-                                <h6>批量AI分析</h6>
-                                <p class="text-muted small">批量处理图片AI分析</p>
+    <div class="stats-cards">
+        <div class="row">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="stat-card animate-slide-up">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="stat-label">总图片数</div>
+                            <div class="stat-number" id="totalImages">-</div>
+                            <div class="stat-change positive">
+                                <i class="fas fa-arrow-up"></i>
+                                今日: <span id="todayUploads">-</span>
                             </div>
                         </div>
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="action-card" onclick="scanDirectory()">
-                                <div class="action-icon">
-                                    <i class="fas fa-folder-open text-success"></i>
-                                </div>
-                                <h6>扫描目录</h6>
-                                <p class="text-muted small">导入目录中的图片</p>
+                        <div>
+                            <i class="fas fa-images fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="stat-card animate-slide-up" style="animation-delay: 0.1s;">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="stat-label">注册用户</div>
+                            <div class="stat-number" id="totalUsers">-</div>
+                            <div class="stat-change positive">
+                                <i class="fas fa-user-plus"></i>
+                                新增: <span id="todayRegistrations">-</span>
                             </div>
                         </div>
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="action-card" onclick="clearCache()">
-                                <div class="action-icon">
-                                    <i class="fas fa-broom text-warning"></i>
-                                </div>
-                                <h6>清理缓存</h6>
-                                <p class="text-muted small">清理系统缓存文件</p>
+                        <div>
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="stat-card animate-slide-up" style="animation-delay: 0.2s;">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="stat-label">待分析</div>
+                            <div class="stat-number" id="pendingAnalysis">-</div>
+                            <div class="stat-change positive">
+                                <i class="fas fa-check-circle"></i>
+                                完成: <span id="completedAnalysis">-</span>
                             </div>
                         </div>
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="action-card" onclick="showSystemInfo()">
-                                <div class="action-icon">
-                                    <i class="fas fa-server text-info"></i>
-                                </div>
-                                <h6>系统信息</h6>
-                                <p class="text-muted small">查看系统运行状态</p>
+                        <div>
+                            <i class="fas fa-brain fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="stat-card animate-slide-up" style="animation-delay: 0.3s;">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="stat-label">标签数量</div>
+                            <div class="stat-number" id="totalTags">-</div>
+                            <div class="stat-change positive">
+                                <i class="fas fa-star"></i>
+                                活跃: <span id="activeTags">-</span>
                             </div>
+                        </div>
+                        <div>
+                            <i class="fas fa-tags fa-2x"></i>
                         </div>
                     </div>
                 </div>
@@ -286,81 +832,275 @@ body {
         </div>
     </div>
 
-    <!-- AI工具内容区域 -->
+    <!-- 快速操作中心 -->
+    <div class="quick-actions">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <i class="fas fa-bolt me-2"></i>快速操作中心
+                    </div>
+                    <div class="badge bg-light text-dark">
+                        <i class="fas fa-clock me-1"></i>
+                        <span id="currentTime">--:--</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="action-card" onclick="showTab('ai-tools')">
+                            <div class="action-icon">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <h6>AI批量分析</h6>
+                            <p>智能图像分析处理</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="action-card" onclick="scanDirectory()">
+                            <div class="action-icon">
+                                <i class="fas fa-folder-open"></i>
+                            </div>
+                            <h6>目录扫描</h6>
+                            <p>批量导入图片文件</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="action-card" onclick="clearCache()">
+                            <div class="action-icon">
+                                <i class="fas fa-broom"></i>
+                            </div>
+                            <h6>清理缓存</h6>
+                            <p>释放系统存储空间</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="action-card" onclick="showSystemInfo()">
+                            <div class="action-icon">
+                                <i class="fas fa-server"></i>
+                            </div>
+                            <h6>系统监控</h6>
+                            <p>实时性能状态</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI工具标签页 -->
     <div id="ai-tools" class="tab-content">
-        <div class="admin-header mb-4">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h2 class="mb-0">
-                        <i class="fas fa-robot text-primary"></i> AI分析工具
-                    </h2>
-                    <p class="text-muted mb-0">批量处理图片AI分析</p>
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <h2 class="mb-2">
+                    <i class="fas fa-robot text-primary me-3"></i>AI分析工具中心
+                </h2>
+                <p class="text-muted mb-0">高效智能的批量图像处理解决方案</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="btn-group" role="group">
+                    <button class="btn btn-outline-primary" onclick="refreshAIStats()">
+                        <i class="fas fa-chart-bar me-1"></i>分析统计
+                    </button>
+                    <button class="btn btn-outline-info" onclick="showAIHistory()">
+                        <i class="fas fa-history me-1"></i>历史记录
+                    </button>
                 </div>
             </div>
         </div>
         
         <div class="row">
+            <!-- 批量分析工具 -->
             <div class="col-md-6 mb-4">
-                <div class="card">
+                <div class="card h-100">
                     <div class="card-header">
-                        <h5><i class="fas fa-magic"></i> 批量AI分析</h5>
+                        <i class="fas fa-magic me-2"></i>批量AI分析
                     </div>
                     <div class="card-body">
-                        <p>对图片进行批量AI分析处理</p>
+                        <p class="text-muted mb-4">
+                            <i class="fas fa-info-circle me-1"></i>
+                            使用先进的人工智能技术对图片进行智能分析和标注
+                        </p>
+                        
                         <div class="mb-3">
-                            <label class="form-label">分析范围:</label>
+                            <label class="form-label">
+                                <i class="fas fa-filter me-1"></i>分析范围
+                            </label>
                             <select class="form-select" id="batchAnalysisFilter">
-                                <option value="pending">仅待分析图片</option>
-                                <option value="failed">仅失败图片</option>
-                                <option value="all">全部图片</option>
+                                <option value="pending">📋 仅待分析图片</option>
+                                <option value="failed">❌ 仅失败图片</option>
+                                <option value="all">🔄 全部图片</option>
                             </select>
                         </div>
+                        
                         <div class="mb-3">
-                            <label class="form-label">处理数量限制:</label>
-                            <input type="number" class="form-control" id="batchAnalysisLimit" value="10" min="1" max="100">
+                            <label class="form-label">
+                                <i class="fas fa-list-ol me-1"></i>处理数量限制
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="batchAnalysisLimit" 
+                                       value="10" min="1" max="100">
+                                <span class="input-group-text">张图片</span>
+                            </div>
+                            <div class="form-text">
+                                <i class="fas fa-lightbulb me-1"></i>
+                                建议单次处理不超过50张以保证最佳性能
+                            </div>
                         </div>
-                        <button class="btn btn-primary" onclick="startBatchAnalysis()">
-                            <i class="fas fa-play"></i> 开始批量分析
+                        
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableProgressNotification" checked>
+                                <label class="form-check-label">
+                                    <i class="fas fa-bell me-1"></i>启用进度实时通知
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-primary w-100" onclick="startBatchAnalysis()">
+                            <i class="fas fa-play me-2"></i>开始批量分析
                         </button>
                     </div>
                 </div>
             </div>
             
+            <!-- 目录扫描工具 -->
             <div class="col-md-6 mb-4">
-                <div class="card">
+                <div class="card h-100">
                     <div class="card-header">
-                        <h5><i class="fas fa-folder-open"></i> 目录扫描</h5>
+                        <i class="fas fa-folder-open me-2"></i>智能目录扫描
                     </div>
                     <div class="card-body">
-                        <p>扫描指定目录并导入新图片</p>
+                        <p class="text-muted mb-4">
+                            <i class="fas fa-info-circle me-1"></i>
+                            自动发现并导入指定目录中的图片文件
+                        </p>
+                        
                         <div class="mb-3">
-                            <label class="form-label">目录路径:</label>
-                            <input type="text" class="form-control" id="scanDirectoryPath" 
-                                   placeholder="例如: uploads" value="uploads">
+                            <label class="form-label">
+                                <i class="fas fa-folder me-1"></i>目录路径
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-folder-open"></i></span>
+                                <input type="text" class="form-control" id="scanDirectoryPath" 
+                                       placeholder="例如: uploads/images" value="uploads">
+                            </div>
                         </div>
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="autoAnalyzeScanned" checked>
-                            <label class="form-check-label">自动分析新导入的图片</label>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-file-image me-1"></i>文件类型过滤
+                            </label>
+                            <select class="form-select" id="fileTypeFilter">
+                                <option value="all">🖼️ 所有图片格式</option>
+                                <option value="jpg">📷 仅 JPG/JPEG</option>
+                                <option value="png">🎨 仅 PNG</option>
+                                <option value="webp">🌐 仅 WebP</option>
+                            </select>
                         </div>
-                        <button class="btn btn-info" onclick="startDirectoryScan()">
-                            <i class="fas fa-scan"></i> 开始扫描
+                        
+                        <div class="mb-4">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="autoAnalyzeScanned" checked>
+                                <label class="form-check-label">
+                                    <i class="fas fa-brain me-1"></i>自动分析新导入的图片
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="recursiveScan">
+                                <label class="form-check-label">
+                                    <i class="fas fa-sitemap me-1"></i>递归扫描子目录
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-info w-100" onclick="startDirectoryScan()">
+                            <i class="fas fa-search me-2"></i>开始智能扫描
                         </button>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- 操作日志 -->
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-list"></i> 操作日志</h5>
-                <button class="btn btn-sm btn-outline-secondary" onclick="clearOperationLog()">
-                    <i class="fas fa-trash-alt"></i> 清空
-                </button>
+        <!-- 操作监控面板 -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-terminal me-2"></i>实时操作日志
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-light" onclick="toggleAutoScroll()" id="autoScrollBtn">
+                                <i class="fas fa-arrow-down me-1"></i>自动滚动
+                            </button>
+                            <button class="btn btn-outline-light" onclick="exportLog()">
+                                <i class="fas fa-download me-1"></i>导出
+                            </button>
+                            <button class="btn btn-outline-light" onclick="clearOperationLog()">
+                                <i class="fas fa-trash-alt me-1"></i>清空
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="operationLog" class="log-container">
+                            <div class="log-entry">
+                                <span class="log-timestamp">[系统]</span>
+                                <span style="color: #00ff88;">
+                                    <i class="fas fa-check-circle"></i> 系统初始化完成，准备接收指令...
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <div id="operationLog" class="log-container">
-                    <div class="text-muted">等待操作...</div>
+            
+            <div class="col-md-4">
+                <div class="performance-panel">
+                    <h6 class="mb-3">
+                        <i class="fas fa-tachometer-alt me-2"></i>性能监控
+                    </h6>
+                    
+                    <div class="performance-item">
+                        <div class="performance-label">内存使用率</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="performance-value" id="memoryUsage">-</div>
+                            <small id="memoryDetails">- / -</small>
+                        </div>
+                        <div class="performance-bar">
+                            <div class="performance-bar-fill bg-primary" id="memoryBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="performance-item">
+                        <div class="performance-label">CPU使用率</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="performance-value" id="cpuUsage">-</div>
+                            <small id="cpuCores">- 核心</small>
+                        </div>
+                        <div class="performance-bar">
+                            <div class="performance-bar-fill bg-success" id="cpuBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="performance-item">
+                        <div class="performance-label">处理队列</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="performance-value" id="queueTasks">-</div>
+                            <small>个任务</small>
+                        </div>
+                        <div class="performance-bar">
+                            <div class="performance-bar-fill bg-warning" id="queueBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-3" style="border-color: rgba(255,255,255,0.2);">
+                    
+                    <div class="text-center">
+                        <div class="performance-label">系统运行时间</div>
+                        <div class="performance-value" id="systemUptime">计算中...</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -372,19 +1112,26 @@ body {
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">编辑图片信息</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>编辑图片信息
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="row">
                     <div class="col-md-6">
                         <div class="text-center">
-                            <img id="editImagePreview" class="img-fluid rounded" style="max-height: 300px;" alt="图片预览">
-                            <div class="mt-2">
-                                <small class="text-muted">
-                                    <span id="editImageDimensions"></span> | 
-                                    <span id="editImageSize"></span>
-                                </small>
+                            <img id="editImagePreview" class="img-fluid rounded-3 shadow" 
+                                 style="max-height: 300px;" alt="图片预览">
+                            <div class="mt-3">
+                                <div class="badge bg-light text-dark me-2">
+                                    <i class="fas fa-expand-arrows-alt me-1"></i>
+                                    <span id="editImageDimensions">-</span>
+                                </div>
+                                <div class="badge bg-light text-dark">
+                                    <i class="fas fa-weight-hanging me-1"></i>
+                                    <span id="editImageSize">-</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -393,42 +1140,57 @@ body {
                             <input type="hidden" id="editImageId">
                             
                             <div class="mb-3">
-                                <label class="form-label">文件名</label>
+                                <label class="form-label">
+                                    <i class="fas fa-file-image me-1"></i>文件名
+                                </label>
                                 <input type="text" class="form-control" id="editImageFilename" readonly>
                             </div>
                             
                             <div class="mb-3">
-                                <label class="form-label">上传者</label>
+                                <label class="form-label">
+                                    <i class="fas fa-user me-1"></i>上传者
+                                </label>
                                 <input type="text" class="form-control" id="editImageUploader" readonly>
                             </div>
                             
                             <div class="mb-3">
-                                <label class="form-label">AI描述</label>
+                                <label class="form-label">
+                                    <i class="fas fa-robot me-1"></i>AI描述
+                                </label>
                                 <textarea class="form-control" id="editImageDescription" rows="3" 
                                           placeholder="编辑AI生成的描述..."></textarea>
                             </div>
                             
                             <div class="mb-3">
-                                <label class="form-label">状态</label>
+                                <label class="form-label">
+                                    <i class="fas fa-toggle-on me-1"></i>状态
+                                </label>
                                 <select class="form-select" id="editImageStatus">
-                                    <option value="true">活跃</option>
-                                    <option value="false">禁用</option>
+                                    <option value="true">✅ 活跃</option>
+                                    <option value="false">❌ 禁用</option>
                                 </select>
                             </div>
                             
                             <div class="mb-3">
-                                <label class="form-label">自定义标签</label>
+                                <label class="form-label">
+                                    <i class="fas fa-tags me-1"></i>自定义标签
+                                </label>
                                 <input type="text" class="form-control" id="editImageTags" 
-                                       placeholder="用逗号分隔多个标签，例如：女性,坐姿,室内">
-                                <div class="form-text">现有标签将被替换</div>
+                                       placeholder="用逗号分隔，例如：女性,坐姿,室内">
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>现有标签将被替换
+                                </div>
                             </div>
                             
                             <div class="mb-3">
-                                <label class="form-label">AI分析状态</label>
+                                <label class="form-label">
+                                    <i class="fas fa-brain me-1"></i>AI分析状态
+                                </label>
                                 <div class="input-group">
                                     <input type="text" class="form-control" id="editImageAIStatus" readonly>
                                     <span class="input-group-text">
-                                        置信度: <span id="editImageConfidence">-</span>%
+                                        <i class="fas fa-percentage me-1"></i>
+                                        <span id="editImageConfidence">-</span>%
                                     </span>
                                 </div>
                             </div>
@@ -437,49 +1199,96 @@ body {
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>取消
+                </button>
                 <button type="button" class="btn btn-primary" onclick="saveImageEdit()">
-                    <i class="fas fa-save"></i> 保存更改
+                    <i class="fas fa-save me-1"></i>保存更改
                 </button>
                 <button type="button" class="btn btn-warning" onclick="reanalyzeImageFromModal()">
-                    <i class="fas fa-brain"></i> 重新分析
+                    <i class="fas fa-brain me-1"></i>重新分析
                 </button>
                 <button type="button" class="btn btn-danger" onclick="deleteImageFromModal()">
-                    <i class="fas fa-trash"></i> 删除图片
+                    <i class="fas fa-trash me-1"></i>删除图片
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- 自定义提示词分析模态框 -->
+<!-- 自定义AI分析模态框 -->
 <div class="modal fade" id="customAnalysisModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">自定义AI分析</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title">
+                    <i class="fas fa-brain me-2"></i>自定义AI分析引擎
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">自定义提示词</label>
-                    <textarea class="form-control" id="modalCustomPrompt" rows="6" 
+                <div class="mb-4">
+                    <label class="form-label">
+                        <i class="fas fa-comment-dots me-1"></i>自定义提示词
+                    </label>
+                    <textarea class="form-control" id="modalCustomPrompt" rows="8" 
                               placeholder="输入自定义的AI分析提示词...
 
-例如：
-- 专注分析图片中人物的服装风格和颜色搭配
-- 详细描述图片的光线和拍摄角度
-- 识别图片中的道具和背景元素"></textarea>
+💡 示例提示词：
+• 专注分析图片中人物的服装风格和颜色搭配
+• 详细描述图片的光线、拍摄角度和构图技巧
+• 识别图片中的道具、背景元素和环境特征
+• 分析人物的姿势、表情和动作的艺术表现力"></textarea>
                 </div>
+                
+                <div class="mb-4">
+                    <h6 class="fw-semibold mb-3">
+                        <i class="fas fa-lightbulb text-warning me-1"></i>智能提示词模板
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <button class="btn btn-outline-primary btn-sm w-100" 
+                                    onclick="insertPromptTemplate('pose')">
+                                <i class="fas fa-user me-1"></i>姿势分析模板
+                            </button>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <button class="btn btn-outline-success btn-sm w-100" 
+                                    onclick="insertPromptTemplate('style')">
+                                <i class="fas fa-palette me-1"></i>风格分析模板
+                            </button>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <button class="btn btn-outline-info btn-sm w-100" 
+                                    onclick="insertPromptTemplate('composition')">
+                                <i class="fas fa-camera me-1"></i>构图分析模板
+                            </button>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <button class="btn btn-outline-warning btn-sm w-100" 
+                                    onclick="insertPromptTemplate('detail')">
+                                <i class="fas fa-search me-1"></i>细节分析模板
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i>
-                    <strong>提示：</strong>自定义提示词将覆盖默认的分析模式，请确保提示词清晰明确。
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>智能提示：</strong>
+                    自定义提示词将替代默认分析模式。更详细、更具体的提示词通常能获得更准确和丰富的分析结果。
+                    建议使用清晰的语言描述您希望AI关注的重点。
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>取消
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="clearCustomPrompt()">
+                    <i class="fas fa-eraser me-1"></i>清空内容
+                </button>
                 <button type="button" class="btn btn-primary" onclick="startCustomAnalysisFromModal()">
-                    <i class="fas fa-brain"></i> 开始分析
+                    <i class="fas fa-brain me-1"></i>开始智能分析
                 </button>
             </div>
         </div>
@@ -489,37 +1298,79 @@ body {
 <!-- 加载遮罩 -->
 <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-content">
-        <div class="spinner-border text-primary mb-3" role="status">
-            <span class="visually-hidden">加载中...</span>
+        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">处理中...</span>
         </div>
-        <h5 id="loadingText">处理中...</h5>
+        <h5 id="loadingText">系统处理中...</h5>
+        <p class="text-muted mb-3" id="loadingSubtext">请稍候，正在执行操作</p>
+        <div class="progress" style="height: 6px; display: none;" id="loadingProgress">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+// ===== 全局变量 =====
 let currentTab = 'dashboard';
 let statsData = null;
+let autoScrollEnabled = true;
+let performanceData = {};
+let statsUpdateInterval;
+let systemMonitorInterval;
+let performanceMonitorInterval;
+let clockInterval;
 
+// ===== 预定义模板 =====
+const promptTemplates = {
+    pose: "请详细分析图片中人物的姿势特征，包括身体姿态、手部动作、腿部位置、头部朝向等，描述姿势的动态感和表现力，以及姿势传达的情感和意图。",
+    style: "请深入分析图片的整体风格特征，包括色彩搭配、光线效果、拍摄风格、后期处理技巧，以及整体的视觉美感和艺术表现力。",
+    composition: "请专业分析图片的构图特点，包括拍摄角度、景深效果、主体位置、背景布局、画面平衡感、引导线运用等摄影构图技巧。",
+    detail: "请全面细致分析图片中的所有可见元素，包括服装细节、道具物品、环境特征、材质纹理、光影变化、色彩层次等视觉细节。"
+};
+
+// ===== 初始化 =====
 document.addEventListener('DOMContentLoaded', function() {
-    // 初始化
-    checkAdminPermission();
-    loadStats();
-    initializeUI();
-    
-    // 启动自动更新
-    startStatsAutoUpdate();
-    startSystemMonitor();
+    initializeSystem();
 });
 
-// 页面卸载时停止计时器
 window.addEventListener('beforeunload', function() {
-    stopStatsAutoUpdate();
-    stopSystemMonitor();
+    cleanupSystem();
 });
 
-// 检查管理员权限
+async function initializeSystem() {
+    try {
+        // 检查权限
+        await checkAdminPermission();
+        
+        // 初始化UI
+        initializeUI();
+        
+        // 加载数据
+        await loadStats();
+        
+        // 启动监控
+        startAllMonitors();
+        
+        // 初始化时钟
+        startClock();
+        
+        // 显示欢迎消息
+        addLog('🚀 管理面板初始化完成', 'success');
+        
+    } catch (error) {
+        console.error('系统初始化失败:', error);
+        addLog('❌ 系统初始化失败: ' + error.message, 'error');
+    }
+}
+
+function cleanupSystem() {
+    stopAllMonitors();
+    if (clockInterval) clearInterval(clockInterval);
+}
+
+// ===== 权限检查 =====
 async function checkAdminPermission() {
     try {
         const response = await fetch('/api/auth/check');
@@ -531,35 +1382,45 @@ async function checkAdminPermission() {
         }
         
         if (data.user.role !== 'admin' && data.user.role !== 'moderator') {
-            alert('您没有管理员权限');
-            window.location.href = '/';
+            showError('您没有管理员权限访问此页面');
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2000);
             return;
         }
+        
+        addLog(`👋 欢迎回来，${data.user.username} (${getRoleText(data.user.role)})`, 'info');
     } catch (error) {
-        console.error('检查权限失败:', error);
-        window.location.href = '/login';
+        console.error('权限检查失败:', error);
+        showError('权限验证失败，请重新登录');
+        setTimeout(() => {
+            window.location.href = '/login';
+        }, 2000);
     }
 }
 
-// 初始化UI
+// ===== UI初始化 =====
 function initializeUI() {
     // 隐藏所有标签页
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.style.display = 'none';
+        tab.classList.remove('active');
     });
     
-    // 根据URL参数显示指定标签页
+    // 检查URL参数
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
     
     if (tab === 'ai-tools') {
         showTab('ai-tools');
     }
+    
+    // 初始化按钮状态
+    updateAutoScrollButton();
 }
 
-// 切换标签页
+// ===== 标签页管理 =====
 function showTab(tabId) {
-    // 如果是外部链接的标签页，直接跳转
     const externalTabs = {
         'images': '/admin/images',
         'users': '/admin/users', 
@@ -575,27 +1436,34 @@ function showTab(tabId) {
     // 隐藏所有标签页
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.style.display = 'none';
+        tab.classList.remove('active');
     });
     
     // 显示目标标签页
     const targetTab = document.getElementById(tabId);
     if (targetTab) {
         targetTab.style.display = 'block';
+        targetTab.classList.add('active');
     }
     
-    // 更新URL参数
+    // 更新URL
     const url = new URL(window.location.href);
     url.searchParams.set('tab', tabId);
     window.history.pushState({}, '', url);
     
-    // 更新当前标签
     currentTab = tabId;
+    
+    // 标签页特殊处理
+    if (tabId === 'ai-tools') {
+        refreshAIStats();
+        addLog('🔧 AI工具面板已激活', 'info');
+    }
 }
 
-// 加载统计数据
+// ===== 统计数据管理 =====
 async function loadStats() {
     try {
-        showLoading('正在加载数据...');
+        showLoading('正在加载统计数据...', '获取最新的系统状态信息');
         
         const response = await fetch('/api/admin/stats');
         const data = await response.json();
@@ -603,35 +1471,69 @@ async function loadStats() {
         if (data.success) {
             statsData = data.data;
             displayStats(statsData);
+            addLog('📊 统计数据刷新完成', 'success');
         } else {
-            showError('加载统计数据失败');
+            throw new Error(data.detail || '统计数据加载失败');
         }
     } catch (error) {
-        console.error('加载统计失败:', error);
-        showError('网络错误：' + error.message);
+        console.error('统计加载失败:', error);
+        showError('统计数据加载失败: ' + error.message);
+        addLog('❌ 统计数据加载失败: ' + error.message, 'error');
     } finally {
         hideLoading();
     }
 }
 
-// 显示统计数据
 function displayStats(data) {
-    document.getElementById('totalImages').textContent = data.overview.total_images || 0;
-    document.getElementById('totalUsers').textContent = data.overview.total_users || 0;
-    document.getElementById('totalTags').textContent = data.overview.total_tags || 0;
-    document.getElementById('pendingAnalysis').textContent = data.ai_analysis.pending || 0;
+    // 使用动画效果更新数字
+    animateNumber('totalImages', data.overview.total_images || 0);
+    animateNumber('totalUsers', data.overview.total_users || 0);
+    animateNumber('totalTags', data.overview.total_tags || 0);
+    animateNumber('pendingAnalysis', data.ai_analysis.pending || 0);
     
-    document.getElementById('todayUploads').textContent = data.today.uploads || 0;
-    document.getElementById('todayRegistrations').textContent = data.today.registrations || 0;
-    document.getElementById('completedAnalysis').textContent = data.ai_analysis.completed || 0;
-    document.getElementById('activeTags').textContent = data.overview.active_tags || 0;
+    animateNumber('todayUploads', data.today.uploads || 0);
+    animateNumber('todayRegistrations', data.today.registrations || 0);
+    animateNumber('completedAnalysis', data.ai_analysis.completed || 0);
+    animateNumber('activeTags', data.overview.active_tags || 0);
 }
 
-// 实时统计更新
-let statsUpdateInterval;
+function animateNumber(elementId, targetValue) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    const currentValue = parseInt(element.textContent.replace(/[^\d]/g, '')) || 0;
+    const difference = targetValue - currentValue;
+    const duration = 1500;
+    const steps = 30;
+    const stepValue = difference / steps;
+    
+    let currentStep = 0;
+    const timer = setInterval(() => {
+        currentStep++;
+        const newValue = Math.round(currentValue + (stepValue * currentStep));
+        element.textContent = formatNumber(newValue);
+        
+        if (currentStep >= steps) {
+            element.textContent = formatNumber(targetValue);
+            clearInterval(timer);
+        }
+    }, duration / steps);
+}
+
+// ===== 监控系统 =====
+function startAllMonitors() {
+    startStatsAutoUpdate();
+    startSystemMonitor();
+    startPerformanceMonitor();
+}
+
+function stopAllMonitors() {
+    stopStatsAutoUpdate();
+    stopSystemMonitor();
+    stopPerformanceMonitor();
+}
 
 function startStatsAutoUpdate() {
-    // 每30秒自动更新统计数据
     statsUpdateInterval = setInterval(loadStats, 30000);
 }
 
@@ -641,28 +1543,19 @@ function stopStatsAutoUpdate() {
     }
 }
 
-// 系统监控功能
-let systemMonitorInterval;
-
 function startSystemMonitor() {
     systemMonitorInterval = setInterval(async () => {
         try {
-            // 检查系统状态
             const response = await fetch('/api/admin/system-info');
             const data = await response.json();
             
             if (data.success) {
-                const memoryUsage = ((data.data.system.memory_total_gb - data.data.system.memory_available_gb) / data.data.system.memory_total_gb * 100).toFixed(1);
-                
-                // 如果内存使用率过高，发出警告
-                if (memoryUsage > 80) {
-                    addLog(`⚠️ 系统警告：内存使用率 ${memoryUsage}%`);
-                }
+                updateSystemInfo(data.data);
             }
         } catch (error) {
             console.error('系统监控错误:', error);
         }
-    }, 60000); // 每分钟检查一次
+    }, 60000);
 }
 
 function stopSystemMonitor() {
@@ -671,21 +1564,119 @@ function stopSystemMonitor() {
     }
 }
 
-// 批量AI分析
+function startPerformanceMonitor() {
+    performanceMonitorInterval = setInterval(async () => {
+        try {
+            const response = await fetch('/api/admin/performance');
+            const data = await response.json();
+            
+            if (data.success) {
+                updatePerformanceMetrics(data.data);
+            }
+        } catch (error) {
+            console.error('性能监控错误:', error);
+        }
+    }, 5000); // 每5秒更新一次性能数据
+}
+function stopPerformanceMonitor() {
+    if (performanceMonitorInterval) {
+        clearInterval(performanceMonitorInterval);
+    }
+}
+
+function updateSystemInfo(systemData) {
+    if (systemData.system) {
+        const memoryTotal = systemData.system.memory_total_gb || 0;
+        const memoryAvailable = systemData.system.memory_available_gb || 0;
+        const memoryUsed = memoryTotal - memoryAvailable;
+        const memoryUsagePercent = memoryTotal > 0 ? (memoryUsed / memoryTotal * 100).toFixed(1) : 0;
+        
+        // 更新运行时间
+        if (systemData.system.uptime) {
+            document.getElementById('systemUptime').textContent = formatUptime(systemData.system.uptime);
+        }
+        
+        // 内存使用率警告
+        if (memoryUsagePercent > 85) {
+            addLog(`🔥 警告：系统内存使用率过高 ${memoryUsagePercent}%`, 'warning');
+            showWarning(`系统内存使用率已达到 ${memoryUsagePercent}%，建议清理缓存或重启服务`);
+        }
+    }
+}
+
+function updatePerformanceMetrics(perfData) {
+    // 更新内存使用率
+    if (perfData.memory) {
+        const memoryPercent = perfData.memory.usage_percent || 0;
+        document.getElementById('memoryUsage').textContent = `${memoryPercent}%`;
+        document.getElementById('memoryDetails').textContent = 
+            `${formatBytes(perfData.memory.used)} / ${formatBytes(perfData.memory.total)}`;
+        document.getElementById('memoryBar').style.width = `${memoryPercent}%`;
+        
+        // 动态颜色
+        const memoryBar = document.getElementById('memoryBar');
+        if (memoryPercent > 80) {
+            memoryBar.className = 'performance-bar-fill bg-danger';
+        } else if (memoryPercent > 60) {
+            memoryBar.className = 'performance-bar-fill bg-warning';
+        } else {
+            memoryBar.className = 'performance-bar-fill bg-primary';
+        }
+    }
+    
+    // 更新CPU使用率
+    if (perfData.cpu) {
+        const cpuPercent = perfData.cpu.usage_percent || 0;
+        document.getElementById('cpuUsage').textContent = `${cpuPercent}%`;
+        document.getElementById('cpuCores').textContent = `${perfData.cpu.cores || '-'} 核心`;
+        document.getElementById('cpuBar').style.width = `${cpuPercent}%`;
+    }
+    
+    // 更新队列状态
+    if (perfData.queue) {
+        const queueCount = perfData.queue.pending || 0;
+        const queueMax = perfData.queue.max || 100;
+        const queuePercent = queueMax > 0 ? Math.min(queueCount / queueMax * 100, 100) : 0;
+        
+        document.getElementById('queueTasks').textContent = queueCount;
+        document.getElementById('queueBar').style.width = `${queuePercent}%`;
+    }
+}
+
+// ===== 时钟功能 =====
+function startClock() {
+    function updateClock() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('zh-CN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        const timeElement = document.getElementById('currentTime');
+        if (timeElement) {
+            timeElement.textContent = timeString;
+        }
+    }
+    
+    updateClock();
+    clockInterval = setInterval(updateClock, 1000);
+}
+
+// ===== AI分析功能 =====
 async function startBatchAnalysis() {
     const filter = document.getElementById('batchAnalysisFilter').value;
     const limit = document.getElementById('batchAnalysisLimit').value;
     
     // 询问是否使用自定义提示词
-    if (confirm('是否使用自定义提示词进行分析？\n\n确定 = 使用自定义提示词\n取消 = 使用默认分析')) {
+    if (confirm('🤖 是否使用自定义提示词进行AI分析？\n\n✅ 确定 = 使用自定义提示词\n❌ 取消 = 使用默认分析模式')) {
         showCustomAnalysisModal();
         return;
     }
     
-    if (confirm(`确定要开始批量分析吗？将处理 ${filter} 图片，限制 ${limit} 张。`)) {
+    if (confirm(`🚀 确定要开始批量AI分析吗？\n\n📋 分析范围：${getFilterText(filter)}\n🔢 处理数量：${limit} 张图片\n\n此操作可能需要较长时间，请耐心等待。`)) {
         try {
-            showLoading('正在启动批量分析...');
-            addLog('开始批量AI分析...');
+            showLoading('🧠 正在启动AI分析引擎...', '初始化批量处理任务');
+            addLog(`🚀 开始批量AI分析 - 范围：${getFilterText(filter)}，限制：${limit}张`, 'info');
             
             const response = await fetch('/api/admin/batch/analyze', {
                 method: 'POST',
@@ -699,39 +1690,52 @@ async function startBatchAnalysis() {
             const data = await response.json();
             
             if (data.success) {
-                addLog(`批量分析任务已启动，将处理 ${data.count} 张图片`);
-                showSuccess('批量分析任务已启动');
+                addLog(`✅ 批量分析任务启动成功，将处理 ${data.count} 张图片`, 'success');
+                showSuccess(`批量AI分析任务已启动！将处理 ${data.count} 张图片`);
+                
+                // 启动进度监控
+                if (document.getElementById('enableProgressNotification').checked) {
+                    startAnalysisProgressMonitor();
+                }
             } else {
-                addLog('批量分析启动失败: ' + (data.detail || '未知错误'));
-                showError('批量分析启动失败');
+                throw new Error(data.detail || '未知错误');
             }
         } catch (error) {
-            addLog('批量分析启动失败: ' + error.message);
-            showError('网络错误：' + error.message);
+            addLog(`❌ 批量分析启动失败: ${error.message}`, 'error');
+            showError('批量分析启动失败: ' + error.message);
         } finally {
             hideLoading();
         }
     }
 }
 
-// 目录扫描
 async function startDirectoryScan() {
-    const path = document.getElementById('scanDirectoryPath').value;
+    const path = document.getElementById('scanDirectoryPath').value.trim();
     const autoAnalyze = document.getElementById('autoAnalyzeScanned').checked;
+    const recursiveScan = document.getElementById('recursiveScan').checked;
+    const fileType = document.getElementById('fileTypeFilter').value;
     
     if (!path) {
-        alert('请输入目录路径');
+        showError('请输入有效的目录路径');
+        document.getElementById('scanDirectoryPath').focus();
         return;
     }
     
-    if (confirm(`确定要扫描目录 "${path}" 吗？`)) {
+    const scanOptions = [];
+    if (autoAnalyze) scanOptions.push('🧠 自动AI分析');
+    if (recursiveScan) scanOptions.push('📁 递归扫描');
+    scanOptions.push(`📸 文件类型：${getFileTypeText(fileType)}`);
+    
+    if (confirm(`📂 确定要扫描目录吗？\n\n📍 路径：${path}\n⚙️ 选项：${scanOptions.join('、')}\n\n扫描可能需要一些时间，请耐心等待。`)) {
         try {
-            showLoading('正在扫描目录...');
-            addLog(`开始扫描目录: ${path}`);
+            showLoading('📂 正在扫描目录...', '发现并导入新图片文件');
+            addLog(`📂 开始目录扫描: ${path}`, 'info');
             
             const params = new URLSearchParams({
                 directory_path: path,
-                auto_analyze: autoAnalyze
+                auto_analyze: autoAnalyze,
+                recursive: recursiveScan,
+                file_type: fileType
             });
             
             const response = await fetch(`/api/admin/scan-directory?${params}`, {
@@ -741,43 +1745,76 @@ async function startDirectoryScan() {
             const data = await response.json();
             
             if (data.success) {
-                addLog('目录扫描任务已启动');
-                showSuccess('目录扫描任务已启动');
+                addLog(`✅ 目录扫描任务启动成功`, 'success');
+                showSuccess('目录扫描任务已启动！');
+                
+                // 如果返回了扫描结果
+                if (data.found_files) {
+                    addLog(`📸 发现 ${data.found_files} 个新文件`, 'info');
+                }
             } else {
-                addLog('目录扫描启动失败: ' + (data.detail || '未知错误'));
-                showError('目录扫描启动失败');
+                throw new Error(data.detail || '未知错误');
             }
         } catch (error) {
-            addLog('目录扫描启动失败: ' + error.message);
-            showError('网络错误：' + error.message);
+            addLog(`❌ 目录扫描启动失败: ${error.message}`, 'error');
+            showError('目录扫描启动失败: ' + error.message);
         } finally {
             hideLoading();
         }
     }
 }
 
-// 自定义分析功能
+// ===== 自定义分析功能 =====
 function showCustomAnalysisModal() {
     const modal = new bootstrap.Modal(document.getElementById('customAnalysisModal'));
     modal.show();
 }
 
-// 使用自定义提示词分析
+function insertPromptTemplate(templateType) {
+    const textarea = document.getElementById('modalCustomPrompt');
+    const template = promptTemplates[templateType];
+    
+    if (template) {
+        // 如果已有内容，在后面添加
+        const currentText = textarea.value.trim();
+        if (currentText) {
+            textarea.value = currentText + '\n\n' + template;
+        } else {
+            textarea.value = template;
+        }
+        
+        // 自动调整高度和聚焦
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+        textarea.focus();
+        
+        showSuccess(`已插入${getTemplateTypeName(templateType)}模板`);
+    }
+}
+
+function clearCustomPrompt() {
+    if (confirm('确定要清空所有提示词内容吗？')) {
+        document.getElementById('modalCustomPrompt').value = '';
+        showSuccess('提示词内容已清空');
+    }
+}
+
 async function startCustomAnalysisFromModal() {
     const customPrompt = document.getElementById('modalCustomPrompt').value.trim();
     
     if (!customPrompt) {
-        alert('请输入自定义提示词');
+        showError('请输入自定义提示词内容');
+        document.getElementById('modalCustomPrompt').focus();
         return;
     }
     
     const filter = document.getElementById('batchAnalysisFilter').value;
     const limit = document.getElementById('batchAnalysisLimit').value;
     
-    if (confirm(`确定要使用自定义提示词进行批量分析吗？\n范围：${filter}\n限制：${limit}张`)) {
+    if (confirm(`🧠 确定要使用自定义提示词进行AI分析吗？\n\n📋 分析范围：${getFilterText(filter)}\n🔢 处理数量：${limit}张\n📝 提示词长度：${customPrompt.length}字符\n\n自定义分析通常需要更长时间。`)) {
         try {
-            showLoading('正在启动自定义分析...');
-            addLog('开始自定义AI分析...');
+            showLoading('🎯 正在启动自定义AI分析...', '使用您的专属提示词');
+            addLog(`🎯 开始自定义AI分析 - 提示词长度：${customPrompt.length}字符`, 'info');
             
             const response = await fetch('/api/admin/batch/analyze', {
                 method: 'POST',
@@ -792,30 +1829,35 @@ async function startCustomAnalysisFromModal() {
             const data = await response.json();
             
             if (data.success) {
-                addLog(`自定义分析任务已启动，将处理 ${data.count} 张图片`);
-                showSuccess('自定义分析任务已启动');
+                addLog(`✅ 自定义分析任务启动成功，将处理 ${data.count} 张图片`, 'success');
+                showSuccess(`自定义AI分析任务已启动！将使用您的提示词处理 ${data.count} 张图片`);
                 
                 // 关闭模态框
                 const modal = bootstrap.Modal.getInstance(document.getElementById('customAnalysisModal'));
                 modal.hide();
+                
+                // 启动进度监控
+                if (document.getElementById('enableProgressNotification').checked) {
+                    startAnalysisProgressMonitor();
+                }
             } else {
-                addLog('自定义分析启动失败: ' + (data.detail || '未知错误'));
-                showError('自定义分析启动失败');
+                throw new Error(data.detail || '未知错误');
             }
         } catch (error) {
-            addLog('自定义分析启动失败: ' + error.message);
-            showError('网络错误：' + error.message);
+            addLog(`❌ 自定义分析启动失败: ${error.message}`, 'error');
+            showError('自定义分析启动失败: ' + error.message);
         } finally {
             hideLoading();
         }
     }
 }
 
-// 清理缓存
+// ===== 系统维护功能 =====
 async function clearCache() {
-    if (confirm('确定要清理系统缓存吗？')) {
+    if (confirm('🧹 确定要清理系统缓存吗？\n\n此操作将清理：\n• 临时文件缓存\n• 图片缩略图缓存\n• API响应缓存\n\n清理后系统性能可能会有短暂影响。')) {
         try {
-            showLoading('正在清理缓存...');
+            showLoading('🧹 正在清理系统缓存...', '释放存储空间，优化性能');
+            addLog('🧹 开始清理系统缓存', 'info');
             
             const response = await fetch('/api/admin/clear-cache', {
                 method: 'POST'
@@ -824,128 +1866,364 @@ async function clearCache() {
             const data = await response.json();
             
             if (data.success) {
-                showSuccess('系统缓存清理完成');
-                addLog('系统缓存清理完成');
+                const freedSpace = data.freed_space ? formatBytes(data.freed_space) : '未知';
+                addLog(`✅ 系统缓存清理完成，释放空间：${freedSpace}`, 'success');
+                showSuccess(`系统缓存清理完成！释放了 ${freedSpace} 存储空间`);
+                
+                // 刷新统计数据
+                setTimeout(loadStats, 1000);
             } else {
-                showError('清理缓存失败');
-                addLog('清理缓存失败: ' + (data.detail || '未知错误'));
+                throw new Error(data.detail || '未知错误');
             }
         } catch (error) {
-            showError('网络错误：' + error.message);
-            addLog('清理缓存失败: ' + error.message);
+            addLog(`❌ 缓存清理失败: ${error.message}`, 'error');
+            showError('缓存清理失败: ' + error.message);
         } finally {
             hideLoading();
         }
     }
 }
 
-// 显示系统信息
 function showSystemInfo() {
+    addLog('🔄 跳转到系统信息页面', 'info');
     window.location.href = '/admin/system';
 }
 
-// 查看图片管理
 function scanDirectory() {
     showTab('ai-tools');
 }
 
-// 添加日志
-function addLog(message) {
+// ===== 进度监控 =====
+function startAnalysisProgressMonitor() {
+    const progressInterval = setInterval(async () => {
+        try {
+            const response = await fetch('/api/admin/analysis-progress');
+            const data = await response.json();
+            
+            if (data.success) {
+                const progress = data.progress;
+                
+                if (progress.status === 'completed') {
+                    addLog(`🎉 AI分析任务完成！成功处理 ${progress.completed} 张图片`, 'success');
+                    clearInterval(progressInterval);
+                } else if (progress.status === 'running') {
+                    const percent = Math.round((progress.completed / progress.total) * 100);
+                    addLog(`⚡ 分析进度：${progress.completed}/${progress.total} (${percent}%)`, 'info');
+                }
+            }
+        } catch (error) {
+            console.error('进度监控错误:', error);
+            clearInterval(progressInterval);
+        }
+    }, 10000); // 每10秒检查一次进度
+    
+    // 30分钟后自动停止监控
+    setTimeout(() => {
+        clearInterval(progressInterval);
+    }, 30 * 60 * 1000);
+}
+
+// ===== 日志管理 =====
+function addLog(message, type = 'info') {
     const logContainer = document.getElementById('operationLog');
-    const timestamp = new Date().toLocaleTimeString();
+    if (!logContainer) return;
+    
+    const timestamp = new Date().toLocaleTimeString('zh-CN');
     const logEntry = document.createElement('div');
-    logEntry.innerHTML = `<span class="text-muted">[${timestamp}]</span> ${message}`;
+    logEntry.className = 'log-entry';
+    
+    const icon = getLogIcon(type);
+    const color = getLogColor(type);
+    
+    logEntry.innerHTML = `
+        <span class="log-timestamp">[${timestamp}]</span>
+        <span style="color: ${color};">
+            ${icon} ${message}
+        </span>
+    `;
+    
     logContainer.appendChild(logEntry);
-    logContainer.scrollTop = logContainer.scrollHeight;
+    
+    // 自动滚动到底部
+    if (autoScrollEnabled) {
+        logContainer.scrollTop = logContainer.scrollHeight;
+    }
+    
+    // 限制日志条数（保留最新500条）
+    const logEntries = logContainer.querySelectorAll('.log-entry');
+    if (logEntries.length > 500) {
+        logEntries[0].remove();
+    }
 }
 
-// 清空操作日志
 function clearOperationLog() {
-    const logContainer = document.getElementById('operationLog');
-    logContainer.innerHTML = '<div class="text-muted">日志已清空...</div>';
+    if (confirm('确定要清空所有操作日志吗？')) {
+        const logContainer = document.getElementById('operationLog');
+        logContainer.innerHTML = `
+            <div class="log-entry">
+                <span class="log-timestamp">[系统]</span>
+                <span style="color: #6c757d;">
+                    <i class="fas fa-info-circle"></i> 操作日志已清空，准备记录新的操作...
+                </span>
+            </div>
+        `;
+        showSuccess('操作日志已清空');
+    }
 }
 
-// 辅助函数
-function formatFileSize(bytes) {
+function toggleAutoScroll() {
+    autoScrollEnabled = !autoScrollEnabled;
+    updateAutoScrollButton();
+    
+    const status = autoScrollEnabled ? '启用' : '禁用';
+    addLog(`📜 自动滚动已${status}`, 'info');
+}
+
+function updateAutoScrollButton() {
+    const btn = document.getElementById('autoScrollBtn');
+    if (btn) {
+        if (autoScrollEnabled) {
+            btn.innerHTML = '<i class="fas fa-arrow-down me-1"></i>自动滚动';
+            btn.className = 'btn btn-outline-light active';
+        } else {
+            btn.innerHTML = '<i class="fas fa-pause me-1"></i>手动滚动';
+            btn.className = 'btn btn-outline-light';
+        }
+    }
+}
+
+function exportLog() {
+    const logContainer = document.getElementById('operationLog');
+    const logEntries = logContainer.querySelectorAll('.log-entry');
+    
+    let logText = '# AI姿势参考图库 - 管理面板操作日志\n';
+    logText += `# 导出时间: ${new Date().toLocaleString('zh-CN')}\n\n`;
+    
+    logEntries.forEach(entry => {
+        logText += entry.textContent + '\n';
+    });
+    
+    // 创建下载链接
+    const blob = new Blob([logText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `admin-log-${new Date().toISOString().slice(0, 10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    addLog('📄 操作日志导出完成', 'success');
+    showSuccess('操作日志已导出到本地文件');
+}
+
+// ===== AI工具增强功能 =====
+function refreshAIStats() {
+    addLog('📊 刷新AI分析统计', 'info');
+    loadStats();
+}
+
+function showAIHistory() {
+    addLog('📚 查看AI分析历史', 'info');
+    window.location.href = '/admin/ai-history';
+}
+
+// ===== 辅助函数 =====
+function formatNumber(num) {
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+}
+
+function formatBytes(bytes) {
     if (bytes === 0) return '0 B';
     const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
 }
 
 function formatUptime(seconds) {
     if (!seconds || seconds === '未知') return '未知';
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
-    return `${days}天 ${hours}小时`;
+    const minutes = Math.floor((seconds % 3600) / 60);
+    
+    if (days > 0) {
+        return `${days}天 ${hours}小时`;
+    } else if (hours > 0) {
+        return `${hours}小时 ${minutes}分钟`;
+    } else {
+        return `${minutes}分钟`;
+    }
 }
 
 function getStatusText(status) {
     const statusMap = {
-        'pending': '待分析',
-        'completed': '已完成',
-        'failed': '分析失败'
+        'pending': '⏳ 待分析',
+        'completed': '✅ 已完成',
+        'failed': '❌ 分析失败',
+        'running': '🔄 分析中'
     };
     return statusMap[status] || status;
 }
 
 function getRoleText(role) {
     const roleMap = {
-        'user': '普通用户',
-        'moderator': '版主',
-        'admin': '管理员'
+        'user': '👤 普通用户',
+        'moderator': '👮 版主',
+        'admin': '👑 管理员'
     };
     return roleMap[role] || role;
 }
 
-// UI通知
-function showLoading(text = '处理中...') {
-    document.getElementById('loadingText').textContent = text;
-    document.getElementById('loadingOverlay').style.display = 'flex';
+function getFilterText(filter) {
+    const filterMap = {
+        'pending': '待分析图片',
+        'failed': '失败图片',
+        'all': '全部图片'
+    };
+    return filterMap[filter] || filter;
+}
+
+function getFileTypeText(fileType) {
+    const typeMap = {
+        'all': '所有格式',
+        'jpg': 'JPG/JPEG',
+        'png': 'PNG',
+        'webp': 'WebP'
+    };
+    return typeMap[fileType] || fileType;
+}
+
+function getTemplateTypeName(type) {
+    const nameMap = {
+        'pose': '姿势分析',
+        'style': '风格分析',
+        'composition': '构图分析',
+        'detail': '细节分析'
+    };
+    return nameMap[type] || type;
+}
+
+function getLogIcon(type) {
+    const iconMap = {
+        'success': '<i class="fas fa-check-circle"></i>',
+        'error': '<i class="fas fa-exclamation-triangle"></i>',
+        'warning': '<i class="fas fa-exclamation-circle"></i>',
+        'info': '<i class="fas fa-info-circle"></i>'
+    };
+    return iconMap[type] || '<i class="fas fa-circle"></i>';
+}
+
+function getLogColor(type) {
+    const colorMap = {
+        'success': '#00ff88',
+        'error': '#ff4757',
+        'warning': '#ffa502',
+        'info': '#70a1ff'
+    };
+    return colorMap[type] || '#ffffff';
+}
+
+// ===== UI通知系统 =====
+function showLoading(text = '处理中...', subtext = '') {
+    const overlay = document.getElementById('loadingOverlay');
+    const textElement = document.getElementById('loadingText');
+    const subtextElement = document.getElementById('loadingSubtext');
+    
+    if (textElement) textElement.textContent = text;
+    if (subtextElement) {
+        subtextElement.textContent = subtext;
+        subtextElement.style.display = subtext ? 'block' : 'none';
+    }
+    
+    if (overlay) overlay.style.display = 'flex';
 }
 
 function hideLoading() {
-    document.getElementById('loadingOverlay').style.display = 'none';
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.style.display = 'none';
 }
 
 function showSuccess(message) {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
-    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
-    alertDiv.innerHTML = `
-        <i class="fas fa-check-circle"></i> ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.body.appendChild(alertDiv);
-    
-    setTimeout(() => {
-        if (alertDiv.parentNode) {
-            alertDiv.parentNode.removeChild(alertDiv);
-        }
-    }, 5000);
+    showNotification(message, 'success', 5000);
 }
 
 function showError(message) {
+    showNotification(message, 'danger', 8000);
+}
+
+function showWarning(message) {
+    showNotification(message, 'warning', 6000);
+}
+
+function showInfo(message) {
+    showNotification(message, 'info', 4000);
+}
+
+function showNotification(message, type, duration) {
     const alertDiv = document.createElement('div');
-    alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
-    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed animate-slide-up`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 350px; max-width: 500px;';
+    
+    const icon = getNotificationIcon(type);
     alertDiv.innerHTML = `
-        <i class="fas fa-exclamation-triangle"></i> ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="d-flex align-items-center">
+            <div class="me-2">${icon}</div>
+            <div class="flex-grow-1">${message}</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
     `;
+    
     document.body.appendChild(alertDiv);
     
+    // 自动移除
     setTimeout(() => {
         if (alertDiv.parentNode) {
-            alertDiv.parentNode.removeChild(alertDiv);
+            alertDiv.classList.remove('show');
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 300);
         }
-    }, 8000);
+    }, duration);
 }
+
+function getNotificationIcon(type) {
+    const iconMap = {
+        'success': '<i class="fas fa-check-circle text-success"></i>',
+        'danger': '<i class="fas fa-exclamation-triangle text-danger"></i>',
+        'warning': '<i class="fas fa-exclamation-circle text-warning"></i>',
+        'info': '<i class="fas fa-info-circle text-info"></i>'
+    };
+    return iconMap[type] || '<i class="fas fa-bell"></i>';
+}
+
+// ===== 图片编辑功能（预留接口） =====
+function saveImageEdit() {
+    // 图片编辑保存功能
+    showInfo('图片编辑功能开发中...');
+}
+
+function reanalyzeImageFromModal() {
+    // 重新分析图片功能
+    showInfo('重新分析功能开发中...');
+}
+
+function deleteImageFromModal() {
+    // 删除图片功能
+    showInfo('删除图片功能开发中...');
+}
+
+// ===== 初始化完成提示 =====
+console.log('🚀 AI姿势参考图库管理面板已就绪');
+console.log('📱 当前用户:', 'marvinli001');
+console.log('🕒 初始化时间:', new Date().toLocaleString('zh-CN'));
 </script>
 {% endblock %}

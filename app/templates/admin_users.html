@@ -11,135 +11,624 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <style>
+        /* ===== 全局样式 ===== */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+            --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --danger-gradient: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            --shadow-light: 0 2px 10px rgba(0,0,0,0.1);
+            --shadow-medium: 0 5px 20px rgba(0,0,0,0.15);
+            --shadow-heavy: 0 10px 30px rgba(0,0,0,0.2);
+            --border-radius: 15px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            background-color: #f8f9fa;
-        }
-        
-        .admin-header {
-            background: white;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .filter-section {
-            background: white;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border-radius: 1rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .stats-cards {
-            margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            background: white;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .batch-actions-bar {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            padding: 1rem;
-            border-radius: 1rem;
-            margin-bottom: 1.5rem;
-            display: none;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: 1rem;
-            overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
-        
-        .user-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #2c3e50;
+        }
+
+        /* ===== 容器布局 ===== */
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            margin: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow-heavy);
+            min-height: calc(100vh - 40px);
+        }
+
+        /* ===== 页面头部 ===== */
+        .admin-header {
+            background: var(--success-gradient);
+            color: white;
+            padding: 2.5rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .admin-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1.5" fill="white" opacity="0.08"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.12"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        }
+
+        .admin-header .row {
+            position: relative;
+            z-index: 2;
+        }
+
+        .admin-header h1 {
+            font-weight: 700;
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .admin-header p {
+            opacity: 0.85;
+            font-size: 1.1rem;
+        }
+
+        /* ===== 统计卡片 ===== */
+        .stats-cards {
+            padding: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--shadow-medium);
+            transition: var(--transition);
+            height: 100%;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--success-gradient);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(86, 171, 47, 0.2);
+        }
+
+        .stat-card .fa-2x {
+            background: var(--success-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 0.5rem 0;
+            background: var(--success-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== 筛选区域 ===== */
+        .filter-section {
+            background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+            padding: 2rem;
+            margin: 0 2rem 2rem;
+            border-radius: 20px;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        /* ===== 批量操作栏 ===== */
+        .batch-actions-bar {
+            background: var(--success-gradient);
+            color: white;
+            padding: 1.5rem 2rem;
+            margin: 0 2rem 2rem;
+            border-radius: 20px;
+            display: none;
+            box-shadow: var(--shadow-medium);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .batch-actions-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255,255,255,0.05) 10px,
+                rgba(255,255,255,0.05) 20px
+            );
+        }
+
+        .batch-actions-bar .row {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===== 表格容器 ===== */
+        .table-container {
+            background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+            border-radius: 20px;
+            margin: 0 2rem 2rem;
+            overflow: hidden;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .table {
+            margin: 0;
+        }
+
+        .table thead {
+            background: var(--success-gradient);
+            color: white;
+        }
+
+        .table th {
+            border: none;
+            padding: 1.2rem 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.85rem;
+        }
+
+        .table td {
+            border: none;
+            padding: 1rem;
+            vertical-align: middle;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .table tbody tr {
+            transition: var(--transition);
+        }
+
+        .table tbody tr:hover {
+            background: rgba(86, 171, 47, 0.05);
+            transform: scale(1.01);
+        }
+
+        .selected-row {
+            background: rgba(86, 171, 47, 0.15) !important;
+            border-left: 4px solid #56ab2f;
+        }
+
+        /* ===== 用户头像 ===== */
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--success-gradient);
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: bold;
-            font-size: 1.2rem;
+            font-size: 1.4rem;
+            box-shadow: var(--shadow-light);
+            transition: var(--transition);
+            border: 3px solid rgba(255, 255, 255, 0.8);
         }
-        
+
+        .user-avatar:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: var(--shadow-medium);
+        }
+
+        /* ===== 角色徽章 ===== */
         .role-badge {
-            padding: 0.4rem 0.8rem;
-            border-radius: 1rem;
-            font-size: 0.75rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
         }
-        
-        .role-user { background: #e3f2fd; color: #1565c0; }
-        .role-moderator { background: #fff3e0; color: #e65100; }
-        .role-admin { background: #ffebee; color: #c62828; }
-        
+
+        .role-user { 
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb); 
+            color: #1565c0; 
+        }
+
+        .role-moderator { 
+            background: linear-gradient(135deg, #fff3e0, #ffcc80); 
+            color: #e65100; 
+        }
+
+        .role-admin { 
+            background: linear-gradient(135deg, #ffebee, #ffcdd2); 
+            color: #c62828; 
+        }
+
+        /* ===== 活跃度指示器 ===== */
         .activity-indicator {
-            width: 12px;
-            height: 12px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             display: inline-block;
             margin-right: 0.5rem;
+            box-shadow: 0 0 10px currentColor;
+            animation: pulse 2s infinite;
         }
-        
-        .activity-today { background: #4caf50; }
-        .activity-week { background: #ff9800; }
-        .activity-month { background: #2196f3; }
-        .activity-older { background: #9e9e9e; }
-        .activity-never { background: #f44336; }
-        
-        .selected-row {
-            background-color: rgba(40, 167, 69, 0.1) !important;
+
+        .activity-today { 
+            background: #4caf50; 
+            box-shadow: 0 0 10px #4caf50;
         }
-        
+
+        .activity-week { 
+            background: #ff9800; 
+            box-shadow: 0 0 10px #ff9800;
+        }
+
+        .activity-month { 
+            background: #2196f3; 
+            box-shadow: 0 0 10px #2196f3;
+        }
+
+        .activity-older { 
+            background: #9e9e9e; 
+            box-shadow: 0 0 10px #9e9e9e;
+        }
+
+        .activity-never { 
+            background: #f44336; 
+            box-shadow: 0 0 10px #f44336;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ===== 统计迷你卡片 ===== */
         .stats-mini {
             font-size: 0.75rem;
             color: #6c757d;
+            background: rgba(0,0,0,0.03);
+            padding: 0.3rem 0.6rem;
+            border-radius: 10px;
+            margin-top: 0.3rem;
         }
-        
+
+        /* ===== 按钮样式 ===== */
+        .btn {
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: var(--transition);
+            border: none;
+            position: relative;
+            overflow: hidden;
+            font-size: 0.95rem;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: var(--success-gradient);
+            box-shadow: 0 4px 15px rgba(86, 171, 47, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(86, 171, 47, 0.4);
+        }
+
+        .btn-info {
+            background: var(--info-gradient);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn-warning {
+            background: var(--warning-gradient);
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+        }
+
+        .btn-danger {
+            background: var(--danger-gradient);
+            box-shadow: 0 4px 15px rgba(255, 65, 108, 0.3);
+        }
+
+        .btn-light {
+            background: rgba(255,255,255,0.9);
+            color: #2c3e50;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-outline-light {
+            border: 2px solid rgba(255,255,255,0.8);
+            color: white;
+            background: transparent;
+        }
+
+        .btn-outline-light:hover {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .btn-group-vertical .btn {
+            margin-bottom: 0.3rem;
+            border-radius: 8px;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+        }
+
+        /* ===== 表单控件 ===== */
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 2px solid rgba(0,0,0,0.1);
+            padding: 0.75rem 1rem;
+            transition: var(--transition);
+            background: rgba(255,255,255,0.9);
+            font-size: 0.95rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #56ab2f;
+            box-shadow: 0 0 0 0.2rem rgba(86, 171, 47, 0.25);
+            background: white;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        /* ===== 分页 ===== */
+        .pagination {
+            margin: 0;
+        }
+
+        .page-link {
+            border: none;
+            color: #56ab2f;
+            padding: 0.75rem 1rem;
+            margin: 0 0.2rem;
+            border-radius: 12px;
+            transition: var(--transition);
+            font-weight: 600;
+        }
+
+        .page-link:hover {
+            background: var(--success-gradient);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .page-item.active .page-link {
+            background: var(--success-gradient);
+            color: white;
+            box-shadow: var(--shadow-light);
+        }
+
+        /* ===== 模态框 ===== */
+        .modal-content {
+            border-radius: 20px;
+            border: none;
+            box-shadow: var(--shadow-heavy);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            background: var(--success-gradient);
+            color: white;
+            border: none;
+            padding: 1.5rem 2rem;
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .modal-footer {
+            border: none;
+            padding: 1.5rem 2rem;
+            background: rgba(0,0,0,0.02);
+        }
+
+        .btn-close-white {
+            filter: brightness(0) invert(1);
+        }
+
+        /* ===== 加载遮罩 ===== */
         .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.8);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 9999;
             display: none;
+            backdrop-filter: blur(10px);
         }
-        
+
         .loading-content {
             background: white;
-            padding: 2rem;
-            border-radius: 1rem;
+            padding: 3rem;
+            border-radius: 20px;
             text-align: center;
+            box-shadow: var(--shadow-heavy);
+            animation: loadingPulse 2s ease-in-out infinite;
         }
-        
+
+        @keyframes loadingPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* ===== 通知样式 ===== */
+        .alert {
+            border-radius: var(--border-radius);
+            border: none;
+            padding: 1rem 1.5rem;
+            font-weight: 500;
+            box-shadow: var(--shadow-light);
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #d4edda, #a8e6cf);
+            color: #155724;
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, #f8d7da, #fab1a0);
+            color: #721c24;
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, #cce7ff, #a8d8ea);
+            color: #0c5460;
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            color: #856404;
+        }
+
+        /* ===== 图表容器 ===== */
+        .chart-container {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-light);
+            margin-bottom: 1rem;
+        }
+
+        /* ===== 徽章样式 ===== */
+        .badge {
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+        }
+
+        .badge.bg-success {
+            background: var(--success-gradient) !important;
+        }
+
+        .badge.bg-danger {
+            background: var(--danger-gradient) !important;
+        }
+
+        .badge.bg-primary {
+            background: var(--primary-gradient) !important;
+        }
+
+        .badge.bg-warning {
+            background: var(--warning-gradient) !important;
+        }
+
+        .badge.bg-info {
+            background: var(--info-gradient) !important;
+        }
+
+        /* ===== 响应式设计 ===== */
         @media (max-width: 768px) {
-            .admin-header h1 {
-                font-size: 1.5rem;
+            .main-container {
+                margin: 10px;
+                border-radius: 20px;
             }
             
-            .filter-section .row > div {
+            .admin-header {
+                padding: 2rem 1.5rem;
+            }
+            
+            .admin-header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .stats-cards, .filter-section, .batch-actions-bar, .table-container {
+                margin-left: 1rem;
+                margin-right: 1rem;
+                padding: 1.5rem;
+            }
+            
+            .stat-card {
+                padding: 1.5rem;
                 margin-bottom: 1rem;
+            }
+            
+            .stat-number {
+                font-size: 2rem;
             }
             
             .table-responsive {
@@ -152,86 +641,198 @@
                 font-size: 1rem;
             }
         }
+
+        /* ===== 滚动条样式 ===== */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--success-gradient);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #4a8c2a, #7bc96f);
+        }
+
+        /* ===== 动画增强 ===== */
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== 特殊效果 ===== */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .glow-effect {
+            box-shadow: 0 0 20px rgba(86, 171, 47, 0.3);
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        /* ===== 工具提示 ===== */
+        [data-tooltip] {
+            position: relative;
+            cursor: help;
+        }
+
+        [data-tooltip]::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        [data-tooltip]:hover::after {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-5px);
+        }
     </style>
 </head>
 <body>
     <!-- 顶部导航 -->
-{% include "components/admin_nav.html" %}
+    {% include "components/admin_nav.html" %}
 
-    <div class="container-fluid py-4">
+    <div class="main-container animate-fade-in">
         <!-- 页面标题 -->
         <div class="admin-header">
             <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h1 class="mb-0">
-                        <i class="fas fa-users text-success"></i> 用户管理
+                <div class="col-md-8">
+                    <h1>
+                        <i class="fas fa-users me-3"></i>用户管理中心
                     </h1>
-                    <p class="text-muted mb-0">管理系统用户和权限</p>
+                    <p class="mb-0">智能管理系统用户和权限 · 批量操作 · 数据分析 · 用户洞察</p>
                 </div>
-                <div class="col-md-6 text-end">
-                    <button class="btn btn-success" onclick="showCreateUserModal()">
-                        <i class="fas fa-user-plus"></i> 创建用户
-                    </button>
-                    <button class="btn btn-primary" onclick="refreshData()">
-                        <i class="fas fa-sync-alt"></i> 刷新数据
-                    </button>
-                    <button class="btn btn-info" onclick="showAnalytics()">
-                        <i class="fas fa-chart-bar"></i> 用户分析
-                    </button>
+                <div class="col-md-4 text-end">
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-light" onclick="showCreateUserModal()" data-tooltip="创建新用户">
+                            <i class="fas fa-user-plus me-2"></i>创建用户
+                        </button>
+                        <button class="btn btn-light" onclick="refreshData()" data-tooltip="刷新所有数据">
+                            <i class="fas fa-sync-alt me-2"></i>刷新数据
+                        </button>
+                        <button class="btn btn-light" onclick="showAnalytics()" data-tooltip="查看用户分析">
+                            <i class="fas fa-chart-bar me-2"></i>用户分析
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 统计卡片 -->
-        <div class="row stats-cards">
-            <div class="col-xl-3 col-md-6 mb-3">
-                <div class="stat-card">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-users fa-2x text-primary"></i>
-                        </div>
-                        <div class="ms-3">
-                            <div class="text-muted small">总用户数</div>
-                            <h4 class="mb-0" id="totalUsers">-</h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-md-6 mb-3">
-                <div class="stat-card">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-user-check fa-2x text-success"></i>
-                        </div>
-                        <div class="ms-3">
-                            <div class="text-muted small">活跃用户</div>
-                            <h4 class="mb-0" id="activeUsers">-</h4>
+        <div class="stats-cards">
+            <div class="row">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="stat-card animate-slide-up">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stat-label">总用户数</div>
+                                <div class="stat-number" id="totalUsers">-</div>
+                                <div class="small text-muted">
+                                    <i class="fas fa-database me-1"></i>
+                                    系统注册用户
+                                </div>
+                            </div>
+                            <div>
+                                <i class="fas fa-users fa-2x"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-xl-3 col-md-6 mb-3">
-                <div class="stat-card">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-clock fa-2x text-warning"></i>
-                        </div>
-                        <div class="ms-3">
-                            <div class="text-muted small">今日活跃</div>
-                            <h4 class="mb-0" id="todayActive">-</h4>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="stat-card animate-slide-up" style="animation-delay: 0.1s;">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stat-label">活跃用户</div>
+                                <div class="stat-number" id="activeUsers">-</div>
+                                <div class="small text-success">
+                                    <i class="fas fa-user-check me-1"></i>
+                                    账户正常
+                                </div>
+                            </div>
+                            <div>
+                                <i class="fas fa-user-check fa-2x"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-xl-3 col-md-6 mb-3">
-                <div class="stat-card">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-user-shield fa-2x text-danger"></i>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="stat-card animate-slide-up" style="animation-delay: 0.2s;">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stat-label">今日活跃</div>
+                                <div class="stat-number" id="todayActive">-</div>
+                                <div class="small text-warning">
+                                    <i class="fas fa-clock me-1"></i>
+                                    今天登录
+                                </div>
+                            </div>
+                            <div>
+                                <i class="fas fa-clock fa-2x"></i>
+                            </div>
                         </div>
-                        <div class="ms-3">
-                            <div class="text-muted small">管理员</div>
-                            <h4 class="mb-0" id="adminUsers">-</h4>
+                    </div>
+                </div>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="stat-card animate-slide-up" style="animation-delay: 0.3s;">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="stat-label">管理员</div>
+                                <div class="stat-number" id="adminUsers">-</div>
+                                <div class="small text-danger">
+                                    <i class="fas fa-user-shield me-1"></i>
+                                    高权限用户
+                                </div>
+                            </div>
+                            <div>
+                                <i class="fas fa-user-shield fa-2x"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -242,43 +843,53 @@
         <div class="filter-section">
             <div class="row align-items-end">
                 <div class="col-md-2">
-                    <label class="form-label">角色筛选</label>
+                    <label class="form-label">
+                        <i class="fas fa-user-tag me-1"></i>角色筛选
+                    </label>
                     <select class="form-select" id="roleFilter" onchange="loadUsers()">
-                        <option value="">全部角色</option>
-                        <option value="user">普通用户</option>
-                        <option value="moderator">版主</option>
-                        <option value="admin">管理员</option>
+                        <option value="">🔄 全部角色</option>
+                        <option value="user">👤 普通用户</option>
+                        <option value="moderator">👮 版主</option>
+                        <option value="admin">👑 管理员</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label">状态筛选</label>
+                    <label class="form-label">
+                        <i class="fas fa-toggle-on me-1"></i>状态筛选
+                    </label>
                     <select class="form-select" id="statusFilter" onchange="loadUsers()">
-                        <option value="">全部状态</option>
-                        <option value="active">活跃</option>
-                        <option value="inactive">禁用</option>
+                        <option value="">📋 全部状态</option>
+                        <option value="active">✅ 活跃</option>
+                        <option value="inactive">❌ 禁用</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label">验证状态</label>
+                    <label class="form-label">
+                        <i class="fas fa-certificate me-1"></i>验证状态
+                    </label>
                     <select class="form-select" id="verifiedFilter" onchange="loadUsers()">
-                        <option value="">全部</option>
-                        <option value="true">已验证</option>
-                        <option value="false">未验证</option>
+                        <option value="">🔄 全部</option>
+                        <option value="true">✅ 已验证</option>
+                        <option value="false">⏳ 未验证</option>
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">搜索</label>
+                    <label class="form-label">
+                        <i class="fas fa-search me-1"></i>智能搜索
+                    </label>
                     <input type="text" class="form-control" id="searchInput" 
-                           placeholder="搜索用户名、邮箱..." onkeyup="searchUsers(event)">
+                           placeholder="搜索用户名、邮箱、真实姓名..." onkeyup="searchUsers(event)">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">操作</label>
+                    <label class="form-label">
+                        <i class="fas fa-tools me-1"></i>快速操作
+                    </label>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-outline-primary" onclick="toggleBatchActions()">
-                            <i class="fas fa-tasks"></i> 批量操作
+                        <button class="btn btn-outline-primary" onclick="toggleBatchActions()" data-tooltip="批量管理用户">
+                            <i class="fas fa-tasks me-1"></i>批量操作
                         </button>
-                        <button class="btn btn-outline-success" onclick="exportData()">
-                            <i class="fas fa-download"></i> 导出
+                        <button class="btn btn-outline-success" onclick="exportData()" data-tooltip="导出用户数据">
+                            <i class="fas fa-download me-1"></i>导出
                         </button>
                     </div>
                 </div>
@@ -291,33 +902,41 @@
                 <div class="col-md-2">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="selectAll" onchange="toggleSelectAll()">
-                        <label class="form-check-label text-white">全选</label>
+                        <label class="form-check-label text-white fw-bold">
+                            <i class="fas fa-check-square me-1"></i>全选
+                        </label>
                     </div>
                 </div>
                 <div class="col-md-8">
-                    <div class="btn-group" role="group">
-                        <button class="btn btn-outline-light btn-sm" onclick="batchAction('activate')">
-                            <i class="fas fa-check"></i> 激活
-                        </button>
-                        <button class="btn btn-outline-light btn-sm" onclick="batchAction('deactivate')">
-                            <i class="fas fa-ban"></i> 禁用
-                        </button>
-                        <button class="btn btn-outline-light btn-sm" onclick="batchAction('verify')">
-                            <i class="fas fa-certificate"></i> 验证
-                        </button>
-                        <select class="form-select form-select-sm text-dark" id="batchRoleSelect" style="width: auto;">
-                            <option value="">批量设置角色</option>
-                            <option value="user">普通用户</option>
-                            <option value="moderator">版主</option>
-                            <option value="admin">管理员</option>
-                        </select>
-                        <button class="btn btn-outline-light btn-sm" onclick="batchChangeRole()">
-                            <i class="fas fa-user-cog"></i> 应用角色
-                        </button>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-outline-light btn-sm" onclick="batchAction('activate')" data-tooltip="激活选中用户">
+                                <i class="fas fa-check me-1"></i>激活
+                            </button>
+                            <button class="btn btn-outline-light btn-sm" onclick="batchAction('deactivate')" data-tooltip="禁用选中用户">
+                                <i class="fas fa-ban me-1"></i>禁用
+                            </button>
+                            <button class="btn btn-outline-light btn-sm" onclick="batchAction('verify')" data-tooltip="验证选中用户">
+                                <i class="fas fa-certificate me-1"></i>验证
+                            </button>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <select class="form-select form-select-sm text-dark" id="batchRoleSelect" style="width: auto;">
+                                <option value="">批量设置角色</option>
+                                <option value="user">👤 普通用户</option>
+                                <option value="moderator">👮 版主</option>
+                                <option value="admin">👑 管理员</option>
+                            </select>
+                            <button class="btn btn-outline-light btn-sm" onclick="batchChangeRole()" data-tooltip="应用选中角色">
+                                <i class="fas fa-user-cog me-1"></i>应用角色
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-2 text-end">
-                    <span id="selectedCount" class="text-white">已选择 0 项</span>
+                    <span id="selectedCount" class="text-white fw-bold">
+                        <i class="fas fa-check-circle me-1"></i>已选择 0 项
+                    </span>
                 </div>
             </div>
         </div>
@@ -326,28 +945,45 @@
         <div class="table-container">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
-                    <thead class="table-light">
+                    <thead>
                         <tr>
                             <th width="50" class="select-column" style="display: none;">
                                 <input type="checkbox" id="selectAllHeader" onchange="toggleSelectAll()">
                             </th>
-                            <th width="80">头像</th>
-                            <th>用户信息</th>
-                            <th>角色</th>
-                            <th>状态</th>
-                            <th>活跃度</th>
-                            <th>统计</th>
-                            <th>注册时间</th>
-                            <th width="120">操作</th>
+                            <th width="100">
+                                <i class="fas fa-user-circle me-1"></i>头像
+                            </th>
+                            <th>
+                                <i class="fas fa-id-card me-1"></i>用户信息
+                            </th>
+                            <th>
+                                <i class="fas fa-user-tag me-1"></i>角色
+                            </th>
+                            <th>
+                                <i class="fas fa-toggle-on me-1"></i>状态
+                            </th>
+                            <th>
+                                <i class="fas fa-chart-pulse me-1"></i>活跃度
+                            </th>
+                            <th>
+                                <i class="fas fa-chart-bar me-1"></i>统计
+                            </th>
+                            <th>
+                                <i class="fas fa-calendar me-1"></i>注册时间
+                            </th>
+                            <th width="150">
+                                <i class="fas fa-cogs me-1"></i>操作
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="userTableBody">
                         <tr>
                             <td colspan="9" class="text-center py-5">
-                                <div class="spinner-border text-primary" role="status">
+                                <div class="spinner-border text-primary pulse-animation" role="status" style="width: 3rem; height: 3rem;">
                                     <span class="visually-hidden">加载中...</span>
                                 </div>
-                                <p class="mt-2 text-muted">正在加载用户数据...</p>
+                                <p class="mt-3 text-muted fw-semibold">正在加载用户数据...</p>
+                                <small class="text-muted">请稍候，系统正在处理您的请求</small>
                             </td>
                         </tr>
                     </tbody>
@@ -355,9 +991,11 @@
             </div>
             
             <!-- 分页 -->
-            <div class="d-flex justify-content-between align-items-center p-3 border-top">
+            <div class="d-flex justify-content-between align-items-center p-3 border-top bg-light">
                 <div>
-                    <span class="text-muted" id="pageInfo">显示 0 - 0 条，共 0 条记录</span>
+                    <span class="text-muted fw-semibold" id="pageInfo">
+                        <i class="fas fa-info-circle me-1"></i>显示 0 - 0 条，共 0 条记录
+                    </span>
                 </div>
                 <nav>
                     <ul class="pagination mb-0" id="pagination">
@@ -371,16 +1009,14 @@
     <!-- 加载遮罩 -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-content">
-            <div class="spinner-border text-primary mb-3" role="status">
+            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
                 <span class="visually-hidden">加载中...</span>
             </div>
-            <h5 id="loadingText">处理中...</h5>
+            <h5 id="loadingText">系统处理中...</h5>
+            <p class="text-muted mb-0">请稍候，正在执行操作</p>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
     <script>
         // 全局变量
         let currentPage = 1;
@@ -411,13 +1047,18 @@
                 }
                 
                 if (data.user.role !== 'admin' && data.user.role !== 'moderator') {
-                    alert('您没有管理员权限');
-                    window.location.href = '/';
+                    showError('您没有管理员权限访问此页面');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
                     return;
                 }
             } catch (error) {
                 console.error('权限检查失败:', error);
-                window.location.href = '/login';
+                showError('权限验证失败，请重新登录');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
             }
         }
 
@@ -428,14 +1069,48 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    document.getElementById('totalUsers').textContent = data.data.overview.total_users || 0;
-                    document.getElementById('activeUsers').textContent = data.data.overview.active_users || 0;
-                    document.getElementById('todayActive').textContent = data.data.today.active_users || 0;
-                    document.getElementById('adminUsers').textContent = data.data.overview.admin_users || 0;
+                    // 使用动画效果更新数字
+                    animateNumber('totalUsers', data.data.overview.total_users || 0);
+                    animateNumber('activeUsers', data.data.overview.active_users || 0);
+                    animateNumber('todayActive', data.data.today.active_users || 0);
+                    animateNumber('adminUsers', data.data.overview.admin_users || 0);
                 }
             } catch (error) {
                 console.error('加载统计失败:', error);
             }
+        }
+
+        // 数字动画效果
+        function animateNumber(elementId, targetValue) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            const currentValue = parseInt(element.textContent.replace(/[^\d]/g, '')) || 0;
+            const difference = targetValue - currentValue;
+            const duration = 1500;
+            const steps = 30;
+            const stepValue = difference / steps;
+            
+            let currentStep = 0;
+            const timer = setInterval(() => {
+                currentStep++;
+                const newValue = Math.round(currentValue + (stepValue * currentStep));
+                element.textContent = formatNumber(newValue);
+                
+                if (currentStep >= steps) {
+                    element.textContent = formatNumber(targetValue);
+                    clearInterval(timer);
+                }
+            }, duration / steps);
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
         }
 
         // 加载用户列表
@@ -484,8 +1159,14 @@
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="9" class="text-center py-5">
-                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">没有找到用户</p>
+                            <div class="mb-4">
+                                <i class="fas fa-users fa-4x text-muted opacity-50"></i>
+                            </div>
+                            <h5 class="text-muted">没有找到用户</h5>
+                            <p class="text-muted">请尝试调整筛选条件或搜索关键词</p>
+                            <button class="btn btn-primary" onclick="loadUsers(1)">
+                                <i class="fas fa-refresh me-1"></i>重新加载
+                            </button>
                         </td>
                     </tr>
                 `;
@@ -505,59 +1186,86 @@
                                    ${isSelected ? 'checked' : ''}>
                         </td>
                         <td>
-                            <div class="user-avatar" title="${user.full_name || user.username}">
+                            <div class="user-avatar" title="${user.full_name || user.username}" data-tooltip="点击查看详情" onclick="viewUserDetails(${user.id})">
                                 ${(user.full_name || user.username).charAt(0).toUpperCase()}
                             </div>
                         </td>
                         <td>
-                            <div class="fw-bold">${user.username}</div>
-                            <div class="text-muted small">${user.email}</div>
-                            ${user.full_name ? `<div class="text-secondary small">${user.full_name}</div>` : ''}
+                            <div class="fw-bold mb-1">
+                                <i class="fas fa-user me-1 text-primary"></i>
+                                ${user.username}
+                            </div>
+                            <div class="text-muted small mb-1">
+                                <i class="fas fa-envelope me-1"></i>
+                                ${user.email}
+                            </div>
+                            ${user.full_name ? `
+                            <div class="text-secondary small">
+                                <i class="fas fa-id-badge me-1"></i>
+                                ${user.full_name}
+                            </div>
+                            ` : ''}
                         </td>
                         <td>
                             <span class="role-badge role-${user.role}">
-                                ${getRoleText(user.role)}
+                                ${getRoleIcon(user.role)} ${getRoleText(user.role)}
                             </span>
                         </td>
                         <td>
-                            <div class="d-flex flex-column">
-                                <span class="badge bg-${user.is_active ? 'success' : 'danger'} mb-1">
-                                    ${user.is_active ? '活跃' : '禁用'}
+                            <div class="d-flex flex-column gap-1">
+                                <span class="badge bg-${user.is_active ? 'success' : 'danger'}">
+                                    ${user.is_active ? '✅ 活跃' : '❌ 禁用'}
                                 </span>
                                 <span class="badge bg-${user.is_verified ? 'info' : 'secondary'}">
-                                    ${user.is_verified ? '已验证' : '未验证'}
+                                    ${user.is_verified ? '📧 已验证' : '⏳ 未验证'}
                                 </span>
                             </div>
                         </td>
                         <td>
-                            <div class="d-flex align-items-center">
+                            <div class="d-flex align-items-center mb-2">
                                 <div class="activity-indicator activity-${activityClass}"></div>
-                                <small>${activityText}</small>
+                                <small class="fw-semibold">${activityText}</small>
                             </div>
                             <div class="stats-mini">
-                                最近: ${user.stats.recent_uploads} 张
+                                <i class="fas fa-images me-1"></i>
+                                最近: ${user.stats?.recent_uploads || 0} 张
                             </div>
                         </td>
                         <td>
                             <div class="stats-mini">
-                                <div>上传: ${user.stats.total_uploads} 张</div>
-                                <div>大小: ${formatFileSize(user.stats.total_size)}</div>
-                                <div>置信度: ${user.stats.avg_confidence}%</div>
+                                <div class="mb-1">
+                                    <i class="fas fa-upload me-1"></i>
+                                    上传: <span class="fw-bold">${user.stats?.total_uploads || 0}</span> 张
+                                </div>
+                                <div class="mb-1">
+                                    <i class="fas fa-hdd me-1"></i>
+                                    大小: ${formatFileSize(user.stats?.total_size || 0)}
+                                </div>
+                                <div>
+                                    <i class="fas fa-percentage me-1"></i>
+                                    置信度: ${user.stats?.avg_confidence || 0}%
+                                </div>
                             </div>
                         </td>
                         <td>
-                            <div class="small">${formatDate(user.created_at)}</div>
+                            <div class="small">
+                                <i class="fas fa-calendar-plus me-1 text-success"></i>
+                                ${formatDate(user.created_at)}
+                            </div>
                         </td>
                         <td>
-                            <div class="btn-group-vertical btn-group-sm">
-                                <button class="btn btn-outline-primary btn-sm" onclick="viewUserDetails(${user.id})" title="详情">
-                                    <i class="fas fa-info-circle"></i>
+                            <div class="btn-group-vertical">
+                                <button class="btn btn-outline-primary btn-sm" onclick="viewUserDetails(${user.id})" 
+                                        data-tooltip="查看详细信息">
+                                    <i class="fas fa-info-circle me-1"></i>详情
                                 </button>
-                                <button class="btn btn-outline-success btn-sm" onclick="editUser(${user.id})" title="编辑">
-                                    <i class="fas fa-edit"></i>
+                                <button class="btn btn-outline-success btn-sm" onclick="editUser(${user.id})" 
+                                        data-tooltip="编辑用户信息">
+                                    <i class="fas fa-edit me-1"></i>编辑
                                 </button>
-                                <button class="btn btn-outline-warning btn-sm" onclick="showUserActions(${user.id})" title="更多">
-                                    <i class="fas fa-ellipsis-v"></i>
+                                <button class="btn btn-outline-warning btn-sm" onclick="showUserActions(${user.id})" 
+                                        data-tooltip="更多操作">
+                                    <i class="fas fa-ellipsis-v me-1"></i>更多
                                 </button>
                             </div>
                         </td>
@@ -565,6 +1273,7 @@
                 `;
             }).join('');
         }
+
         // 更新分页
         function updatePagination(pagination) {
             const paginationEl = document.getElementById('pagination');
@@ -573,7 +1282,11 @@
             // 更新页面信息
             const start = (pagination.page - 1) * pagination.per_page + 1;
             const end = Math.min(pagination.page * pagination.per_page, pagination.total);
-            pageInfo.textContent = `显示 ${start} - ${end} 条，共 ${pagination.total} 条记录`;
+            pageInfo.innerHTML = `
+                <i class="fas fa-info-circle me-1"></i>
+                显示 <span class="fw-bold">${start}</span> - <span class="fw-bold">${end}</span> 条，
+                共 <span class="fw-bold text-success">${pagination.total}</span> 条记录
+            `;
             
             // 生成分页按钮
             let paginationHtml = '';
@@ -582,7 +1295,9 @@
             if (pagination.page > 1) {
                 paginationHtml += `
                     <li class="page-item">
-                        <a class="page-link" href="#" onclick="loadUsers(${pagination.page - 1})">上一页</a>
+                        <a class="page-link" href="#" onclick="loadUsers(${pagination.page - 1})">
+                            <i class="fas fa-chevron-left me-1"></i>上一页
+                        </a>
                     </li>
                 `;
             }
@@ -603,7 +1318,9 @@
             if (pagination.page < pagination.pages) {
                 paginationHtml += `
                     <li class="page-item">
-                        <a class="page-link" href="#" onclick="loadUsers(${pagination.page + 1})">下一页</a>
+                        <a class="page-link" href="#" onclick="loadUsers(${pagination.page + 1})">
+                            下一页<i class="fas fa-chevron-right ms-1"></i>
+                        </a>
                     </li>
                 `;
             }
@@ -627,12 +1344,14 @@
             if (batchActionsVisible) {
                 batchBar.style.display = 'block';
                 selectColumns.forEach(col => col.style.display = 'table-cell');
+                showInfo('批量操作模式已启用，请选择要操作的用户');
             } else {
                 batchBar.style.display = 'none';
                 selectColumns.forEach(col => col.style.display = 'none');
                 selectedUsers.clear();
                 updateSelectedCount();
                 clearSelections();
+                showInfo('批量操作模式已关闭');
             }
         }
 
@@ -677,7 +1396,10 @@
         function updateSelectedCount() {
             const countElement = document.getElementById('selectedCount');
             if (countElement) {
-                countElement.textContent = `已选择 ${selectedUsers.size} 项`;
+                countElement.innerHTML = `
+                    <i class="fas fa-check-circle me-1"></i>
+                    已选择 <span class="badge bg-light text-dark">${selectedUsers.size}</span> 项
+                `;
             }
         }
 
@@ -693,7 +1415,7 @@
         // 批量操作执行
         async function batchAction(action) {
             if (selectedUsers.size === 0) {
-                alert('请先选择要操作的用户');
+                showError('请先选择要操作的用户');
                 return;
             }
             
@@ -734,7 +1456,7 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showSuccess(`批量操作成功：${result.message}`);
+                    showSuccess(`✅ 批量操作成功：${result.message}`);
                     selectedUsers.clear();
                     loadUsers(currentPage);
                     loadStats();
@@ -754,16 +1476,16 @@
             const newRole = document.getElementById('batchRoleSelect').value;
             
             if (!newRole) {
-                alert('请选择要设置的角色');
+                showError('请选择要设置的角色');
                 return;
             }
             
             if (selectedUsers.size === 0) {
-                alert('请先选择要操作的用户');
+                showError('请先选择要操作的用户');
                 return;
             }
             
-            if (!confirm(`确定要将选中的 ${selectedUsers.size} 个用户设置为 ${getRoleText(newRole)} 吗？`)) {
+            if (!confirm(`🔄 确定要将选中的 ${selectedUsers.size} 个用户设置为 ${getRoleText(newRole)} 吗？\n\n此操作会立即生效，请谨慎操作。`)) {
                 return;
             }
             
@@ -785,7 +1507,7 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showSuccess(`角色更新成功：${result.message}`);
+                    showSuccess(`✅ 角色更新成功：${result.message}`);
                     selectedUsers.clear();
                     loadUsers(currentPage);
                     toggleBatchActions();
@@ -799,6 +1521,75 @@
             } finally {
                 hideLoading();
             }
+        }
+
+        // 继续完成其余功能...（由于篇幅限制，这里先展示前半部分）
+        // 辅助函数
+        function getRoleText(role) {
+            const roleMap = {
+                'user': '普通用户',
+                'moderator': '版主',
+                'admin': '管理员'
+            };
+            return roleMap[role] || role;
+        }
+
+        function getRoleIcon(role) {
+            const iconMap = {
+                'user': '👤',
+                'moderator': '👮',
+                'admin': '👑'
+            };
+            return iconMap[role] || '👤';
+        }
+
+        function getActivityClass(lastLogin) {
+            if (!lastLogin) return 'never';
+            
+            const now = new Date();
+            const loginDate = new Date(lastLogin);
+            const diffMs = now - loginDate;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return 'today';
+            if (diffDays <= 7) return 'week';
+            if (diffDays <= 30) return 'month';
+            return 'older';
+        }
+
+        function getActivityText(lastLogin) {
+            if (!lastLogin) return '从未登录';
+            
+            const now = new Date();
+            const loginDate = new Date(lastLogin);
+            const diffMs = now - loginDate;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return '今天活跃';
+            if (diffDays === 1) return '昨天活跃';
+            if (diffDays <= 7) return `${diffDays}天前`;
+            if (diffDays <= 30) return `${diffDays}天前`;
+            return `${Math.floor(diffDays / 30)}个月前`;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+        }
+
+        function getRankBadgeClass(index) {
+            if (index === 0) return 'warning';
+            if (index === 1) return 'secondary';
+            if (index === 2) return 'dark';
+            return 'light';
         }
 
         // 单个用户操作
@@ -824,6 +1615,7 @@
 
         async function editUser(userId) {
             try {
+                showLoading('正在加载用户信息...');
                 const response = await fetch(`/api/admin/users/${userId}/details`);
                 const result = await response.json();
                 
@@ -835,6 +1627,8 @@
             } catch (error) {
                 console.error('获取用户信息失败:', error);
                 showError('网络错误：' + error.message);
+            } finally {
+                hideLoading();
             }
         }
 
@@ -845,26 +1639,35 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">
-                                    <i class="fas fa-user-cog"></i> 用户操作
+                                    <i class="fas fa-user-cog me-2"></i>用户操作中心
                                 </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
-                                <div class="d-grid gap-2">
+                                <div class="d-grid gap-3">
                                     <button class="btn btn-outline-primary" onclick="sendMessageToUser(${userId}); bootstrap.Modal.getInstance(document.getElementById('userActionsModal')).hide();">
-                                        <i class="fas fa-envelope"></i> 发送消息
+                                        <i class="fas fa-envelope me-2"></i>发送消息
+                                        <small class="d-block text-muted">向用户发送系统通知</small>
                                     </button>
                                     <button class="btn btn-outline-warning" onclick="resetUserPassword(${userId}); bootstrap.Modal.getInstance(document.getElementById('userActionsModal')).hide();">
-                                        <i class="fas fa-key"></i> 重置密码
+                                        <i class="fas fa-key me-2"></i>重置密码
+                                        <small class="d-block text-muted">为用户生成新密码</small>
                                     </button>
                                     <button class="btn btn-outline-info" onclick="viewUserImages(${userId}); bootstrap.Modal.getInstance(document.getElementById('userActionsModal')).hide();">
-                                        <i class="fas fa-images"></i> 查看图片
+                                        <i class="fas fa-images me-2"></i>查看图片
+                                        <small class="d-block text-muted">查看用户上传的所有图片</small>
                                     </button>
-                                    <hr>
+                                    <hr class="my-2">
                                     <button class="btn btn-outline-danger" onclick="deleteUser(${userId}); bootstrap.Modal.getInstance(document.getElementById('userActionsModal')).hide();">
-                                        <i class="fas fa-trash"></i> 删除用户
+                                        <i class="fas fa-trash me-2"></i>删除用户
+                                        <small class="d-block text-muted">永久删除用户账户</small>
                                     </button>
                                 </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-1"></i>取消
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -881,7 +1684,7 @@
         // 显示用户详情模态框
         function showUserDetailsModal(data) {
             const user = data.user;
-            const stats = data.image_stats;
+            const stats = data.image_stats || {};
             
             const modalHtml = `
                 <div class="modal fade" id="userDetailsModal" tabindex="-1">
@@ -889,35 +1692,73 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">
-                                    <i class="fas fa-user"></i> 用户详细信息
+                                    <i class="fas fa-user me-2"></i>用户详细信息
                                 </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="text-center mb-4">
-                                            <div class="user-avatar mx-auto mb-3" style="width: 120px; height: 120px; font-size: 3rem;">
+                                            <div class="user-avatar mx-auto mb-3 glow-effect" style="width: 120px; height: 120px; font-size: 3rem;">
                                                 ${(user.full_name || user.username).charAt(0).toUpperCase()}
                                             </div>
-                                            <h4>${user.username}</h4>
-                                            <p class="text-muted">${user.email}</p>
-                                            <span class="role-badge role-${user.role}">${getRoleText(user.role)}</span>
+                                            <h4 class="fw-bold">${user.username}</h4>
+                                            <p class="text-muted mb-2">
+                                                <i class="fas fa-envelope me-1"></i>${user.email}
+                                            </p>
+                                            <span class="role-badge role-${user.role} fs-6">
+                                                ${getRoleIcon(user.role)} ${getRoleText(user.role)}
+                                            </span>
                                         </div>
                                         
-                                        <div class="card">
+                                        <div class="card shadow">
                                             <div class="card-header">
-                                                <h6 class="mb-0"><i class="fas fa-info-circle"></i> 基本信息</h6>
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-info-circle text-primary me-2"></i>基本信息
+                                                </h6>
                                             </div>
                                             <div class="card-body">
                                                 <table class="table table-sm">
-                                                    <tr><th>ID</th><td>${user.id}</td></tr>
-                                                    <tr><th>真实姓名</th><td>${user.full_name || '未设置'}</td></tr>
-                                                    <tr><th>角色</th><td>${getRoleText(user.role)}</td></tr>
-                                                    <tr><th>状态</th><td><span class="badge bg-${user.is_active ? 'success' : 'danger'}">${user.is_active ? '活跃' : '禁用'}</span></td></tr>
-                                                    <tr><th>邮箱验证</th><td><span class="badge bg-${user.is_verified ? 'info' : 'secondary'}">${user.is_verified ? '已验证' : '未验证'}</span></td></tr>
-                                                    <tr><th>注册时间</th><td>${formatDate(user.created_at)}</td></tr>
-                                                    <tr><th>最后登录</th><td>${user.last_login ? formatDate(user.last_login) : '从未登录'}</td></tr>
+                                                    <tr>
+                                                        <th width="80"><i class="fas fa-hashtag me-1"></i>ID</th>
+                                                        <td><span class="badge bg-primary">${user.id}</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th><i class="fas fa-id-badge me-1"></i>真实姓名</th>
+                                                        <td>${user.full_name || '<em class="text-muted">未设置</em>'}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th><i class="fas fa-user-tag me-1"></i>角色</th>
+                                                        <td>${getRoleIcon(user.role)} ${getRoleText(user.role)}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th><i class="fas fa-toggle-on me-1"></i>状态</th>
+                                                        <td>
+                                                            <span class="badge bg-${user.is_active ? 'success' : 'danger'}">
+                                                                ${user.is_active ? '✅ 活跃' : '❌ 禁用'}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th><i class="fas fa-certificate me-1"></i>邮箱验证</th>
+                                                        <td>
+                                                            <span class="badge bg-${user.is_verified ? 'info' : 'secondary'}">
+                                                                ${user.is_verified ? '📧 已验证' : '⏳ 未验证'}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th><i class="fas fa-calendar-plus me-1"></i>注册时间</th>
+                                                        <td>${formatDate(user.created_at)}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th><i class="fas fa-sign-in-alt me-1"></i>最后登录</th>
+                                                        <td>
+                                                            ${user.last_login ? formatDate(user.last_login) : 
+                                                              '<em class="text-muted">从未登录</em>'}
+                                                        </td>
+                                                    </tr>
                                                 </table>
                                             </div>
                                         </div>
@@ -927,33 +1768,37 @@
                                         <!-- 统计信息 -->
                                         <div class="row mb-4">
                                             <div class="col-md-3">
-                                                <div class="card text-center">
+                                                <div class="card text-center bg-primary bg-opacity-10 border-primary">
                                                     <div class="card-body">
-                                                        <h4 class="text-primary">${stats.total_count}</h4>
+                                                        <i class="fas fa-upload fa-2x text-primary mb-2"></i>
+                                                        <h4 class="text-primary">${stats.total_count || 0}</h4>
                                                         <small class="text-muted">总上传量</small>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
-                                                <div class="card text-center">
+                                                <div class="card text-center bg-success bg-opacity-10 border-success">
                                                     <div class="card-body">
-                                                        <h4 class="text-success">${stats.active_count}</h4>
+                                                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                                                        <h4 class="text-success">${stats.active_count || 0}</h4>
                                                         <small class="text-muted">活跃图片</small>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
-                                                <div class="card text-center">
+                                                <div class="card text-center bg-info bg-opacity-10 border-info">
                                                     <div class="card-body">
-                                                        <h4 class="text-info">${formatFileSize(stats.total_size)}</h4>
+                                                        <i class="fas fa-hdd fa-2x text-info mb-2"></i>
+                                                        <h4 class="text-info">${formatFileSize(stats.total_size || 0)}</h4>
                                                         <small class="text-muted">总存储</small>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
-                                                <div class="card text-center">
+                                                <div class="card text-center bg-warning bg-opacity-10 border-warning">
                                                     <div class="card-body">
-                                                        <h4 class="text-warning">${stats.avg_confidence}%</h4>
+                                                        <i class="fas fa-percentage fa-2x text-warning mb-2"></i>
+                                                        <h4 class="text-warning">${stats.avg_confidence || 0}%</h4>
                                                         <small class="text-muted">平均置信度</small>
                                                     </div>
                                                 </div>
@@ -961,10 +1806,12 @@
                                         </div>
                                         
                                         <!-- AI状态分布 -->
-                                        ${data.ai_stats.length > 0 ? `
-                                        <div class="card mb-4">
+                                        ${data.ai_stats && data.ai_stats.length > 0 ? `
+                                        <div class="card mb-4 shadow">
                                             <div class="card-header">
-                                                <h6 class="mb-0"><i class="fas fa-chart-pie"></i> AI分析状态</h6>
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-chart-pie text-success me-2"></i>AI分析状态
+                                                </h6>
                                             </div>
                                             <div class="card-body">
                                                 <canvas id="userAIStatusChart" width="400" height="200"></canvas>
@@ -973,10 +1820,12 @@
                                         ` : ''}
                                         
                                         <!-- 最近活动 -->
-                                        ${data.recent_activity.length > 0 ? `
-                                        <div class="card mb-4">
+                                        ${data.recent_activity && data.recent_activity.length > 0 ? `
+                                        <div class="card mb-4 shadow">
                                             <div class="card-header">
-                                                <h6 class="mb-0"><i class="fas fa-chart-line"></i> 最近30天活动</h6>
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-chart-line text-info me-2"></i>最近30天活动
+                                                </h6>
                                             </div>
                                             <div class="card-body">
                                                 <canvas id="userActivityChart" width="400" height="150"></canvas>
@@ -985,15 +1834,17 @@
                                         ` : ''}
                                         
                                         <!-- 最近图片 -->
-                                        ${data.recent_images.length > 0 ? `
-                                        <div class="card">
+                                        ${data.recent_images && data.recent_images.length > 0 ? `
+                                        <div class="card shadow">
                                             <div class="card-header">
-                                                <h6 class="mb-0"><i class="fas fa-images"></i> 最近上传图片</h6>
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-images text-primary me-2"></i>最近上传图片
+                                                </h6>
                                             </div>
                                             <div class="card-body">
                                                 <div class="table-responsive">
-                                                    <table class="table table-sm">
-                                                        <thead>
+                                                    <table class="table table-sm table-hover">
+                                                        <thead class="table-light">
                                                             <tr>
                                                                 <th>文件名</th>
                                                                 <th>上传时间</th>
@@ -1004,10 +1855,21 @@
                                                         <tbody>
                                                             ${data.recent_images.map(img => `
                                                                 <tr>
-                                                                    <td>${img.filename}</td>
+                                                                    <td class="text-truncate" style="max-width: 200px;" title="${img.filename}">
+                                                                        <i class="fas fa-image me-1 text-primary"></i>
+                                                                        ${img.filename}
+                                                                    </td>
                                                                     <td>${formatDate(img.upload_time)}</td>
-                                                                    <td><span class="status-badge status-${img.ai_analysis_status}">${getStatusText(img.ai_analysis_status)}</span></td>
-                                                                    <td><span class="badge bg-${img.is_active ? 'success' : 'danger'}">${img.is_active ? '活跃' : '禁用'}</span></td>
+                                                                    <td>
+                                                                        <span class="status-badge status-${img.ai_analysis_status}">
+                                                                            ${getStatusText(img.ai_analysis_status)}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td>
+                                                                        <span class="badge bg-${img.is_active ? 'success' : 'danger'}">
+                                                                            ${img.is_active ? '✅ 活跃' : '❌ 禁用'}
+                                                                        </span>
+                                                                    </td>
                                                                 </tr>
                                                             `).join('')}
                                                         </tbody>
@@ -1015,16 +1877,27 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        ` : ''}
+                                        ` : `
+                                        <div class="card shadow">
+                                            <div class="card-body text-center py-5">
+                                                <i class="fas fa-images fa-3x text-muted mb-3"></i>
+                                                <h5 class="text-muted">暂无上传图片</h5>
+                                                <p class="text-muted">该用户还没有上传任何图片</p>
+                                            </div>
+                                        </div>
+                                        `}
                                     </div>
                                 </div>
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-primary" onclick="editUser(${user.id}); bootstrap.Modal.getInstance(document.getElementById('userDetailsModal')).hide();">
-                                    <i class="fas fa-edit"></i> 编辑用户
+                                    <i class="fas fa-edit me-1"></i>编辑用户
                                 </button>
                                 <button type="button" class="btn btn-info" onclick="sendMessageToUser(${user.id}); bootstrap.Modal.getInstance(document.getElementById('userDetailsModal')).hide();">
-                                    <i class="fas fa-envelope"></i> 发送消息
+                                    <i class="fas fa-envelope me-1"></i>发送消息
+                                </button>
+                                <button type="button" class="btn btn-warning" onclick="showUserActions(${user.id}); bootstrap.Modal.getInstance(document.getElementById('userDetailsModal')).hide();">
+                                    <i class="fas fa-cogs me-1"></i>更多操作
                                 </button>
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
                             </div>
@@ -1041,10 +1914,10 @@
             
             // 绘制图表
             setTimeout(() => {
-                if (data.ai_stats.length > 0) {
+                if (data.ai_stats && data.ai_stats.length > 0) {
                     drawUserAIStatusChart(data.ai_stats);
                 }
-                if (data.recent_activity.length > 0) {
+                if (data.recent_activity && data.recent_activity.length > 0) {
                     drawUserActivityChart(data.recent_activity);
                 }
             }, 500);
@@ -1054,69 +1927,108 @@
         function showEditUserModal(user) {
             const modalHtml = `
                 <div class="modal fade" id="editUserModal" tabindex="-1">
-                    <div class="modal-dialog">
+                    <div class="modal-dialog modal-lg">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">
-                                    <i class="fas fa-edit"></i> 编辑用户
+                                    <i class="fas fa-edit me-2"></i>编辑用户信息
                                 </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
-                                <form id="editUserForm">
-                                    <input type="hidden" id="editUserId" value="${user.id}">
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">用户名</label>
-                                        <input type="text" class="form-control" value="${user.username}" readonly>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">邮箱</label>
-                                        <input type="email" class="form-control" value="${user.email}" readonly>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">真实姓名</label>
-                                        <input type="text" class="form-control" id="editUserFullName" 
-                                               value="${user.full_name || ''}" placeholder="输入真实姓名">
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">角色</label>
-                                        <select class="form-select" id="editUserRole">
-                                            <option value="user" ${user.role === 'user' ? 'selected' : ''}>普通用户</option>
-                                            <option value="moderator" ${user.role === 'moderator' ? 'selected' : ''}>版主</option>
-                                            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>管理员</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label class="form-label">账户状态</label>
-                                                <select class="form-select" id="editUserActive">
-                                                    <option value="true" ${user.is_active ? 'selected' : ''}>活跃</option>
-                                                    <option value="false" ${!user.is_active ? 'selected' : ''}>禁用</option>
-                                                </select>
-                                            </div>
+                                <div class="row">
+                                    <div class="col-md-4 text-center">
+                                        <div class="user-avatar mx-auto mb-3" style="width: 100px; height: 100px; font-size: 2.5rem;">
+                                            ${(user.full_name || user.username).charAt(0).toUpperCase()}
                                         </div>
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label class="form-label">邮箱验证</label>
-                                                <select class="form-select" id="editUserVerified">
-                                                    <option value="true" ${user.is_verified ? 'selected' : ''}>已验证</option>
-                                                    <option value="false" ${!user.is_verified ? 'selected' : ''}>未验证</option>
-                                                </select>
-                                            </div>
-                                        </div>
+                                        <h5>${user.username}</h5>
+                                        <p class="text-muted small">${user.email}</p>
                                     </div>
-                                </form>
+                                    <div class="col-md-8">
+                                        <form id="editUserForm">
+                                            <input type="hidden" id="editUserId" value="${user.id}">
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">
+                                                            <i class="fas fa-user me-1"></i>用户名
+                                                        </label>
+                                                        <input type="text" class="form-control" value="${user.username}" readonly>
+                                                        <div class="form-text">用户名不可修改</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">
+                                                            <i class="fas fa-envelope me-1"></i>邮箱
+                                                        </label>
+                                                        <input type="email" class="form-control" value="${user.email}" readonly>
+                                                        <div class="form-text">邮箱不可修改</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">
+                                                    <i class="fas fa-id-badge me-1"></i>真实姓名
+                                                </label>
+                                                <input type="text" class="form-control" id="editUserFullName" 
+                                                       value="${user.full_name || ''}" placeholder="输入真实姓名（可选）">
+                                                <div class="form-text">用于显示和身份识别</div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">
+                                                    <i class="fas fa-user-tag me-1"></i>用户角色
+                                                </label>
+                                                <select class="form-select" id="editUserRole">
+                                                    <option value="user" ${user.role === 'user' ? 'selected' : ''}>👤 普通用户</option>
+                                                    <option value="moderator" ${user.role === 'moderator' ? 'selected' : ''}>👮 版主</option>
+                                                    <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>👑 管理员</option>
+                                                </select>
+                                                <div class="form-text">角色决定了用户的权限范围</div>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">
+                                                            <i class="fas fa-toggle-on me-1"></i>账户状态
+                                                        </label>
+                                                        <select class="form-select" id="editUserActive">
+                                                            <option value="true" ${user.is_active ? 'selected' : ''}>✅ 活跃</option>
+                                                            <option value="false" ${!user.is_active ? 'selected' : ''}>❌ 禁用</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">
+                                                            <i class="fas fa-certificate me-1"></i>邮箱验证
+                                                        </label>
+                                                        <select class="form-select" id="editUserVerified">
+                                                            <option value="true" ${user.is_verified ? 'selected' : ''}>📧 已验证</option>
+                                                            <option value="false" ${!user.is_verified ? 'selected' : ''}>⏳ 未验证</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                <strong>提示：</strong>修改后的信息将立即生效，请谨慎操作。
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-1"></i>取消
+                                </button>
                                 <button type="button" class="btn btn-primary" onclick="saveUserEdit()">
-                                    <i class="fas fa-save"></i> 保存更改
+                                    <i class="fas fa-save me-1"></i>保存更改
                                 </button>
                             </div>
                         </div>
@@ -1158,7 +2070,7 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showSuccess('用户信息更新成功');
+                    showSuccess('✅ 用户信息更新成功！');
                     
                     // 关闭模态框
                     const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
@@ -1182,71 +2094,111 @@
         function showCreateUserModal() {
             const modalHtml = `
                 <div class="modal fade" id="createUserModal" tabindex="-1">
-                    <div class="modal-dialog">
+                    <div class="modal-dialog modal-lg">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">
-                                    <i class="fas fa-user-plus"></i> 创建新用户
+                                    <i class="fas fa-user-plus me-2"></i>创建新用户
                                 </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
-                                <form id="createUserForm">
-                                    <div class="mb-3">
-                                        <label class="form-label">用户名 <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="createUsername" 
-                                               placeholder="输入用户名" required>
-                                        <div class="form-text">用户名只能包含字母、数字和下划线</div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">邮箱 <span class="text-danger">*</span></label>
-                                        <input type="email" class="form-control" id="createEmail" 
-                                               placeholder="输入邮箱地址" required>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">密码 <span class="text-danger">*</span></label>
-                                        <input type="password" class="form-control" id="createPassword" 
-                                               placeholder="输入密码" required>
-                                        <div class="form-text">密码至少6位</div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">真实姓名</label>
-                                        <input type="text" class="form-control" id="createFullName" 
-                                               placeholder="输入真实姓名（可选）">
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">角色</label>
-                                        <select class="form-select" id="createRole">
-                                            <option value="user">普通用户</option>
-                                            <option value="moderator">版主</option>
-                                            <option value="admin">管理员</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="createActive" checked>
-                                                <label class="form-check-label">激活账户</label>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <form id="createUserForm">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">
+                                                            <i class="fas fa-user me-1"></i>用户名 <span class="text-danger">*</span>
+                                                        </label>
+                                                        <input type="text" class="form-control" id="createUsername" 
+                                                               placeholder="输入用户名" required>
+                                                        <div class="form-text">用户名只能包含字母、数字和下划线</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">
+                                                            <i class="fas fa-envelope me-1"></i>邮箱 <span class="text-danger">*</span>
+                                                        </label>
+                                                        <input type="email" class="form-control" id="createEmail" 
+                                                               placeholder="输入邮箱地址" required>
+                                                        <div class="form-text">用于登录和接收通知</div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="createVerified">
-                                                <label class="form-check-label">验证邮箱</label>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">
+                                                            <i class="fas fa-key me-1"></i>密码 <span class="text-danger">*</span>
+                                                        </label>
+                                                        <input type="password" class="form-control" id="createPassword" 
+                                                               placeholder="输入密码" required>
+                                                        <div class="form-text">密码至少6位字符</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">
+                                                            <i class="fas fa-id-badge me-1"></i>真实姓名
+                                                        </label>
+                                                        <input type="text" class="form-control" id="createFullName" 
+                                                               placeholder="输入真实姓名（可选）">
+                                                        <div class="form-text">可选，用于身份识别</div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">
+                                                    <i class="fas fa-user-tag me-1"></i>用户角色
+                                                </label>
+                                                <select class="form-select" id="createRole">
+                                                    <option value="user">👤 普通用户</option>
+                                                    <option value="moderator">👮 版主</option>
+                                                    <option value="admin">👑 管理员</option>
+                                                </select>
+                                                <div class="form-text">角色决定用户的权限范围</div>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" id="createActive" checked>
+                                                        <label class="form-check-label">
+                                                            <i class="fas fa-toggle-on me-1"></i>激活账户
+                                                        </label>
+                                                        <div class="form-text">创建后立即激活账户</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" id="createVerified">
+                                                        <label class="form-check-label">
+                                                            <i class="fas fa-certificate me-1"></i>验证邮箱
+                                                        </label>
+                                                        <div class="form-text">跳过邮箱验证流程</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="alert alert-success mt-3">
+                                                <i class="fas fa-lightbulb me-2"></i>
+                                                <strong>提示：</strong>创建成功后，系统将生成用户ID，您可以通过用户管理页面进行后续管理。
+                                            </div>
+                                        </form>
                                     </div>
-                                </form>
+                                </div>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-1"></i>取消
+                                </button>
                                 <button type="button" class="btn btn-success" onclick="createUser()">
-                                    <i class="fas fa-plus"></i> 创建用户
+                                    <i class="fas fa-plus me-1"></i>创建用户
                                 </button>
                             </div>
                         </div>
@@ -1272,12 +2224,12 @@
             
             // 基本验证
             if (!username || !email || !password) {
-                alert('请填写所有必填字段');
+                showError('请填写所有必填字段');
                 return;
             }
             
             if (password.length < 6) {
-                alert('密码至少6位');
+                showError('密码至少需要6位字符');
                 return;
             }
             
@@ -1303,7 +2255,7 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showSuccess(`用户创建成功！用户ID: ${result.user_id}`);
+                    showSuccess(`✅ 用户创建成功！用户ID: ${result.user_id}`);
                     
                     // 关闭模态框
                     const modal = bootstrap.Modal.getInstance(document.getElementById('createUserModal'));
@@ -1327,40 +2279,53 @@
         async function sendMessageToUser(userId) {
             const modalHtml = `
                 <div class="modal fade" id="sendMessageModal" tabindex="-1">
-                    <div class="modal-dialog">
+                    <div class="modal-dialog modal-lg">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">
-                                    <i class="fas fa-envelope"></i> 发送消息
+                                    <i class="fas fa-envelope me-2"></i>发送系统消息
                                 </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
                                 <form id="sendMessageForm">
                                     <input type="hidden" id="messageUserId" value="${userId}">
                                     
                                     <div class="mb-3">
-                                        <label class="form-label">主题 <span class="text-danger">*</span></label>
+                                        <label class="form-label">
+                                            <i class="fas fa-tag me-1"></i>消息主题 <span class="text-danger">*</span>
+                                        </label>
                                         <input type="text" class="form-control" id="messageSubject" 
                                                placeholder="输入消息主题" required>
+                                        <div class="form-text">简洁明了的主题，便于用户快速了解</div>
                                     </div>
                                     
                                     <div class="mb-3">
-                                        <label class="form-label">消息内容 <span class="text-danger">*</span></label>
-                                        <textarea class="form-control" id="messageContent" rows="6" 
-                                                  placeholder="输入消息内容..." required></textarea>
+                                        <label class="form-label">
+                                            <i class="fas fa-align-left me-1"></i>消息内容 <span class="text-danger">*</span>
+                                        </label>
+                                        <textarea class="form-control" id="messageContent" rows="8" 
+                                                  placeholder="输入详细的消息内容..." required></textarea>
+                                        <div class="form-text">支持换行，建议内容清晰、友好</div>
                                     </div>
                                     
                                     <div class="alert alert-info">
-                                        <i class="fas fa-info-circle"></i>
-                                        <strong>说明：</strong>消息将通过邮件发送给用户，请确保内容准确无误。
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>发送说明：</strong>
+                                        <ul class="mb-0 mt-2">
+                                            <li>消息将通过邮件发送给用户</li>
+                                            <li>请确保内容准确、友好</li>
+                                            <li>发送后无法撤回，请谨慎操作</li>
+                                        </ul>
                                     </div>
                                 </form>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-1"></i>取消
+                                </button>
                                 <button type="button" class="btn btn-primary" onclick="sendMessage()">
-                                    <i class="fas fa-paper-plane"></i> 发送消息
+                                    <i class="fas fa-paper-plane me-1"></i>发送消息
                                 </button>
                             </div>
                         </div>
@@ -1381,7 +2346,7 @@
             const content = document.getElementById('messageContent').value.trim();
             
             if (!subject || !content) {
-                alert('请填写主题和消息内容');
+                showError('请填写主题和消息内容');
                 return;
             }
             
@@ -1402,7 +2367,7 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showSuccess('消息发送成功');
+                    showSuccess('✅ 消息发送成功！');
                     
                     // 关闭模态框
                     const modal = bootstrap.Modal.getInstance(document.getElementById('sendMessageModal'));
@@ -1420,18 +2385,18 @@
 
         // 重置密码功能
         async function resetUserPassword(userId) {
-            const newPassword = prompt('请输入新密码（至少6位）：');
+            const newPassword = prompt('🔐 请输入新密码（至少6位）：');
             
             if (!newPassword) {
                 return;
             }
             
             if (newPassword.length < 6) {
-                alert('密码至少6位');
+                showError('密码至少需要6位字符');
                 return;
             }
             
-            const sendNotification = confirm('是否发送密码重置通知邮件给用户？');
+            const sendNotification = confirm('📧 是否发送密码重置通知邮件给用户？\n\n✅ 确定 = 发送邮件通知\n❌ 取消 = 仅重置密码');
             
             try {
                 showLoading('正在重置密码...');
@@ -1464,9 +2429,9 @@
 
         // 删除用户功能
         async function deleteUser(userId) {
-            const transferImages = confirm('选择图片处理方式：\n\n确定 = 转移图片到当前管理员\n取消 = 禁用用户的图片');
+            const transferImages = confirm('🗂️ 选择图片处理方式：\n\n✅ 确定 = 转移图片到当前管理员\n❌ 取消 = 禁用用户的图片');
             
-            if (!confirm(`确定要删除这个用户吗？\n用户的图片将${transferImages ? '转移到您的账户' : '被禁用'}。`)) {
+            if (!confirm(`⚠️ 确定要删除这个用户吗？\n\n📸 用户的图片将${transferImages ? '转移到您的账户' : '被禁用'}。\n\n此操作不可撤销，请谨慎操作！`)) {
                 return;
             }
             
@@ -1480,7 +2445,7 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showSuccess(`${result.message}（影响 ${result.affected_images} 张图片）`);
+                    showSuccess(`✅ ${result.message}（影响 ${result.affected_images} 张图片）`);
                     loadUsers(currentPage);
                     loadStats();
                 } else {
@@ -1500,7 +2465,6 @@
             window.open(`/admin/images?uploader=${encodeURIComponent(userId)}`, '_blank');
         }
 
-        // 继续下一部分...
         // 用户分析功能
         async function showAnalytics() {
             try {
@@ -1529,69 +2493,129 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">
-                                    <i class="fas fa-chart-bar"></i> 用户数据分析报告
+                                    <i class="fas fa-chart-bar me-2"></i>用户数据分析报告
                                 </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
                                 <div class="row">
                                     <!-- 注册趋势 -->
                                     <div class="col-md-6 mb-4">
-                                        <h6><i class="fas fa-chart-line"></i> 用户注册趋势（近30天）</h6>
-                                        <canvas id="registrationTrendChart" width="400" height="200"></canvas>
+                                        <div class="chart-container">
+                                            <h6>
+                                                <i class="fas fa-chart-line text-primary me-2"></i>用户注册趋势（近30天）
+                                            </h6>
+                                            <canvas id="registrationTrendChart" width="400" height="250"></canvas>
+                                        </div>
                                     </div>
                                     
                                     <!-- 活跃度分布 -->
                                     <div class="col-md-6 mb-4">
-                                        <h6><i class="fas fa-chart-pie"></i> 用户活跃度分布</h6>
-                                        <canvas id="activityDistChart" width="400" height="200"></canvas>
+                                        <div class="chart-container">
+                                            <h6>
+                                                <i class="fas fa-chart-pie text-success me-2"></i>用户活跃度分布
+                                            </h6>
+                                            <canvas id="activityDistChart" width="400" height="250"></canvas>
+                                        </div>
                                     </div>
                                     
                                     <!-- 角色分布 -->
                                     <div class="col-md-6 mb-4">
-                                        <h6><i class="fas fa-chart-doughnut"></i> 角色分布</h6>
-                                        <canvas id="roleDistChart" width="400" height="200"></canvas>
+                                        <div class="chart-container">
+                                            <h6>
+                                                <i class="fas fa-chart-doughnut text-warning me-2"></i>用户角色分布
+                                            </h6>
+                                            <canvas id="roleDistChart" width="400" height="250"></canvas>
+                                        </div>
                                     </div>
                                     
                                     <!-- 上传活跃度 -->
                                     <div class="col-md-6 mb-4">
-                                        <h6><i class="fas fa-chart-bar"></i> 上传活跃度分布</h6>
-                                        <canvas id="uploadDistChart" width="400" height="200"></canvas>
+                                        <div class="chart-container">
+                                            <h6>
+                                                <i class="fas fa-chart-bar text-info me-2"></i>上传活跃度分布
+                                            </h6>
+                                            <canvas id="uploadDistChart" width="400" height="250"></canvas>
+                                        </div>
                                     </div>
                                     
                                     <!-- 最活跃用户排行 -->
                                     <div class="col-md-12">
-                                        <h6><i class="fas fa-trophy"></i> 最活跃用户排行榜</h6>
-                                        <div class="table-responsive">
-                                            <table class="table table-striped">
-                                                <thead>
-                                                    <tr>
-                                                        <th>排名</th>
-                                                        <th>用户名</th>
-                                                        <th>上传数量</th>
-                                                        <th>总存储大小</th>
-                                                        <th>平均置信度</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    ${data.top_uploaders.map((user, index) => `
+                                        <div class="chart-container">
+                                            <h6>
+                                                <i class="fas fa-trophy text-warning me-2"></i>最活跃用户排行榜
+                                            </h6>
+                                            <div class="table-responsive">
+                                                <table class="table table-striped table-hover">
+                                                    <thead class="table-light">
                                                         <tr>
-                                                            <td><span class="badge bg-${getRankBadgeClass(index)}">#${index + 1}</span></td>
-                                                            <td>${user.username}</td>
-                                                            <td><span class="badge bg-primary">${user.upload_count}</span></td>
-                                                            <td>${formatFileSize(user.total_size)}</td>
-                                                            <td>${user.avg_confidence}%</td>
+                                                            <th width="80">排名</th>
+                                                            <th>用户名</th>
+                                                            <th>上传数量</th>
+                                                            <th>总存储大小</th>
+                                                            <th>平均置信度</th>
+                                                            <th>最后活跃</th>
                                                         </tr>
-                                                    `).join('')}
-                                                </tbody>
-                                            </table>
+                                                    </thead>
+                                                    <tbody>
+                                                        ${data.top_uploaders?.map((user, index) => `
+                                                            <tr>
+                                                                <td>
+                                                                    <span class="badge bg-${getRankBadgeClass(index)} fs-6">
+                                                                        ${getRankIcon(index)} ${index + 1}
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    <div class="d-flex align-items-center">
+                                                                        <div class="user-avatar me-2" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                                                            ${user.username.charAt(0).toUpperCase()}
+                                                                        </div>
+                                                                        <div>
+                                                                            <div class="fw-bold">${user.username}</div>
+                                                                            <small class="text-muted">${getRoleIcon(user.role)} ${getRoleText(user.role)}</small>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="badge bg-primary fs-6">
+                                                                        <i class="fas fa-images me-1"></i>${user.upload_count}
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="fw-bold">${formatFileSize(user.total_size)}</span>
+                                                                </td>
+                                                                <td>
+                                                                    <div class="d-flex align-items-center">
+                                                                        <div class="confidence-bar me-2" style="width: 50px; height: 6px;">
+                                                                            <div class="confidence-fill bg-${getConfidenceColor(user.avg_confidence / 100)}" 
+                                                                                 style="width: ${user.avg_confidence}%"></div>
+                                                                        </div>
+                                                                        <small>${user.avg_confidence}%</small>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <small class="text-muted">
+                                                                        ${user.last_login ? formatDate(user.last_login) : '从未登录'}
+                                                                    </small>
+                                                                </td>
+                                                            </tr>
+                                                        `).join('') || '<tr><td colspan="6" class="text-center text-muted">暂无数据</td></tr>'}
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="modal-footer">
+                                <div class="text-muted me-auto">
+                                    <small>
+                                        <i class="fas fa-clock me-1"></i>
+                                        报告生成时间: ${new Date().toLocaleString('zh-CN')}
+                                    </small>
+                                </div>
                                 <button type="button" class="btn btn-success" onclick="exportAnalyticsReport()">
-                                    <i class="fas fa-download"></i> 导出报告
+                                    <i class="fas fa-download me-1"></i>导出报告
                                 </button>
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
                             </div>
@@ -1608,17 +2632,17 @@
             
             // 等待模态框显示后绘制图表
             setTimeout(() => {
-                drawRegistrationTrendChart(data.registration_trend);
-                drawActivityDistChart(data.activity_distribution);
-                drawRoleDistChart(data.role_distribution);
-                drawUploadDistChart(data.upload_distribution);
+                if (data.registration_trend) drawRegistrationTrendChart(data.registration_trend);
+                if (data.activity_distribution) drawActivityDistChart(data.activity_distribution);
+                if (data.role_distribution) drawRoleDistChart(data.role_distribution);
+                if (data.upload_distribution) drawUploadDistChart(data.upload_distribution);
             }, 500);
         }
 
         // 导出数据
         async function exportData() {
-            const includeStats = confirm('是否包含详细统计数据？\n\n确定 = 包含统计\n取消 = 仅基本信息');
-            const format = prompt('选择导出格式：\n\n1 = CSV格式\n2 = JSON格式', '1');
+            const includeStats = confirm('📊 是否包含详细统计数据？\n\n✅ 确定 = 包含统计\n❌ 取消 = 仅基本信息');
+            const format = prompt('📁 选择导出格式：\n\n1️⃣ = CSV格式 (Excel兼容)\n2️⃣ = JSON格式 (程序处理)', '1');
             
             if (!format || !['1', '2'].includes(format)) {
                 return;
@@ -1627,7 +2651,7 @@
             const exportFormat = format === '1' ? 'csv' : 'json';
             
             try {
-                showLoading('正在导出用户数据...');
+                showLoading(`正在导出${exportFormat.toUpperCase()}格式数据...`);
                 
                 const response = await fetch(`/api/admin/users/export?format=${exportFormat}&include_stats=${includeStats}`);
                 
@@ -1644,7 +2668,7 @@
                     window.URL.revokeObjectURL(url);
                     document.body.removeChild(a);
                     
-                    showSuccess('用户数据导出成功');
+                    showSuccess(`✅ ${exportFormat.toUpperCase()}数据导出成功！`);
                 } else {
                     showError('导出数据失败');
                 }
@@ -1660,75 +2684,31 @@
         function refreshData() {
             loadStats();
             loadUsers(currentPage);
-            showSuccess('数据已刷新');
+            showSuccess('🔄 数据已刷新！');
         }
 
         // 辅助函数
-        function getRoleText(role) {
-            const roleMap = {
-                'user': '普通用户',
-                'moderator': '版主',
-                'admin': '管理员'
-            };
-            return roleMap[role] || role;
-        }
-
-        function getActivityClass(lastLogin) {
-            if (!lastLogin) return 'never';
-            
-            const now = new Date();
-            const loginDate = new Date(lastLogin);
-            const diffMs = now - loginDate;
-            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-            
-            if (diffDays === 0) return 'today';
-            if (diffDays <= 7) return 'week';
-            if (diffDays <= 30) return 'month';
-            return 'older';
-        }
-
-        function getActivityText(lastLogin) {
-            if (!lastLogin) return '从未登录';
-            
-            const now = new Date();
-            const loginDate = new Date(lastLogin);
-            const diffMs = now - loginDate;
-            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-            
-            if (diffDays === 0) return '今天活跃';
-            if (diffDays === 1) return '昨天活跃';
-            if (diffDays <= 7) return `${diffDays}天前`;
-            if (diffDays <= 30) return `${diffDays}天前`;
-            return `${Math.floor(diffDays / 30)}个月前`;
-        }
-
         function getStatusText(status) {
             const statusMap = {
                 'pending': '待分析',
                 'completed': '已完成',
-                'failed': '分析失败'
+                'failed': '分析失败',
+                'running': '分析中'
             };
             return statusMap[status] || status;
         }
 
-        function getRankBadgeClass(index) {
-            if (index === 0) return 'warning';
-            if (index === 1) return 'secondary';
-            if (index === 2) return 'dark';
-            return 'light';
+        function getRankIcon(index) {
+            if (index === 0) return '🥇';
+            if (index === 1) return '🥈';
+            if (index === 2) return '🥉';
+            return '📍';
         }
 
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+        function getConfidenceColor(confidence) {
+            if (confidence >= 0.8) return 'success';
+            if (confidence >= 0.6) return 'warning';
+            return 'danger';
         }
 
         function removeModal(modalId) {
@@ -1738,6 +2718,7 @@
             }
         }
 
+        // ===== UI通知系统 =====
         function showLoading(text = '处理中...') {
             document.getElementById('loadingText').textContent = text;
             document.getElementById('loadingOverlay').style.display = 'flex';
@@ -1748,40 +2729,61 @@
         }
 
         function showSuccess(message) {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
-            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
-            alertDiv.innerHTML = `
-                <i class="fas fa-check-circle"></i> ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.body.appendChild(alertDiv);
-            
-            setTimeout(() => {
-                if (alertDiv.parentNode) {
-                    alertDiv.parentNode.removeChild(alertDiv);
-                }
-            }, 5000);
+            showNotification(message, 'success', 5000);
         }
 
         function showError(message) {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
-            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
-            alertDiv.innerHTML = `
-                <i class="fas fa-exclamation-triangle"></i> ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.body.appendChild(alertDiv);
-            
-            setTimeout(() => {
-                if (alertDiv.parentNode) {
-                    alertDiv.parentNode.removeChild(alertDiv);
-                }
-            }, 8000);
+            showNotification(message, 'danger', 8000);
         }
 
-        // 图表绘制函数
+        function showWarning(message) {
+            showNotification(message, 'warning', 6000);
+        }
+
+        function showInfo(message) {
+            showNotification(message, 'info', 4000);
+        }
+
+        function showNotification(message, type, duration) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed animate-slide-up`;
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 350px; max-width: 500px;';
+            
+            const icon = getNotificationIcon(type);
+            alertDiv.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="me-2">${icon}</div>
+                    <div class="flex-grow-1">${message}</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            // 自动移除
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.classList.remove('show');
+                    setTimeout(() => {
+                        if (alertDiv.parentNode) {
+                            alertDiv.parentNode.removeChild(alertDiv);
+                        }
+                    }, 300);
+                }
+            }, duration);
+        }
+
+        function getNotificationIcon(type) {
+            const iconMap = {
+                'success': '<i class="fas fa-check-circle text-success"></i>',
+                'danger': '<i class="fas fa-exclamation-triangle text-danger"></i>',
+                'warning': '<i class="fas fa-exclamation-circle text-warning"></i>',
+                'info': '<i class="fas fa-info-circle text-info"></i>'
+            };
+            return iconMap[type] || '<i class="fas fa-bell"></i>';
+        }
+
+        // ===== 图表绘制函数 =====
         function drawRegistrationTrendChart(data) {
             const ctx = document.getElementById('registrationTrendChart');
             if (!ctx) return;
@@ -1793,10 +2795,15 @@
                     datasets: [{
                         label: '每日注册数',
                         data: data.map(item => item.count),
-                        borderColor: '#28a745',
-                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        borderColor: '#56ab2f',
+                        backgroundColor: 'rgba(86, 171, 47, 0.1)',
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        pointBackgroundColor: '#56ab2f',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 8
                     }]
                 },
                 options: {
@@ -1805,15 +2812,32 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
                         }
                     },
                     scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
                         y: {
                             beginAtZero: true,
                             ticks: {
                                 stepSize: 1
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
                             }
                         }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
                     }
                 }
             });
@@ -1824,11 +2848,11 @@
             if (!ctx) return;
             
             const activityLabels = {
-                'today': '今天',
-                'week': '本周',
-                'month': '本月',
-                'older': '更早',
-                'never': '从未'
+                'today': '今天活跃',
+                'week': '本周活跃',
+                'month': '本月活跃',
+                'older': '较早活跃',
+                'never': '从未登录'
             };
             
             new Chart(ctx, {
@@ -1838,7 +2862,8 @@
                     datasets: [{
                         data: data.map(item => item.count),
                         backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#6c757d', '#dc3545'],
-                        borderWidth: 0
+                        borderWidth: 0,
+                        hoverOffset: 10
                     }]
                 },
                 options: {
@@ -1846,7 +2871,20 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed} 人 (${percentage}%)`;
+                                }
+                            }
                         }
                     }
                 }
@@ -1864,7 +2902,8 @@
                     datasets: [{
                         data: data.map(item => item.count),
                         backgroundColor: ['#007bff', '#fd7e14', '#dc3545'],
-                        borderWidth: 0
+                        borderWidth: 0,
+                        hoverOffset: 8
                     }]
                 },
                 options: {
@@ -1872,7 +2911,20 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed} 人 (${percentage}%)`;
+                                }
+                            }
                         }
                     }
                 }
@@ -1899,7 +2951,9 @@
                         label: '用户数量',
                         data: data.map(item => item.count),
                         backgroundColor: ['#6c757d', '#17a2b8', '#28a745', '#ffc107', '#fd7e14'],
-                        borderWidth: 0
+                        borderWidth: 0,
+                        borderRadius: 8,
+                        borderSkipped: false
                     }]
                 },
                 options: {
@@ -1908,13 +2962,28 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.parsed.y} 人`;
+                                }
+                            }
                         }
                     },
                     scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
                         y: {
                             beginAtZero: true,
                             ticks: {
                                 stepSize: 1
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
                             }
                         }
                     }
@@ -1932,8 +3001,9 @@
                     labels: data.map(item => getStatusText(item.status)),
                     datasets: [{
                         data: data.map(item => item.count),
-                        backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
-                        borderWidth: 0
+                        backgroundColor: ['#28a745', '#ffc107', '#dc3545', '#17a2b8'],
+                        borderWidth: 0,
+                        hoverOffset: 8
                     }]
                 },
                 options: {
@@ -1941,7 +3011,20 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed} 张 (${percentage}%)`;
+                                }
+                            }
                         }
                     }
                 }
@@ -1962,7 +3045,12 @@
                         borderColor: '#007bff',
                         backgroundColor: 'rgba(0, 123, 255, 0.1)',
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        pointBackgroundColor: '#007bff',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     }]
                 },
                 options: {
@@ -1971,26 +3059,325 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
                         }
                     },
                     scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
                         y: {
                             beginAtZero: true,
                             ticks: {
                                 stepSize: 1
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
                             }
                         }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
                     }
                 }
             });
         }
 
-        // 占位函数
+        // ===== 占位函数（可以后续实现） =====
         function exportAnalyticsReport() {
-            alert('导出分析报告功能开发中...');
+            showInfo('📊 分析报告导出功能开发中，敬请期待...');
         }
-        // 继续实现其他功能...
-        // 由于篇幅限制，我先提交这部分，然后继续完善剩余功能
+
+        // ===== 额外的样式类 =====
+        const additionalStyles = `
+            <style>
+                .confidence-bar {
+                    height: 6px;
+                    background: rgba(0,0,0,0.1);
+                    border-radius: 3px;
+                    overflow: hidden;
+                }
+                
+                .confidence-fill {
+                    height: 100%;
+                    border-radius: 3px;
+                    transition: width 0.3s ease;
+                }
+                
+                .status-badge {
+                    padding: 0.3rem 0.6rem;
+                    border-radius: 10px;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.2rem;
+                }
+                
+                .status-pending {
+                    background: #fff3cd;
+                    color: #856404;
+                }
+                
+                .status-completed {
+                    background: #d1eddc;
+                    color: #155724;
+                }
+                
+                .status-failed {
+                    background: #f8d7da;
+                    color: #721c24;
+                }
+                
+                .status-running {
+                    background: #cce7ff;
+                    color: #004085;
+                }
+                
+                .animate-number {
+                    transition: all 0.3s ease;
+                }
+                
+                .card:hover .card-body i {
+                    animation: iconBounce 0.6s ease;
+                }
+                
+                @keyframes iconBounce {
+                    0%, 20%, 60%, 100% {
+                        transform: translateY(0);
+                    }
+                    40% {
+                        transform: translateY(-10px);
+                    }
+                    80% {
+                        transform: translateY(-5px);
+                    }
+                }
+                
+                .table tbody tr:hover .user-avatar {
+                    transform: scale(1.1);
+                }
+                
+                .modal-content {
+                    animation: modalSlideIn 0.3s ease;
+                }
+                
+                @keyframes modalSlideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-50px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                .chart-container canvas {
+                    border-radius: 10px;
+                }
+                
+                .btn:active {
+                    transform: translateY(1px) scale(0.98);
+                }
+                
+                .search-highlight {
+                    background: linear-gradient(120deg, #f093fb 0%, #f5576c 100%);
+                    color: white;
+                    padding: 0.2rem 0.4rem;
+                    border-radius: 4px;
+                    font-weight: bold;
+                }
+                
+                .loading-dots::after {
+                    content: '';
+                    animation: loadingDots 1.5s infinite;
+                }
+                
+                @keyframes loadingDots {
+                    0%, 20% {
+                        content: '.';
+                    }
+                    40% {
+                        content: '..';
+                    }
+                    60%, 100% {
+                        content: '...';
+                    }
+                }
+                
+                .glass-card {
+                    background: rgba(255, 255, 255, 0.1);
+                    backdrop-filter: blur(15px);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+                }
+                
+                .hover-lift {
+                    transition: transform 0.3s ease, box-shadow 0.3s ease;
+                }
+                
+                .hover-lift:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+                }
+            </style>
+        `;
+        
+        // 插入额外样式
+        document.head.insertAdjacentHTML('beforeend', additionalStyles);
+
+        // ===== 键盘快捷键支持 =====
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + R: 刷新数据
+            if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+                e.preventDefault();
+                refreshData();
+            }
+            
+            // Ctrl/Cmd + N: 创建新用户
+            if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                e.preventDefault();
+                showCreateUserModal();
+            }
+            
+            // Ctrl/Cmd + E: 导出数据
+            if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+                e.preventDefault();
+                exportData();
+            }
+            
+            // Ctrl/Cmd + A: 显示分析
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                e.preventDefault();
+                showAnalytics();
+            }
+            
+            // B: 切换批量操作
+            if (e.key === 'b' || e.key === 'B') {
+                if (!e.target.matches('input, textarea')) {
+                    e.preventDefault();
+                    toggleBatchActions();
+                }
+            }
+            
+            // ESC: 关闭模态框和批量操作
+            if (e.key === 'Escape') {
+                // 关闭所有模态框
+                document.querySelectorAll('.modal.show').forEach(modal => {
+                    const bsModal = bootstrap.Modal.getInstance(modal);
+                    if (bsModal) {
+                        bsModal.hide();
+                    }
+                });
+                
+                // 关闭批量操作
+                if (batchActionsVisible) {
+                    toggleBatchActions();
+                }
+            }
+        });
+
+        // ===== 搜索增强功能 =====
+        let searchTimeout;
+        
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                if (e.target.value.length >= 2 || e.target.value.length === 0) {
+                    loadUsers(1);
+                }
+            }, 500);
+        });
+
+        // ===== 页面可见性检测 =====
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                // 页面重新可见时刷新统计数据
+                loadStats();
+            }
+        });
+
+        // ===== 初始化完成提示 =====
+        console.log('👥 AI姿势参考图库 - 用户管理系统已就绪');
+        console.log('👤 当前用户:', 'marvinli001'); 
+        console.log('🕒 初始化时间:', new Date().toLocaleString('zh-CN'));
+        console.log('📊 功能模块: 用户管理、批量操作、数据分析、权限控制');
+        console.log('⌨️  快捷键: Ctrl+R(刷新) | Ctrl+N(新建) | Ctrl+E(导出) | Ctrl+A(分析) | B(批量操作)');
+        console.log('🎨 UI主题: 现代化渐变设计 | 响应式布局 | 动画效果');
+
+        // ===== 性能监控 =====
+        window.addEventListener('load', function() {
+            const loadTime = performance.now();
+            console.log(`⚡ 页面加载完成，耗时: ${Math.round(loadTime)}ms`);
+            
+            // 如果加载时间过长，显示提示
+            if (loadTime > 3000) {
+                setTimeout(() => {
+                    showInfo('页面加载完成！如果遇到性能问题，请尝试刷新页面。');
+                }, 1000);
+            }
+        });
+
+        // ===== 错误处理增强 =====
+        window.addEventListener('error', function(e) {
+            console.error('页面错误:', e.error);
+            showError('页面发生错误，请刷新重试');
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('未处理的Promise错误:', e.reason);
+            showError('网络请求失败，请检查连接后重试');
+        });
+
+        // ===== 自动保存用户偏好 =====
+        function saveUserPreferences() {
+            const preferences = {
+                roleFilter: document.getElementById('roleFilter').value,
+                statusFilter: document.getElementById('statusFilter').value,
+                verifiedFilter: document.getElementById('verifiedFilter').value,
+                searchInput: document.getElementById('searchInput').value
+            };
+            localStorage.setItem('userManagementPreferences', JSON.stringify(preferences));
+        }
+
+        function loadUserPreferences() {
+            const saved = localStorage.getItem('userManagementPreferences');
+            if (saved) {
+                try {
+                    const preferences = JSON.parse(saved);
+                    if (preferences.roleFilter) document.getElementById('roleFilter').value = preferences.roleFilter;
+                    if (preferences.statusFilter) document.getElementById('statusFilter').value = preferences.statusFilter;
+                    if (preferences.verifiedFilter) document.getElementById('verifiedFilter').value = preferences.verifiedFilter;
+                    if (preferences.searchInput) document.getElementById('searchInput').value = preferences.searchInput;
+                } catch (e) {
+                    console.warn('加载用户偏好设置失败:', e);
+                }
+            }
+        }
+
+        // 在筛选器变化时保存偏好
+        ['roleFilter', 'statusFilter', 'verifiedFilter', 'searchInput'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('change', saveUserPreferences);
+                if (id === 'searchInput') {
+                    element.addEventListener('input', saveUserPreferences);
+                }
+            }
+        });
+
+        // 页面加载时恢复偏好设置
+        setTimeout(loadUserPreferences, 100);
+
+        // ===== 结束脚本 =====
     </script>
 </body>
 </html>
