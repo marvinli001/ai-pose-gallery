@@ -212,8 +212,13 @@
     position: relative;
 }
 
-/* 确保所有hero区域的文字都是白色 */
-.hero-section * {
+/* 修改全局hero区域文字颜色规则，排除功能卡片 */
+.hero-section > *:not(.feature-showcase),
+.hero-section .hero-title,
+.hero-section .hero-subtitle,
+.hero-section .hero-stat-number,
+.hero-section .hero-stat-label,
+.hero-section .btn {
     color: white !important;
 }
 
@@ -230,6 +235,43 @@
     font-weight: 700;
     font-size: 2rem;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+/* 确保功能卡片区域使用正常的文字颜色 */
+.hero-section .feature-showcase {
+    color: initial !important;
+}
+
+.hero-section .feature-showcase * {
+    color: initial !important;
+}
+
+/* 功能卡片样式 - 更具体的选择器 */
+.hero-section .feature-showcase .feature-card {
+    background: white !important;
+    color: #333 !important;
+}
+
+.hero-section .feature-showcase .feature-card .card-body {
+    background: white !important;
+}
+
+.hero-section .feature-showcase .feature-card .feature-card-title {
+    color: #333 !important;
+    font-weight: 600 !important;
+}
+
+.hero-section .feature-showcase .feature-card .feature-card-text {
+    color: #555 !important;
+}
+
+/* 功能卡片内的图标颜色 */
+.hero-section .feature-showcase .feature-card .text-primary {
+    color: #0d6efd !important;
+}
+
+.hero-section .feature-showcase .feature-card .text-success {
+    color: #198754 !important;
 }
 
 .hero-section .feature-card .text-primary {
