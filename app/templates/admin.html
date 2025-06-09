@@ -2232,5 +2232,120 @@ function deleteImageFromModal() {
 console.log('🚀 AI姿势参考图库管理面板已就绪');
 console.log('📱 当前用户:', 'marvinli001');
 console.log('🕒 初始化时间:', new Date().toLocaleString('zh-CN'));
+
+// 切换扫描源类型
+function toggleScanSource() {
+    const sourceType = document.getElementById('scanSourceType').value;
+    const localSection = document.getElementById('localPathSection');
+    const ossSection = document.getElementById('ossPrefixSection');
+    
+    if (sourceType === 'oss') {
+        localSection.style.display = 'none';
+        ossSection.style.display = 'block';
+    } else {
+        localSection.style.display = 'block';
+        ossSection.style.display = 'none';
+    }
+}
+
+// 修改startDirectoryScan函数
+async function startDirectoryScan() {
+    const sourceType = document.getElementById('scanSourceType').value;
+    const autoAnalyze = document.getElementById('autoAnalyzeScanned').checked;
+    const recursiveScan = document.getElementById('recursiveScan').checked;
+    const fileType = document.getElementById('fileTypeFilter').value;
+    
+    let path, endpoint, scanType;
+    
+    if (sourceType === 'oss') {
+        path = document.getElementById('scanOssPrefix').value.trim();
+        endpoint = '/api/admin/scan-oss';
+        scanType = 'OSS存储桶';
+        
+        const scanOptions = [];
+        if (autoAnalyze) scanOptions.push('🧠 自动AI分析');
+        scanOptions.push(`📸 文件类型：${getFileTypeText(fileType)}`);
+        
+        if (confirm(`☁️  确定要扫描OSS存储桶吗？\n\n📍 前缀路径：${path || '根目录'}\n⚙️ 选项：${scanOptions.join('、')}\n\n扫描可能需要一些时间，请耐心等待。`)) {
+            try {
+                showLoading('☁️  正在扫描OSS存储桶...', '发现并导入新图片文件');
+                addLog(`☁️  开始OSS扫描: ${path || '根目录'}`, 'info');
+                
+                const params = new URLSearchParams({
+                    oss_prefix: path,
+                    auto_analyze: autoAnalyze
+                });
+                
+                const response = await fetch(`${endpoint}?${params}`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog(`✅ OSS扫描任务启动成功`, 'success');
+                    showSuccess('OSS扫描任务已启动！请查看操作日志了解详细进度。');
+                } else {
+                    addLog(`❌ OSS扫描任务启动失败`, 'error');
+                    showError(data.message || '启动OSS扫描任务失败');
+                }
+            } catch (error) {
+                addLog(`❌ OSS扫描请求失败: ${error.message}`, 'error');
+                showError(`请求失败: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+    } else {
+        // 原有的本地目录扫描逻辑
+        path = document.getElementById('scanDirectoryPath').value.trim();
+        endpoint = '/api/admin/scan-directory';
+        scanType = '本地目录';
+        
+        if (!path) {
+            showError('请输入有效的目录路径');
+            document.getElementById('scanDirectoryPath').focus();
+            return;
+        }
+        
+        const scanOptions = [];
+        if (autoAnalyze) scanOptions.push('🧠 自动AI分析');
+        if (recursiveScan) scanOptions.push('📁 递归扫描');
+        scanOptions.push(`📸 文件类型：${getFileTypeText(fileType)}`);
+        
+        if (confirm(`📂 确定要扫描目录吗？\n\n📍 路径：${path}\n⚙️ 选项：${scanOptions.join('、')}\n\n扫描可能需要一些时间，请耐心等待。`)) {
+            try {
+                showLoading('📂 正在扫描目录...', '发现并导入新图片文件');
+                addLog(`📂 开始目录扫描: ${path}`, 'info');
+                
+                const params = new URLSearchParams({
+                    directory_path: path,
+                    auto_analyze: autoAnalyze,
+                    recursive: recursiveScan,
+                    file_type: fileType
+                });
+                
+                const response = await fetch(`${endpoint}?${params}`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog(`✅ 目录扫描任务启动成功`, 'success');
+                    showSuccess('目录扫描任务已启动！请查看操作日志了解详细进度。');
+                } else {
+                    addLog(`❌ 目录扫描任务启动失败`, 'error');
+                    showError(data.message || '启动目录扫描任务失败');
+                }
+            } catch (error) {
+                addLog(`❌ 目录扫描请求失败: ${error.message}`, 'error');
+                showError(`请求失败: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+    }
+}
 </script>
 {% endblock %}

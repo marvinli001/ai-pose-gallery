@@ -693,7 +693,7 @@ async def scan_oss_directory(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"启动OSS扫描失败: {str(e)}")
-
+    
 async def scan_oss_task(oss_prefix: str, uploader: str, auto_analyze: bool = True):
     """扫描OSS存储桶任务"""
     print(f"☁️  开始扫描OSS存储桶: {oss_prefix}")
