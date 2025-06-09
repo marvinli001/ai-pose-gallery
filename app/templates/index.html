@@ -212,8 +212,7 @@
     position: relative;
 }
 
-/* 修改全局hero区域文字颜色规则，排除功能卡片 */
-.hero-section > *:not(.feature-showcase),
+/* Hero区域文字颜色 - 排除功能卡片 */
 .hero-section .hero-title,
 .hero-section .hero-subtitle,
 .hero-section .hero-stat-number,
@@ -222,81 +221,14 @@
     color: white !important;
 }
 
-.hero-title, .hero-subtitle, .hero-stat-number, .hero-stat-label {
-    color: white !important;
-}
-
 .hero-stats {
     margin-top: 2rem;
 }
 
 .hero-stat-number {
-    color: white !important;
     font-weight: 700;
     font-size: 2rem;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-}
-
-/* ===== 功能卡片区域样式修复 ===== */
-.hero-section .feature-showcase {
-    /* 重置继承的白色文字 */
-    color: initial !important;
-}
-
-.hero-section .feature-showcase * {
-    color: initial !important;
-}
-
-/* 功能卡片样式 - 更具体的选择器 */
-.hero-section .feature-showcase .feature-card {
-    background: white !important;
-    color: #333 !important;
-}
-
-/* 功能卡片内容区域 */
-.feature-showcase .feature-card .card-body {
-    background: white !important;
-    color: #333 !important;
-}
-
-/* 功能卡片标题样式 */
-.feature-showcase .feature-card .feature-card-title {
-    color: #333 !important;
-    font-weight: 600 !important;
-    font-size: 1.25rem !important;
-    margin-bottom: 1rem !important;
-}
-
-/* 功能卡片描述文字 */
-.feature-showcase .feature-card .feature-card-text {
-    color: #555 !important;
-    line-height: 1.6 !important;
-    font-size: 0.95rem !important;
-    margin-bottom: 0 !important;
-}
-
-/* 强制覆盖可能的继承样式 */
-.hero-section .feature-showcase .card-title,
-.hero-section .feature-showcase .card-text,
-.hero-section .feature-showcase h5,
-.hero-section .feature-showcase p {
-    color: inherit !important;
-}
-
-/* 图标颜色保持 */
-.feature-showcase .feature-card .text-primary {
-    color: #0d6efd !important;
-}
-
-.feature-showcase .feature-card .text-success {
-    color: #198754 !important;
-}
-
-.hero-section .feature-card .text-primary {
-    color: #0d6efd !important;
-}
-.hero-section .feature-card .text-success {
-    color: #198754 !important;
 }
 
 .hero-stat-label {
@@ -304,7 +236,45 @@
     text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
 }
 
-/* 按钮样式优化 */
+/* ===== 功能卡片样式 - 简化版 ===== */
+.feature-showcase .feature-card {
+    background: white !important;
+    border: none !important;
+    transform: translateY(0);
+    transition: transform 0.3s ease;
+}
+
+.feature-showcase .feature-card:hover {
+    transform: translateY(-5px);
+}
+
+/* 功能卡片内所有文字强制深色 */
+.feature-card,
+.feature-card *,
+.feature-card .card-body,
+.feature-card .card-body *,
+.feature-card h5,
+.feature-card p,
+.feature-card .feature-card-title,
+.feature-card .feature-card-text {
+    color: #333 !important;
+}
+
+/* 功能卡片描述文字 */
+.feature-card .feature-card-text {
+    color: #555 !important;
+}
+
+/* 图标颜色保持 */
+.feature-card .text-primary {
+    color: #0d6efd !important;
+}
+
+.feature-card .text-success {
+    color: #198754 !important;
+}
+
+/* 按钮样式 */
 .btn-light {
     background-color: white;
     border-color: white;
@@ -326,51 +296,6 @@
 .btn-outline-light:hover {
     background-color: white;
     color: #333 !important;
-}
-
-/* 功能卡片容器 */
-.feature-showcase .feature-card {
-    background: white !important;
-    border: none !important;
-    transform: translateY(0);
-    transition: transform 0.3s ease;
-}
-
-.feature-showcase .feature-card:hover {
-    transform: translateY(-5px);
-}
-
-/* 功能卡片标题 - 强制深色 */
-.feature-card-title {
-    color: #333 !important;
-    font-weight: 600 !important;
-}
-
-/* 功能卡片标题图标颜色 */
-.feature-card-title .text-primary {
-    color: #0d6efd !important;
-}
-
-.feature-card-title .text-success {
-    color: #198754 !important;
-}
-
-.feature-card-text {
-    color: #555 !important;
-}
-
-/* 确保卡片内所有元素都使用深色文字 */
-.feature-card .card-body,
-.feature-card .card-body * {
-    color: #333 !important;
-}
-
-.feature-card .card-title {
-    color: #333 !important;
-}
-
-.feature-card .card-text {
-    color: #555 !important;
 }
 
 /* 搜索区域样式 */
@@ -590,35 +515,6 @@
     .search-btn {
         padding: 0.8rem 1.5rem;
     }
-}
-
-.hero-section .feature-card,
-.hero-section .feature-card * {
-    color: #333 !important;
-}
-.hero-section .feature-card .feature-card-title {
-    color: #333 !important;
-}
-.hero-section .feature-card .feature-card-text {
-    color: #555 !important;
-}
-
-/* 强制覆盖所有可能的Bootstrap样式冲突 */
-.feature-card * {
-    color: inherit !important;
-}
-
-.feature-card h5 {
-    color: #333 !important;
-}
-
-.feature-card p {
-    color: #555 !important;
-}
-
-/* 确保卡片内容区域是白色背景 */
-.card-body {
-    background-color: white !important;
 }
 </style>
 {% endblock %}
