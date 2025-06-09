@@ -977,7 +977,18 @@ body {
                             自动发现并导入指定目录中的图片文件
                         </p>
                         
-                        <div class="mb-3">
+                                                <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-source-branch me-1"></i>扫描源
+                            </label>
+                            <select class="form-select" id="scanSourceType" onchange="toggleScanSource()">
+                                <option value="local">💾 本地目录</option>
+                                <option value="oss">☁️  OSS存储桶</option>
+                            </select>
+                        </div>
+
+                        <!-- 本地目录路径 -->
+                        <div class="mb-3" id="localPathSection">
                             <label class="form-label">
                                 <i class="fas fa-folder me-1"></i>目录路径
                             </label>
@@ -985,6 +996,22 @@ body {
                                 <span class="input-group-text"><i class="fas fa-folder-open"></i></span>
                                 <input type="text" class="form-control" id="scanDirectoryPath" 
                                        placeholder="例如: uploads/images" value="uploads">
+                            </div>
+                        </div>
+
+                        <!-- OSS前缀路径 -->
+                        <div class="mb-3" id="ossPrefixSection" style="display: none;">
+                            <label class="form-label">
+                                <i class="fas fa-cloud me-1"></i>OSS前缀路径
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-cloud"></i></span>
+                                <input type="text" class="form-control" id="scanOssPrefix" 
+                                       placeholder="例如: ai-pose-gallery/images/" value="ai-pose-gallery/">
+                            </div>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                留空扫描整个存储桶，或输入前缀路径扫描特定目录
                             </div>
                         </div>
                         
@@ -999,26 +1026,6 @@ body {
                                 <option value="webp">🌐 仅 WebP</option>
                             </select>
                         </div>
-                        
-                        <div class="mb-4">
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="autoAnalyzeScanned" checked>
-                                <label class="form-check-label">
-                                    <i class="fas fa-brain me-1"></i>自动分析新导入的图片
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="recursiveScan">
-                                <label class="form-check-label">
-                                    <i class="fas fa-sitemap me-1"></i>递归扫描子目录
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <button class="btn btn-info w-100" onclick="startDirectoryScan()">
-                            <i class="fas fa-search me-2"></i>开始智能扫描
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
