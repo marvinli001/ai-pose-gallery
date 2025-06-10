@@ -1,6 +1,7 @@
 """
 管理员图片管理API - 独立模块
 """
+from app.services.storage_service import storage_manager
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
@@ -103,7 +104,7 @@ async def get_images_list(
                 "id": image.id,
                 "filename": image.filename,
                 "url": storage_manager.get_image_url(image.file_path),
-                "thumbnail_url": storage_manager.get_image_url(image.file_path, size="thumbnail"),
+                "thumbnail_url": storage_manager.get_image_url(image.file_path),
                 "width": image.width,
                 "height": image.height,
                 "file_size": image.file_size,
