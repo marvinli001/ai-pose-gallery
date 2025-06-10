@@ -696,61 +696,52 @@ async def scan_oss_directory(
     
 async def scan_oss_task(oss_prefix: str, uploader: str, auto_analyze: bool = True):
     """扫描OSS存储桶任务"""
-    print(f"☁️  开始扫描OSS存储桶: {oss_prefix}")
-    
-    imported_count = 0
-    skipped_count = 0
-    
     try:
-        from app.database import SessionLocal
-        from app.services.storage_service import storage_manager
+        from app.services.storage_service import StorageManager
+        from app.services.ai_service import AIService
+        from app.models.image import Image, TagCreate
+        from app.database import get_db
         
-        # 获取OSS存储服务
-        if not storage_manager.settings.use_oss_storage:
-            print("❌ OSS存储未启用")
-            return
-            
-        oss_service = storage_manager.service
+        storage = StorageManager()
+        ai_service = AIService()
+        imported_count = 0
         
-        # 确保是OSS服务
-        if not hasattr(oss_service, 'list_objects'):
-            print("❌ 当前存储服务不支持对象列表功能")
-            return
-        
-        # 列出OSS对象
-        objects = await oss_service.list_objects(prefix=oss_prefix)
-        print(f"📋 发现 {len(objects)} 个图片文件")
+        # 获取OSS中的图片文件
+        objects = storage.list_oss_objects(oss_prefix)
         
         for obj in objects:
             try:
-                # 检查文件是否已存在
-                db = SessionLocal()
-                existing = db.query(Image).filter(
-                    Image.file_path == obj['key']
-                ).first()
+                db = next(get_db())
                 
+                # 检查文件是否已存在（使用OSS的key作为唯一标识）
+                existing = db.query(Image).filter(Image.oss_key == obj['key']).first()
                 if existing:
-                    skipped_count += 1
-                    db.close()
-                    continue
-                
-                # 获取文件内容
-                file_content = await oss_service.get_object_content(obj['key'])
-                if not file_content:
-                    print(f"❌ 无法获取文件内容: {obj['key']}")
+                    print(f"⏭️ 跳过已存在的文件: {obj['key']}")
                     db.close()
                     continue
                 
                 # 获取图片尺寸
-                width, height = storage_manager.get_image_dimensions(file_content)
+                try:
+                    from PIL import Image as PILImage
+                    import io
+                    import requests
+                    
+                    # 构建正确的OSS URL
+                    oss_url = storage.get_oss_url(obj['key'])
+                    response = requests.get(oss_url, timeout=10)
+                    img = PILImage.open(io.BytesIO(response.content))
+                    width, height = img.size
+                except Exception as e:
+                    print(f"⚠️ 获取图片尺寸失败: {obj['key']}, {e}")
+                    width, height = 0, 0
                 
-                # 创建数据库记录
-                db_service = DatabaseService(db)
-                filename = Path(obj['key']).name
-                
-                image = db_service.create_image(
-                    filename=filename,
-                    file_path=obj['key'],
+                # 创建图片记录 - 关键修复：正确设置路径字段
+                image = Image(
+                    filename=obj['key'].split('/')[-1],  # 只保存文件名
+                    original_filename=obj['key'].split('/')[-1],
+                    file_path=obj['key'],  # 存储完整的OSS key
+                    oss_key=obj['key'],    # 新增：OSS key字段
+                    url=storage.get_oss_url(obj['key']),  # 存储完整的访问URL
                     file_size=obj['size'],
                     width=width,
                     height=height,
@@ -758,6 +749,10 @@ async def scan_oss_task(oss_prefix: str, uploader: str, auto_analyze: bool = Tru
                     ai_analysis_status="pending" if auto_analyze else "skipped",
                     ai_model="gpt-4o"
                 )
+                
+                db.add(image)
+                db.commit()
+                db.refresh(image)
                 
                 imported_count += 1
                 
@@ -775,7 +770,7 @@ async def scan_oss_task(oss_prefix: str, uploader: str, auto_analyze: bool = Tru
     except Exception as e:
         print(f"❌ 扫描OSS失败: {e}")
     
-    print(f"☁️  OSS扫描完成 - 导入: {imported_count}, 跳过: {skipped_count}")
+    print(f"🎉 OSS扫描完成，共导入 {imported_count} 张图片")
 
 @router.get("/users")
 async def get_admin_users(

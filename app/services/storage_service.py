@@ -433,14 +433,30 @@ class StorageManager:
             return "/static/images/placeholder.jpg"
         
         # 如果是完整的URL，直接返回
-        if file_path.startswith(('http://', 'https://', '/')):
+        if file_path.startswith('http'):
             return file_path
         
+        clean_path = file_path.lstrip('/')
+        
         # 构建相对URL
-        if file_path.startswith('uploads/'):
-            return f"/static/{file_path}"
+        if self.storage_type == 'oss' and self.oss_enabled:
+            return self.get_oss_url(clean_path)
         else:
-            return f"/static/uploads/{file_path}"
+            return f"/uploads/{clean_path}"
+        
+    def get_oss_url(self, oss_key: str) -> str:
+        """获取阿里云OSS文件的访问URL"""
+        if not key:
+            return "/static/images/placeholder.jpg"
+        
+        clean_key = key.lstrip('/')
+        
+        if self.oss_custom_domain:
+            # 使用自定义域名
+            return f"{self.oss_custom_domain}/{oss_key}"
+        else:
+            # 使用默认域名
+            return f"https://{self.oss_bucket}.{self.oss_endpoint}/{oss_key}"
         
     async def save_upload_file(self, file: UploadFile, subfolder: str = "") -> tuple[str, str]:
         """保存上传的文件"""
