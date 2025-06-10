@@ -891,23 +891,33 @@ function displaySearchResults(searchData) {
 }
 
 // 修改 generateImageCard 函数
-function generateImageCard(image, colClass = '') {
+function generateImageCard(image, colClass = 'col-lg-3 col-md-4 col-sm-6 mb-4') {
+    console.log('生成图片卡片:', image);
+    
     // 修复图片URL处理逻辑
     let imageUrl = image.url || image.thumbnail_url;
     
-    // 调试输出
-    console.log('原始图片数据:', image);
-    console.log('原始图片URL:', imageUrl);
-    
-    // 如果URL不是完整的http/https链接，则补充完整
-    if (imageUrl && !imageUrl.startsWith('http')) {
-        // 确保URL格式正确
-        const baseUrl = 'https://poseapp-ai.cat.sd';
-        const cleanUrl = imageUrl.replace(/^\/+/, ''); // 移除开头的斜杠
-        imageUrl = `${baseUrl}/${cleanUrl}`;
+    if (imageUrl) {
+        // 检查是否为本地uploads路径，需要转换为OSS路径
+        if (imageUrl.includes('/uploads/') || imageUrl.startsWith('uploads/')) {
+            const baseUrl = 'https://poseapp-ai.cat.sd';
+            // 提取文件名
+            const filename = imageUrl.split('/').pop();
+            imageUrl = `${baseUrl}/ai-pose-gallery/${filename}`;
+            console.log('修复本地路径为OSS路径:', imageUrl);
+        } else if (!imageUrl.startsWith('http')) {
+            // 其他相对路径的处理
+            const baseUrl = 'https://poseapp-ai.cat.sd';
+            const cleanUrl = imageUrl.replace(/^\/+/, '');
+            if (cleanUrl.startsWith('ai-pose-gallery/')) {
+                imageUrl = `${baseUrl}/${cleanUrl}`;
+            } else {
+                imageUrl = `${baseUrl}/ai-pose-gallery/${cleanUrl}`;
+            }
+        }
     }
     
-    console.log('修复后图片URL:', imageUrl);
+    console.log('最终图片URL:', imageUrl);
     
     const confidence = image.confidence ? (image.confidence * 100).toFixed(0) : '0';
     const tags = (image.tags || []).slice(0, 3).map(tag => 
@@ -947,10 +957,22 @@ function generateImageListItem(image) {
     // 修复图片URL处理逻辑
     let imageUrl = image.url || image.thumbnail_url;
     
-    if (imageUrl && !imageUrl.startsWith('http')) {
-        const baseUrl = 'https://poseapp-ai.cat.sd';
-        const cleanUrl = imageUrl.replace(/^\/+/, '');
-        imageUrl = `${baseUrl}/${cleanUrl}`;
+    if (imageUrl) {
+        // 检查是否为本地uploads路径，需要转换为OSS路径
+        if (imageUrl.includes('/uploads/') || imageUrl.startsWith('uploads/')) {
+            const baseUrl = 'https://poseapp-ai.cat.sd';
+            // 提取文件名
+            const filename = imageUrl.split('/').pop();
+            imageUrl = `${baseUrl}/ai-pose-gallery/${filename}`;
+        } else if (!imageUrl.startsWith('http')) {
+            const baseUrl = 'https://poseapp-ai.cat.sd';
+            const cleanUrl = imageUrl.replace(/^\/+/, '');
+            if (cleanUrl.startsWith('ai-pose-gallery/')) {
+                imageUrl = `${baseUrl}/${cleanUrl}`;
+            } else {
+                imageUrl = `${baseUrl}/ai-pose-gallery/${cleanUrl}`;
+            }
+        }
     }
     
     const confidence = image.confidence ? (image.confidence * 100).toFixed(0) : '0';
@@ -966,7 +988,7 @@ function generateImageListItem(image) {
                          class="img-fluid rounded-start h-100" 
                          style="object-fit: cover; cursor: pointer;" 
                          alt="${image.description || image.filename || '图片'}"
-                         onerror="this.onerror=null; this.src='/static/images/placeholder.jpg'; console.error('列表图片加载失败:', '${imageUrl}');"
+                         onerror="this.onerror=null; this.src='/static/images/placeholder.jpg';"
                          onload="console.log('列表图片加载成功:', '${imageUrl}');">
                 </div>
                 <div class="col-md-9">

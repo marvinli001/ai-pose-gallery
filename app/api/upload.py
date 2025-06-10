@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import Optional
 import json
+import logging
 
 from app.database import get_db
 from app.services.storage_service import storage_manager
@@ -14,6 +15,10 @@ from app.services.database_service import DatabaseService
 from app.models.image import Image
 from app.models.user import User
 from app.auth.dependencies import require_user
+from app.services.storage_service import StorageManager
+
+# 配置日志记录器
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -143,7 +148,7 @@ async def _process_gpt4o_tags(db_service: DatabaseService, image_id: int, analys
 @router.post("/upload")
 async def upload_image(
     background_tasks: BackgroundTasks,
-    current_user: User = Depends(require_user),  # 要求用户登录
+    current_user: User = Depends(require_user),
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
@@ -151,24 +156,40 @@ async def upload_image(
     上传图片到云存储并进行GPT-4o分析（需要登录）
     """
     try:
-        # 读取文件内容
-        file_content = await file.read()
+        # 确保使用云存储管理器
+        storage_manager = StorageManager()
         
-        # 使用存储管理器上传文件
-        upload_result = await storage_manager.upload_image(file_content, file.filename)
+        # 保存文件到OSS
+        file_path, original_filename = await storage_manager.save_upload_file(file, "ai-pose-gallery")
         
-        if not upload_result.get("success"):
-            raise HTTPException(status_code=400, detail=upload_result.get("error", "上传失败"))
+        # 获取文件信息
+        file_info = storage_manager.get_file_info(file_path)
         
-        # 创建数据库记录（使用当前用户信息）
+        # 确保URL使用正确的OSS路径
+        oss_url = storage_manager.get_oss_url(file_path)
+        
+        upload_result = {
+            "filename": file_info.get("filename", original_filename),
+            "original_filename": original_filename,
+            "file_path": file_path,
+            "file_size": file_info.get("file_size", 0),
+            "width": file_info.get("width", 0),
+            "height": file_info.get("height", 0),
+            "url": oss_url,  # 确保使用OSS URL
+            "storage_type": "oss"
+        }
+        
+        # 创建数据库记录
         db_service = DatabaseService(db)
         image = db_service.create_image(
-            filename=upload_result["original_filename"],
-            file_path=upload_result["file_path"],  # 云存储路径或本地路径
+            filename=upload_result["filename"],
+            original_filename=upload_result["original_filename"],
+            file_path=upload_result["file_path"],
             file_size=upload_result["file_size"],
+            url=upload_result["url"],  # 使用OSS URL
             width=upload_result["width"],
             height=upload_result["height"],
-            uploader=current_user.username,  # 使用登录用户的用户名
+            uploader=current_user.username,
             ai_analysis_status="pending",
             ai_model="gpt-4o"
         )
@@ -178,12 +199,11 @@ async def upload_image(
         db.commit()
         
         # 启动GPT-4o分析任务
-        is_cloud_storage = upload_result["storage_type"] in ["oss", "s3"]
         background_tasks.add_task(
             process_image_with_gpt4o, 
             image.id, 
             upload_result["file_path"],
-            is_cloud_storage
+            True  # 使用云存储
         )
         
         return JSONResponse({
@@ -205,10 +225,8 @@ async def upload_image(
             }
         })
         
-    except HTTPException:
-        raise
     except Exception as e:
-        print(f"❌ 上传失败: {e}")
+        logger.error(f"上传图片失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")
 
 

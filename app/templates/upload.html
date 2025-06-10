@@ -263,8 +263,12 @@ function initializeUpload() {
         return;
     }
     
-    // 点击上传区域
-    dropzone.addEventListener('click', triggerFileSelect);
+    // 修复按钮点击事件
+    dropzone.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerFileSelect();
+    });
     
     // 文件选择
     fileInput.addEventListener('change', handleFileSelect);
@@ -278,10 +282,11 @@ function initializeUpload() {
     document.addEventListener('dragover', e => e.preventDefault());
     document.addEventListener('drop', e => e.preventDefault());
     
-    console.log('✅ 上传事件监听器已注册');
+    console.log('✅ 上传组件初始化完成');
 }
 
 function triggerFileSelect() {
+    console.log('🔄 触发文件选择...');
     const fileInput = document.getElementById('fileInput');
     if (fileInput) {
         fileInput.click();
@@ -289,10 +294,17 @@ function triggerFileSelect() {
 }
 
 function handleFileSelect(event) {
+    console.log('📁 文件选择事件触发');
     const files = Array.from(event.target.files);
-    if (files.length > 0) {
-        console.log(`📁 选择了 ${files.length} 个文件`);
-        addFilesToQueue(files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length !== files.length) {
+        alert('只能上传图片文件');
+    }
+    
+    if (imageFiles.length > 0) {
+        console.log(`📁 选择了 ${imageFiles.length} 个图片文件`);
+        addFilesToQueue(imageFiles);
     }
 }
 
@@ -495,36 +507,60 @@ async function startBatchUpload() {
     }, 2000);
 }
 
+// 修复上传函数，添加详细的进度跟踪
 async function uploadFile(fileData, uploaderName) {
     try {
         console.log(`📤 开始上传文件: ${fileData.file.name}`);
-        updateFileStatus(fileData.id, 'uploading', '上传中...');
+        updateFileStatus(fileData.id, 'uploading', '准备上传...');
         
         const formData = new FormData();
         formData.append('file', fileData.file);
         
-        const response = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok && result.success) {
-            console.log(`✅ 上传成功: ${fileData.file.name}`);
-            fileData.uploadId = result.data?.id;
-            fileData.status = 'analyzing';
-            updateFileStatus(fileData.id, 'analyzing', 'GPT-4o分析中...');
+        // 创建带进度监听的XMLHttpRequest
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
             
-            // 模拟分析完成（实际项目中应该轮询分析状态）
-            setTimeout(() => {
-                fileData.status = 'completed';
-                updateFileStatus(fileData.id, 'completed', '分析完成');
-                addToProgressModal(fileData, result.data);
-            }, 3000);
-        } else {
-            throw new Error(result.message || result.detail || '上传失败');
-        }
+            // 上传进度监听
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = Math.round((e.loaded / e.total) * 100);
+                    updateFileStatus(fileData.id, 'uploading', `上传中... ${percentComplete}%`);
+                    console.log(`📊 上传进度: ${percentComplete}%`);
+                }
+            });
+            
+            // 响应处理
+            xhr.addEventListener('load', function() {
+                if (xhr.status === 200) {
+                    try {
+                        const result = JSON.parse(xhr.responseText);
+                        if (result.success) {
+                            console.log(`✅ 上传成功: ${fileData.file.name}`);
+                            fileData.uploadId = result.data?.id;
+                            fileData.status = 'analyzing';
+                            updateFileStatus(fileData.id, 'analyzing', 'GPT-4o分析中...');
+                            
+                            // 轮询分析状态
+                            pollAnalysisStatus(fileData, result.data);
+                            resolve(result);
+                        } else {
+                            throw new Error(result.message || result.detail || '上传失败');
+                        }
+                    } catch (parseError) {
+                        reject(new Error('响应解析失败'));
+                    }
+                } else {
+                    reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+                }
+            });
+            
+            xhr.addEventListener('error', function() {
+                reject(new Error('网络请求失败'));
+            });
+            
+            xhr.open('POST', '/api/upload');
+            xhr.send(formData);
+        });
         
     } catch (error) {
         console.error(`❌ 上传失败: ${fileData.file.name}`, error);
@@ -532,6 +568,39 @@ async function uploadFile(fileData, uploaderName) {
         fileData.error = error.message;
         updateFileStatus(fileData.id, 'error', `错误: ${error.message}`);
     }
+}
+
+// 新增：轮询分析状态
+async function pollAnalysisStatus(fileData, uploadResult) {
+    const maxAttempts = 30; // 最多轮询30次 (30秒)
+    let attempts = 0;
+    
+    const poll = async () => {
+        attempts++;
+        try {
+            const response = await fetch(`/api/upload/status/${uploadResult.id}`);
+            const result = await response.json();
+            
+            if (result.ai_analysis_status === 'completed') {
+                updateFileStatus(fileData.id, 'completed', '分析完成');
+                addToProgressModal(fileData, result);
+                return;
+            } else if (result.ai_analysis_status === 'failed') {
+                updateFileStatus(fileData.id, 'error', '分析失败');
+                return;
+            } else if (attempts < maxAttempts) {
+                // 继续轮询
+                setTimeout(poll, 1000);
+            } else {
+                updateFileStatus(fileData.id, 'error', '分析超时');
+            }
+        } catch (error) {
+            console.error('轮询分析状态失败:', error);
+            updateFileStatus(fileData.id, 'error', '状态检查失败');
+        }
+    };
+    
+    poll();
 }
 
 function updateFileStatus(fileId, status, message) {
