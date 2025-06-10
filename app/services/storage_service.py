@@ -427,21 +427,6 @@ class StorageManager:
             return {'exists': False, 'error': str(e)}
 
     
-    def get_image_url(self, file_path: str) -> str:
-        """获取图片的URL"""
-        if not file_path:
-            return "/static/images/placeholder.jpg"
-        
-        # 如果是完整的URL，直接返回
-        if file_path.startswith(('http://', 'https://', '/')):
-            return file_path
-        
-        # 构建相对URL
-        if file_path.startswith('uploads/'):
-            return f"/static/{file_path}"
-        else:
-            return f"/static/uploads/{file_path}"
-        
     async def save_upload_file(self, file: UploadFile, subfolder: str = "") -> tuple[str, str]:
         """保存上传的文件"""
         try:
