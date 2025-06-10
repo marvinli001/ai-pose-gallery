@@ -510,21 +510,20 @@ class StorageManager:
             # 本地存储
             return f"/uploads/{clean_path}"
         
-    def get_oss_url(self, key: str) -> str:
+    def get_oss_url(self, oss_key: str) -> str:
         """获取OSS文件的访问URL"""
-        if not key:
+        if not oss_key:
             return "/static/images/placeholder.jpg"
         
         # 移除开头的斜杠
-        clean_key = key.lstrip('/')
+        clean_key = oss_key.lstrip('/')
         
         if self.oss_custom_domain:
             # 使用自定义域名
-            return f"{self.oss_custom_domain}/{clean_key}"
+            return f"{self.oss_custom_domain}/{clean_key}"  # 修复：使用clean_key
         else:
             # 使用默认OSS域名
-            endpoint_clean = self.oss_endpoint.replace('https://', '').replace('http://', '')
-            return f"https://{self.oss_bucket_name}.{endpoint_clean}/{clean_key}"
+            return f"https://{self.oss_bucket}.{self.oss_endpoint}/{clean_key}"  # 修复：使用clean_key
 
         
     async def save_upload_file(self, file: UploadFile, subfolder: str = "") -> tuple[str, str]:
