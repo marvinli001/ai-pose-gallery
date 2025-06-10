@@ -206,4 +206,6 @@ async def admin_system_page(request: Request, current_user: User = Depends(optio
 # 添加系统设置API路由
 from app.api.admin_system import router as admin_system_router
 app.include_router(admin_system_router, prefix="/api/admin/system", tags=["admin-system"])
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# 删除这行重复的配置！这就是导致错误的原因
+# app.mount("/static", StaticFiles(directory="static"), name="static")
