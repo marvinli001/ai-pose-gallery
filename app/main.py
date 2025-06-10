@@ -41,7 +41,8 @@ app = FastAPI(
 )
 
 # 挂载静态文件
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# 统一使用项目根目录下的 static 目录，避免路径错误
+app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # 模板配置
