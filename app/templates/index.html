@@ -890,18 +890,41 @@ function displaySearchResults(searchData) {
     }
 }
 
+// 修改 generateImageCard 函数
 function generateImageCard(image, colClass = '') {
-    const confidence = (image.confidence * 100).toFixed(0);
-    const tags = image.tags.slice(0, 3).map(tag => 
-        `<span class="badge bg-secondary me-1">${tag.name}</span>`
+    // 修复图片URL处理逻辑
+    let imageUrl = image.url || image.thumbnail_url;
+    
+    // 调试输出
+    console.log('原始图片数据:', image);
+    console.log('原始图片URL:', imageUrl);
+    
+    // 如果URL不是完整的http/https链接，则补充完整
+    if (imageUrl && !imageUrl.startsWith('http')) {
+        // 确保URL格式正确
+        const baseUrl = 'https://poseapp-ai.cat.sd';
+        const cleanUrl = imageUrl.replace(/^\/+/, ''); // 移除开头的斜杠
+        imageUrl = `${baseUrl}/${cleanUrl}`;
+    }
+    
+    console.log('修复后图片URL:', imageUrl);
+    
+    const confidence = image.confidence ? (image.confidence * 100).toFixed(0) : '0';
+    const tags = (image.tags || []).slice(0, 3).map(tag => 
+        `<span class="badge bg-secondary me-1">${tag.name || tag}</span>`
     ).join('');
     
     return `
         <div class="${colClass}">
             <div class="card image-card border-0 shadow-sm" onclick="openImageDetail(${image.id})">
                 <div class="position-relative">
-                    <img src="${image.url}" class="image-thumbnail" alt="${image.description}">
-                    <span class="badge bg-primary confidence-badge">${confidence}%</span>
+                    <img src="${imageUrl}" 
+                         class="image-thumbnail" 
+                         alt="${image.description || image.filename || '图片'}"
+                         style="width: 100%; height: 250px; object-fit: cover; cursor: pointer;"
+                         onerror="this.onerror=null; this.src='/static/images/placeholder.jpg'; console.error('图片加载失败:', '${imageUrl}');"
+                         onload="console.log('图片加载成功:', '${imageUrl}');">
+                    <span class="badge bg-primary confidence-badge position-absolute top-0 end-0 m-2">${confidence}%</span>
                 </div>
                 <div class="card-body">
                     <p class="card-text small mb-2" style="color: #666;">${image.description || '暂无描述'}</p>
@@ -910,7 +933,7 @@ function generateImageCard(image, colClass = '') {
                             ${tags}
                         </div>
                         <small style="color: #999;">
-                            <i class="fas fa-eye"></i> ${image.view_count}
+                            <i class="fas fa-eye"></i> ${image.view_count || 0}
                         </small>
                     </div>
                 </div>
@@ -919,23 +942,37 @@ function generateImageCard(image, colClass = '') {
     `;
 }
 
+// 修改 generateImageListItem 函数
 function generateImageListItem(image) {
-    const confidence = (image.confidence * 100).toFixed(0);
-    const tags = image.tags.map(tag => 
-        `<span class="badge bg-light me-1" style="color: #333;">${tag.name}</span>`
+    // 修复图片URL处理逻辑
+    let imageUrl = image.url || image.thumbnail_url;
+    
+    if (imageUrl && !imageUrl.startsWith('http')) {
+        const baseUrl = 'https://poseapp-ai.cat.sd';
+        const cleanUrl = imageUrl.replace(/^\/+/, '');
+        imageUrl = `${baseUrl}/${cleanUrl}`;
+    }
+    
+    const confidence = image.confidence ? (image.confidence * 100).toFixed(0) : '0';
+    const tags = (image.tags || []).map(tag => 
+        `<span class="badge bg-light me-1" style="color: #333;">${tag.name || tag}</span>`
     ).join('');
     
     return `
         <div class="card image-card mb-3" onclick="openImageDetail(${image.id})">
             <div class="row g-0">
                 <div class="col-md-3">
-                    <img src="${image.url}" class="img-fluid rounded-start h-100" 
-                         style="object-fit: cover;" alt="${image.description}">
+                    <img src="${imageUrl}" 
+                         class="img-fluid rounded-start h-100" 
+                         style="object-fit: cover; cursor: pointer;" 
+                         alt="${image.description || image.filename || '图片'}"
+                         onerror="this.onerror=null; this.src='/static/images/placeholder.jpg'; console.error('列表图片加载失败:', '${imageUrl}');"
+                         onload="console.log('列表图片加载成功:', '${imageUrl}');">
                 </div>
                 <div class="col-md-9">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h6 class="card-title" style="color: #333;">${image.filename}</h6>
+                            <h6 class="card-title" style="color: #333;">${image.filename || '未知文件'}</h6>
                             <span class="badge bg-primary">${confidence}% 置信度</span>
                         </div>
                         <p class="card-text" style="color: #666;">${image.description || '暂无描述'}</p>
@@ -945,7 +982,7 @@ function generateImageListItem(image) {
                             </div>
                             <div style="color: #999;">
                                 <small>
-                                    <i class="fas fa-eye"></i> ${image.view_count} | 
+                                    <i class="fas fa-eye"></i> ${image.view_count || 0} | 
                                     <i class="fas fa-clock"></i> ${formatDate(image.upload_time)}
                                 </small>
                             </div>
@@ -1028,23 +1065,64 @@ async function loadPopularTags() {
     }
 }
 
+// 在 loadRecommendedImages 函数中添加调试
 async function loadRecommendedImages() {
     try {
+        console.log('🔄 开始加载推荐图片...');
         const response = await fetch('/api/images?per_page=8');
         const data = await response.json();
         
+        console.log('📊 API响应数据:', data);
+        
         if (data.success) {
             const container = document.getElementById('recommendedImages');
-            let html = '';
+            const images = data.data.images || [];
             
-            data.data.images.forEach(image => {
+            console.log(`📸 获得 ${images.length} 张推荐图片`);
+            
+            if (images.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-images fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">暂无推荐图片</h5>
+                        <p class="text-muted">请先上传一些图片</p>
+                        <a href="/upload" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> 上传图片
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            images.forEach((image, index) => {
+                console.log(`🖼️  图片 ${index + 1}:`, image);
                 html += generateImageCard(image, 'col-lg-3 col-md-4 col-sm-6 mb-4');
             });
             
             container.innerHTML = html;
+            console.log('✅ 推荐图片加载完成');
+        } else {
+            console.error('❌ API返回失败:', data.message);
+            document.getElementById('recommendedImages').innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        加载推荐图片失败：${data.message || '未知错误'}
+                    </div>
+                </div>
+            `;
         }
     } catch (error) {
-        console.error('加载推荐图片失败:', error);
+        console.error('❌ 加载推荐图片失败:', error);
+        document.getElementById('recommendedImages').innerHTML = `
+            <div class="col-12 text-center py-5">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    网络错误：${error.message}
+                </div>
+            </div>
+        `;
     }
 }
 
