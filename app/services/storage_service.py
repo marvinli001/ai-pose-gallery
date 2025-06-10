@@ -43,6 +43,8 @@ class StorageService:
     
     def generate_filename(self, original_filename: str) -> str:
         """生成唯一文件名"""
+        import uuid
+        from pathlib import Path
         ext = Path(original_filename).suffix.lower()
         unique_name = f"{uuid.uuid4().hex}{ext}"
         return unique_name
@@ -90,31 +92,42 @@ class OSSStorageService(StorageService):
     
     def __init__(self):
         super().__init__()
-        self.auth = oss2.Auth(
-            self.settings.oss_access_key_id,
-            self.settings.oss_access_key_secret
-        )
-        self.bucket = oss2.Bucket(
-            self.auth,
-            self.settings.oss_endpoint,
-            self.settings.oss_bucket_name
-        )
+        # 获取OSS配置
+        self.oss_access_key_id = os.getenv('OSS_ACCESS_KEY_ID', '')
+        self.oss_access_key_secret = os.getenv('OSS_ACCESS_KEY_SECRET', '')
+        self.oss_bucket_name = os.getenv('OSS_BUCKET_NAME', '')
+        self.oss_endpoint = os.getenv('OSS_ENDPOINT', '')
+        self.oss_folder_prefix = os.getenv('OSS_FOLDER_PREFIX', 'ai-pose-gallery').rstrip('/')
+        
+        if all([self.oss_access_key_id, self.oss_access_key_secret, self.oss_bucket_name, self.oss_endpoint]):
+            self.auth = oss2.Auth(self.oss_access_key_id, self.oss_access_key_secret)
+            self.bucket = oss2.Bucket(self.auth, self.oss_endpoint, self.oss_bucket_name)
+        else:
+            self.bucket = None
+            print("❌ OSS配置不完整")
     
     async def upload_file(self, file_content: bytes, filename: str, content_type: str = None) -> Dict[str, Any]:
         """上传文件到阿里云OSS"""
+        if not self.bucket:
+            return {"success": False, "error": "OSS未配置", "storage_type": "oss"}
+            
         try:
             # 构建OSS文件路径
-            oss_key = f"{self.settings.oss_folder_prefix}{filename}"
+            if self.oss_folder_prefix:
+                oss_key = f"{self.oss_folder_prefix}/{filename}"
+            else:
+                oss_key = filename
             
             # 设置元数据
             headers = {}
             if content_type:
                 headers['Content-Type'] = content_type
             
-            # 在新线程中执行OSS上传（因为oss2不支持async）
+            # 在新线程中执行OSS上传
             def _upload():
                 return self.bucket.put_object(oss_key, file_content, headers=headers)
             
+            import asyncio
             result = await asyncio.get_event_loop().run_in_executor(None, _upload)
             
             if result.status == 200:
@@ -135,19 +148,6 @@ class OSSStorageService(StorageService):
                 "error": str(e),
                 "storage_type": "oss"
             }
-    
-    async def delete_file(self, oss_key: str) -> bool:
-        """删除OSS文件"""
-        try:
-            def _delete():
-                return self.bucket.delete_object(oss_key)
-            
-            result = await asyncio.get_event_loop().run_in_executor(None, _delete)
-            return result.status == 204
-            
-        except Exception as e:
-            print(f"❌ 删除OSS文件失败: {e}")
-            return False
     
     def get_file_url(self, oss_key: str) -> str:
         """获取OSS文件URL"""
@@ -280,16 +280,18 @@ class S3StorageService(StorageService):
 
 class StorageManager:
     def __init__(self):
-        self.settings = get_settings()  # 添加这行
+        self.settings = get_settings()
+        self._service = None  # 添加这行
         self.storage_type = os.getenv('STORAGE_TYPE', 'local')
+        
         if self.storage_type == 'oss':
             self.oss_enabled = os.getenv('OSS_ENABLED', 'false').lower() == 'true'
             self.oss_bucket = os.getenv('OSS_BUCKET_NAME', '')
-            self.oss_bucket_name = self.oss_bucket  # 添加别名
+            self.oss_bucket_name = self.oss_bucket
             self.oss_endpoint = os.getenv('OSS_ENDPOINT', '')
             self.oss_region = os.getenv('OSS_REGION', '')
             self.oss_custom_domain = os.getenv('OSS_CUSTOM_DOMAIN', '')
-            self.oss_folder_prefix = os.getenv('OSS_FOLDER_PREFIX', '').rstrip('/')
+            self.oss_folder_prefix = os.getenv('OSS_FOLDER_PREFIX', 'ai-pose-gallery').rstrip('/')
             
             # OSS认证信息
             self.oss_access_key_id = os.getenv('OSS_ACCESS_KEY_ID', '')
@@ -306,6 +308,7 @@ class StorageManager:
         else:
             self.oss_enabled = False
             self.oss_bucket = None
+            self.oss_bucket_client = None
 
     def _init_oss_client(self):
         """初始化OSS客户端"""
@@ -337,10 +340,8 @@ class StorageManager:
         try:
             print(f"🔍 获取OSS对象列表，前缀: {prefix}")
             
-            # 使用oss2的ObjectIterator
             import oss2
             for obj in oss2.ObjectIterator(self.oss_bucket_client, prefix=prefix):
-                # 只处理图片文件
                 if self._is_image_file(obj.key):
                     objects.append({
                         'key': obj.key,
@@ -390,49 +391,106 @@ class StorageManager:
     def service(self) -> StorageService:
         """获取存储服务实例"""
         if self._service is None:
-            if self.settings.use_oss_storage:
+            # 根据配置选择存储服务
+            if self.storage_type == 'oss' and self.oss_enabled:
                 self._service = OSSStorageService()
-                print("🗂️  使用阿里云OSS存储")
-            elif self.settings.use_s3_storage:
+                print("🗂️ 使用阿里云OSS存储")
+            elif hasattr(self.settings, 'use_s3_storage') and self.settings.use_s3_storage:
                 self._service = S3StorageService()
-                print("🗂️  使用AWS S3存储")
+                print("🗂️ 使用AWS S3存储")
             else:
                 self._service = LocalStorageService()
-                print("🗂️  使用本地文件存储")
+                print("🗂️ 使用本地文件存储")
         
         return self._service
     
     async def upload_image(self, file_content: bytes, original_filename: str) -> Dict[str, Any]:
         """上传图片"""
-        # 验证文件
-        file_size = len(file_content)
-        is_valid, message = self.validate_image_file(original_filename, file_size)
-        if not is_valid:
-            return {"success": False, "error": message}
-        
-        # 生成文件名
-        filename = self.service.generate_filename(original_filename)
-        
-        # 检测内容类型
-        content_type = self.get_content_type(original_filename)
-        
-        # 上传文件
-        upload_result = await self.service.upload_file(file_content, filename, content_type)
-        
-        if upload_result.get("success"):
-            # 获取图片尺寸信息
-            width, height = self.get_image_dimensions(file_content)
+        try:
+            # 验证文件
+            file_size = len(file_content)
+            is_valid, message = self.validate_image_file(original_filename, file_size)
+            if not is_valid:
+                return {"success": False, "error": message}
             
-            upload_result.update({
-                "original_filename": original_filename,
-                "filename": filename,
-                "file_size": file_size,
-                "width": width,
-                "height": height,
-                "content_type": content_type
-            })
+            # 如果使用OSS，直接处理OSS上传
+            if self.storage_type == 'oss' and self.oss_enabled and self.oss_bucket_client:
+                return await self._upload_to_oss(file_content, original_filename, file_size)
+            else:
+                # 使用StorageService上传
+                filename = self.service.generate_filename(original_filename)
+                content_type = self.get_content_type(original_filename)
+                
+                upload_result = await self.service.upload_file(file_content, filename, content_type)
+                
+                if upload_result.get("success"):
+                    width, height = self.get_image_dimensions(file_content)
+                    upload_result.update({
+                        "original_filename": original_filename,
+                        "filename": filename,
+                        "file_size": file_size,
+                        "width": width,
+                        "height": height,
+                        "content_type": content_type
+                    })
+                
+                return upload_result
+                
+        except Exception as e:
+            print(f"❌ 上传图片失败: {e}")
+            return {"success": False, "error": str(e)}
         
-        return upload_result
+    async def _upload_to_oss(self, file_content: bytes, original_filename: str, file_size: int) -> Dict[str, Any]:
+        """直接上传到OSS"""
+        try:
+            # 生成唯一文件名
+            filename = self.generate_filename(original_filename)
+            
+            # 构建OSS key
+            if self.oss_folder_prefix:
+                oss_key = f"{self.oss_folder_prefix}/{filename}"
+            else:
+                oss_key = filename
+            
+            # 获取内容类型
+            content_type = self.get_content_type(original_filename)
+            
+            # 上传到OSS
+            def _upload():
+                headers = {'Content-Type': content_type} if content_type else {}
+                return self.oss_bucket_client.put_object(oss_key, file_content, headers=headers)
+            
+            # 在线程池中执行上传
+            import asyncio
+            result = await asyncio.get_event_loop().run_in_executor(None, _upload)
+            
+            if result.status == 200:
+                # 获取图片尺寸
+                width, height = self.get_image_dimensions(file_content)
+                
+                # 构建访问URL
+                file_url = self.get_oss_url(oss_key)
+                
+                return {
+                    "success": True,
+                    "file_path": oss_key,
+                    "url": file_url,
+                    "storage_type": "oss",
+                    "filename": filename,
+                    "original_filename": original_filename,
+                    "file_size": file_size,
+                    "width": width,
+                    "height": height,
+                    "content_type": content_type,
+                    "etag": result.etag
+                }
+            else:
+                raise Exception(f"OSS上传失败，状态码: {result.status}")
+                
+        except Exception as e:
+            print(f"❌ OSS上传失败: {e}")
+            return {"success": False, "error": f"OSS上传失败: {str(e)}"}
+
     
     async def delete_image(self, file_path: str) -> bool:
         """删除图片文件"""
@@ -475,55 +533,50 @@ class StorageManager:
 
     
     def get_image_url(self, file_path: str) -> str:
-        """获取图片访问URL"""
+        """获取图片访问URL - 优先使用OSS"""
         if not file_path:
             return "/static/images/placeholder.jpg"
         
-        # 如果已经是完整URL，直接返回
+        # 如果已经是完整URL，检查是否需要修复
         if file_path.startswith('http'):
+            if '/uploads/' in file_path:
+                filename = file_path.split('/')[-1]
+                return self.get_oss_url(f"ai-pose-gallery/{filename}")
             return file_path
-            
-        # 移除开头的斜杠
+        
+        # 对于相对路径，统一使用OSS
         clean_path = file_path.lstrip('/')
         
-        if self.storage_type == 'oss' and self.oss_enabled:
-            # 移除重复的前缀
-            if self.oss_folder_prefix and clean_path.startswith(self.oss_folder_prefix):
-                clean_path = clean_path[len(self.oss_folder_prefix):].lstrip('/')
-            
-            # 构建完整的OSS URL
-            if self.oss_custom_domain:
-                # 使用自定义域名
-                if self.oss_folder_prefix:
-                    full_url = f"{self.oss_custom_domain}/{self.oss_folder_prefix}/{clean_path}"
-                else:
-                    full_url = f"{self.oss_custom_domain}/{clean_path}"
-                return full_url
-            else:
-                # 使用默认OSS域名
-                if self.oss_folder_prefix:
-                    full_path = f"{self.oss_folder_prefix}/{clean_path}"
-                else:
-                    full_path = clean_path
-                return f"https://{self.oss_bucket}.{self.oss_endpoint}/{full_path}"
-        else:
-            # 本地存储
-            return f"/uploads/{clean_path}"
+        # 移除错误的uploads前缀
+        if clean_path.startswith('uploads/'):
+            filename = clean_path.split('/')[-1]
+            return self.get_oss_url(f"ai-pose-gallery/{filename}")
+        
+        # 确保使用正确的OSS路径
+        return self.get_oss_url(clean_path)
+
         
     def get_oss_url(self, oss_key: str) -> str:
         """获取OSS文件的访问URL"""
         if not oss_key:
             return "/static/images/placeholder.jpg"
         
-        # 移除开头的斜杠
+        # 确保oss_key包含正确的前缀
         clean_key = oss_key.lstrip('/')
         
+        # 如果key不包含ai-pose-gallery前缀，添加它
+        if not clean_key.startswith('ai-pose-gallery/'):
+            if '/' not in clean_key:
+                clean_key = f"ai-pose-gallery/{clean_key}"
+            elif clean_key.startswith('uploads/'):
+                filename = clean_key.split('/')[-1]
+                clean_key = f"ai-pose-gallery/{filename}"
+        
         if self.oss_custom_domain:
-            # 使用自定义域名
-            return f"{self.oss_custom_domain}/{clean_key}"  # 修复：使用clean_key
+            return f"{self.oss_custom_domain}/{clean_key}"
         else:
-            # 使用默认OSS域名
-            return f"https://{self.oss_bucket}.{self.oss_endpoint}/{clean_key}"  # 修复：使用clean_key
+            endpoint_clean = self.oss_endpoint.replace('https://', '').replace('http://', '')
+            return f"https://{self.oss_bucket_name}.{endpoint_clean}/{clean_key}"
 
         
     async def save_upload_file(self, file: UploadFile, subfolder: str = "") -> tuple[str, str]:
@@ -571,35 +624,46 @@ class StorageManager:
             logger.error(f"保存文件失败: {e}")
             raise
     
-    def validate_image_file(self, filename: str, file_size: int) -> Tuple[bool, str]:
+    def validate_image_file(self, filename: str, file_size: int) -> tuple[bool, str]:
         """验证图片文件"""
+        from pathlib import Path
+        
+        # 定义允许的扩展名和最大文件大小
+        allowed_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'}
+        max_file_size = 10 * 1024 * 1024  # 10MB
+        
         # 检查文件扩展名
         ext = Path(filename).suffix.lower()
-        if ext not in self.settings.allowed_extensions:
-            return False, f"不支持的文件类型：{ext}。支持的类型：{', '.join(self.settings.allowed_extensions)}"
+        if ext not in allowed_extensions:
+            return False, f"不支持的文件类型：{ext}。支持的类型：{', '.join(allowed_extensions)}"
         
         # 检查文件大小
-        if file_size > self.settings.max_file_size:
-            max_mb = self.settings.max_file_size / (1024 * 1024)
+        if file_size > max_file_size:
+            max_mb = max_file_size / (1024 * 1024)
             return False, f"文件太大：{file_size / (1024 * 1024):.1f}MB。最大允许：{max_mb:.1f}MB"
         
         return True, "验证通过"
+
     
     def get_content_type(self, filename: str) -> str:
         """获取文件内容类型"""
+        from pathlib import Path
         ext = Path(filename).suffix.lower()
         content_types = {
             '.jpg': 'image/jpeg',
             '.jpeg': 'image/jpeg',
             '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.bmp': 'image/bmp',
             '.webp': 'image/webp'
         }
         return content_types.get(ext, 'application/octet-stream')
-    
-    def get_image_dimensions(self, file_content: bytes) -> Tuple[int, int]:
+
+    def get_image_dimensions(self, file_content: bytes) -> tuple[int, int]:
         """获取图片尺寸"""
         try:
             from io import BytesIO
+            from PIL import Image
             with Image.open(BytesIO(file_content)) as img:
                 return img.width, img.height
         except Exception as e:
