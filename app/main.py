@@ -54,6 +54,7 @@ app.include_router(search.router, prefix="/api", tags=["搜索"])
 app.include_router(admin.router, prefix="/api/admin", tags=["管理"])
 
 
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request, current_user: User = Depends(optional_user)):
     """首页"""
@@ -205,3 +206,4 @@ async def admin_system_page(request: Request, current_user: User = Depends(optio
 # 添加系统设置API路由
 from app.api.admin_system import router as admin_system_router
 app.include_router(admin_system_router, prefix="/api/admin/system", tags=["admin-system"])
+app.mount("/static", StaticFiles(directory="static"), name="static")

@@ -13,8 +13,12 @@ import oss2
 import boto3
 from botocore.exceptions import ClientError
 from urllib.parse import urljoin
+from fastapi import UploadFile
+import logging
 
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -384,17 +388,104 @@ class StorageManager:
         return upload_result
     
     async def delete_image(self, file_path: str) -> bool:
-        """删除图片"""
-        return await self.service.delete_file(file_path)
+        """删除图片文件"""
+        try:
+            # 删除原始文件
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            
+            # 删除static目录中的文件
+            if file_path.startswith('uploads/'):
+                static_path = f"static/{file_path}"
+            else:
+                static_path = f"static/uploads/{os.path.basename(file_path)}"
+            
+            if os.path.exists(static_path):
+                os.remove(static_path)
+            
+            logger.info(f"文件删除成功: {file_path}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"删除文件失败: {e}")
+            return False
+        
+    def get_file_info(self, file_path: str) -> dict:
+        """获取文件信息"""
+        try:
+            if os.path.exists(file_path):
+                stat = os.stat(file_path)
+                return {
+                    'exists': True,
+                    'size': stat.st_size,
+                    'modified': stat.st_mtime
+                }
+            else:
+                return {'exists': False}
+        except Exception as e:
+            logger.error(f"获取文件信息失败: {e}")
+            return {'exists': False, 'error': str(e)}
+
     
     def get_image_url(self, file_path: str) -> str:
-        """获取图片URL"""
-        if self.settings.use_oss_storage or self.settings.use_s3_storage:
-            return self.service.get_file_url(file_path)
+        """获取图片的URL"""
+        if not file_path:
+            return "/static/images/placeholder.jpg"
+        
+        # 如果是完整的URL，直接返回
+        if file_path.startswith(('http://', 'https://', '/')):
+            return file_path
+        
+        # 构建相对URL
+        if file_path.startswith('uploads/'):
+            return f"/static/{file_path}"
         else:
-            # 本地存储，提取文件名
-            filename = Path(file_path).name
-            return self.service.get_file_url(filename)
+            return f"/static/uploads/{file_path}"
+        
+    async def save_upload_file(self, file: UploadFile, subfolder: str = "") -> tuple[str, str]:
+        """保存上传的文件"""
+        try:
+            # 验证文件扩展名
+            file_ext = Path(file.filename).suffix.lower()
+            if file_ext not in self.settings['allowed_extensions']:
+                raise ValueError(f"不支持的文件类型: {file_ext}")
+            
+            # 生成唯一文件名
+            unique_filename = f"{uuid.uuid4()}{file_ext}"
+            
+            # 确定保存路径
+            if subfolder:
+                save_dir = self.upload_dir / subfolder
+                save_dir.mkdir(parents=True, exist_ok=True)
+                file_path = save_dir / unique_filename
+                relative_path = f"{subfolder}/{unique_filename}"
+            else:
+                file_path = self.upload_dir / unique_filename
+                relative_path = unique_filename
+            
+            # 保存文件
+            async with aiofiles.open(file_path, 'wb') as f:
+                content = await file.read()
+                
+                # 检查文件大小
+                if len(content) > self.settings['max_file_size']:
+                    raise ValueError(f"文件太大，最大允许 {self.settings['max_file_size']//1024//1024}MB")
+                
+                await f.write(content)
+            
+            # 复制到static目录以便web访问
+            static_path = Path('static/uploads') / relative_path
+            static_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            async with aiofiles.open(static_path, 'wb') as f:
+                await f.write(content)
+            
+            logger.info(f"文件保存成功: {file_path}")
+            return str(file_path), relative_path
+            
+        except Exception as e:
+            logger.error(f"保存文件失败: {e}")
+            raise
     
     def validate_image_file(self, filename: str, file_size: int) -> Tuple[bool, str]:
         """验证图片文件"""

@@ -6,6 +6,7 @@ from functools import lru_cache
 from typing import Optional
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
+from fastapi.staticfiles import StaticFiles
 
 
 class Settings(BaseSettings):
@@ -142,8 +143,27 @@ def create_directories():
     # 始终创建本地上传目录（作为临时存储）
     os.makedirs(settings.upload_dir, exist_ok=True)
     os.makedirs("./cache", exist_ok=True)
+    os.makedirs("static/uploads", exist_ok=True)
+    os.makedirs("uploads", exist_ok=True)
     
-    print(f"✅ 创建目录: {settings.upload_dir}")
+    # 创建所有必要的目录
+    directories = [
+        settings.upload_dir,
+        "./cache",
+        "static",
+        "static/uploads",
+        "static/images",
+        "uploads"
+    ]
+    for directory in directories:
+        os.makedirs(directory, exist_ok=True)
+        print(f"✅ 创建目录: {directory}")
+    
+    # 创建占位图片（如果不存在）
+    placeholder_path = "static/images/placeholder.jpg"
+    if not os.path.exists(placeholder_path):
+        # 这里可以复制一个默认的占位图片
+        print(f"⚠️  请添加占位图片: {placeholder_path}")
     
     if settings.use_oss_storage:
         print("🗂️  已启用阿里云OSS存储")
