@@ -280,52 +280,99 @@ class S3StorageService(StorageService):
 
 class StorageManager:
     def __init__(self):
+        self.settings = get_settings()  # 添加这行
         self.storage_type = os.getenv('STORAGE_TYPE', 'local')
         if self.storage_type == 'oss':
             self.oss_enabled = os.getenv('OSS_ENABLED', 'false').lower() == 'true'
             self.oss_bucket = os.getenv('OSS_BUCKET_NAME', '')
+            self.oss_bucket_name = self.oss_bucket  # 添加别名
             self.oss_endpoint = os.getenv('OSS_ENDPOINT', '')
             self.oss_region = os.getenv('OSS_REGION', '')
             self.oss_custom_domain = os.getenv('OSS_CUSTOM_DOMAIN', '')
             self.oss_folder_prefix = os.getenv('OSS_FOLDER_PREFIX', '').rstrip('/')
+            
+            # OSS认证信息
+            self.oss_access_key_id = os.getenv('OSS_ACCESS_KEY_ID', '')
+            self.oss_access_key_secret = os.getenv('OSS_ACCESS_KEY_SECRET', '')
             
             # 修复自定义域名协议
             if self.oss_custom_domain:
                 if not self.oss_custom_domain.startswith(('http://', 'https://')):
                     self.oss_custom_domain = f"https://{self.oss_custom_domain}"
                 self.oss_custom_domain = self.oss_custom_domain.rstrip('/')
-
-    def get_image_url(self, file_path: str) -> str:
-        """获取图片访问URL"""
-        if not file_path:
-            return "/static/images/placeholder.jpg"
             
-        # 移除开头的斜杠
-        clean_path = file_path.lstrip('/')
-        
-        if self.storage_type == 'oss' and self.oss_enabled:
-            # 移除重复的前缀
-            if self.oss_folder_prefix and clean_path.startswith(self.oss_folder_prefix):
-                clean_path = clean_path[len(self.oss_folder_prefix):].lstrip('/')
-            
-            # 构建完整的OSS URL
-            if self.oss_custom_domain:
-                # 使用自定义域名
-                if self.oss_folder_prefix:
-                    full_url = f"{self.oss_custom_domain}/{self.oss_folder_prefix}/{clean_path}"
-                else:
-                    full_url = f"{self.oss_custom_domain}/{clean_path}"
-                return full_url
-            else:
-                # 使用默认OSS域名
-                if self.oss_folder_prefix:
-                    full_path = f"{self.oss_folder_prefix}/{clean_path}"
-                else:
-                    full_path = clean_path
-                return f"https://{self.oss_bucket}.{self.oss_endpoint}/{full_path}"
+            # 初始化OSS客户端
+            self._init_oss_client()
         else:
-            # 本地存储
-            return f"/uploads/{clean_path}"
+            self.oss_enabled = False
+            self.oss_bucket = None
+
+    def _init_oss_client(self):
+        """初始化OSS客户端"""
+        if self.oss_enabled and all([
+            self.oss_access_key_id, 
+            self.oss_access_key_secret, 
+            self.oss_bucket_name, 
+            self.oss_endpoint
+        ]):
+            try:
+                import oss2
+                auth = oss2.Auth(self.oss_access_key_id, self.oss_access_key_secret)
+                self.oss_bucket_client = oss2.Bucket(auth, self.oss_endpoint, self.oss_bucket_name)
+                print(f"✅ OSS客户端初始化成功: {self.oss_bucket_name}")
+            except Exception as e:
+                print(f"❌ OSS客户端初始化失败: {e}")
+                self.oss_bucket_client = None
+        else:
+            self.oss_bucket_client = None
+            print("⚠️ OSS未配置或配置不完整")
+
+    def list_oss_objects(self, prefix: str = "") -> List[Dict]:
+        """获取OSS对象列表"""
+        if not self.oss_bucket_client:
+            print("❌ OSS客户端未初始化")
+            return []
+        
+        objects = []
+        try:
+            print(f"🔍 获取OSS对象列表，前缀: {prefix}")
+            
+            # 使用oss2的ObjectIterator
+            import oss2
+            for obj in oss2.ObjectIterator(self.oss_bucket_client, prefix=prefix):
+                # 只处理图片文件
+                if self._is_image_file(obj.key):
+                    objects.append({
+                        'key': obj.key,
+                        'size': obj.size,
+                        'last_modified': obj.last_modified,
+                        'etag': obj.etag
+                    })
+            
+            print(f"✅ 找到 {len(objects)} 个图片文件")
+            return objects
+            
+        except Exception as e:
+            print(f"❌ 获取OSS对象列表失败: {e}")
+            return []
+        
+    def _is_image_file(self, filename: str) -> bool:
+        """检查是否为图片文件"""
+        image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'}
+        return any(filename.lower().endswith(ext) for ext in image_extensions)
+
+    def check_oss_connection(self) -> bool:
+        """检查OSS连接"""
+        if not self.oss_bucket_client:
+            return False
+        
+        try:
+            # 尝试列出存储桶信息
+            self.oss_bucket_client.get_bucket_info()
+            return True
+        except Exception as e:
+            print(f"❌ OSS连接检查失败: {e}")
+            return False
         
     def get_full_image_path(self, filename: str) -> str:
         """获取完整的图片存储路径"""
@@ -428,35 +475,57 @@ class StorageManager:
 
     
     def get_image_url(self, file_path: str) -> str:
-        """获取图片的URL"""
+        """获取图片访问URL"""
         if not file_path:
             return "/static/images/placeholder.jpg"
         
-        # 如果是完整的URL，直接返回
+        # 如果已经是完整URL，直接返回
         if file_path.startswith('http'):
             return file_path
-        
+            
+        # 移除开头的斜杠
         clean_path = file_path.lstrip('/')
         
-        # 构建相对URL
         if self.storage_type == 'oss' and self.oss_enabled:
-            return self.get_oss_url(clean_path)
+            # 移除重复的前缀
+            if self.oss_folder_prefix and clean_path.startswith(self.oss_folder_prefix):
+                clean_path = clean_path[len(self.oss_folder_prefix):].lstrip('/')
+            
+            # 构建完整的OSS URL
+            if self.oss_custom_domain:
+                # 使用自定义域名
+                if self.oss_folder_prefix:
+                    full_url = f"{self.oss_custom_domain}/{self.oss_folder_prefix}/{clean_path}"
+                else:
+                    full_url = f"{self.oss_custom_domain}/{clean_path}"
+                return full_url
+            else:
+                # 使用默认OSS域名
+                if self.oss_folder_prefix:
+                    full_path = f"{self.oss_folder_prefix}/{clean_path}"
+                else:
+                    full_path = clean_path
+                return f"https://{self.oss_bucket}.{self.oss_endpoint}/{full_path}"
         else:
+            # 本地存储
             return f"/uploads/{clean_path}"
         
-    def get_oss_url(self, oss_key: str) -> str:
-        """获取阿里云OSS文件的访问URL"""
+    def get_oss_url(self, key: str) -> str:
+        """获取OSS文件的访问URL"""
         if not key:
             return "/static/images/placeholder.jpg"
         
+        # 移除开头的斜杠
         clean_key = key.lstrip('/')
         
         if self.oss_custom_domain:
             # 使用自定义域名
-            return f"{self.oss_custom_domain}/{oss_key}"
+            return f"{self.oss_custom_domain}/{clean_key}"
         else:
-            # 使用默认域名
-            return f"https://{self.oss_bucket}.{self.oss_endpoint}/{oss_key}"
+            # 使用默认OSS域名
+            endpoint_clean = self.oss_endpoint.replace('https://', '').replace('http://', '')
+            return f"https://{self.oss_bucket_name}.{endpoint_clean}/{clean_key}"
+
         
     async def save_upload_file(self, file: UploadFile, subfolder: str = "") -> tuple[str, str]:
         """保存上传的文件"""
