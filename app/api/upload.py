@@ -28,14 +28,17 @@ async def process_image_with_gpt4o(image_id: int, file_path: str, is_cloud_stora
     try:
         print(f"🤖 开始GPT-4o分析图片 ID: {image_id}")
         
-        # 对于云存储，需要下载图片进行分析
+        # 对于云存储，file_path实际上是URL
         analysis_file_path = file_path
         if is_cloud_storage:
-            # 这里可以实现临时下载逻辑，或者直接使用URL分析
-            # 目前使用file_path作为分析路径
-            pass
+            # 对于OSS存储，file_path已经是完整的URL
+            print(f"🌐 分析OSS图片URL: {file_path}")
+        else:
+            print(f"📁 分析本地图片: {file_path}")
         
-        # 使用GPT-4o进行专门的搜索优化分析
+        # 使用GPT-4o进行分析
+        from app.services.ai_service import GPT4OAnalyzer
+        gpt4o_analyzer = GPT4OAnalyzer()
         analysis_result = await gpt4o_analyzer.analyze_for_search(analysis_file_path)
         
         if not analysis_result.get("success"):
@@ -58,6 +61,7 @@ async def process_image_with_gpt4o(image_id: int, file_path: str, is_cloud_stora
         from app.database import SessionLocal
         db = SessionLocal()
         try:
+            from app.services.database_service import DatabaseService
             db_service = DatabaseService(db)
             image = db_service.get_image_by_id(image_id)
             
@@ -69,6 +73,7 @@ async def process_image_with_gpt4o(image_id: int, file_path: str, is_cloud_stora
                 image.ai_model = 'gpt-4o'
                 
                 # 存储完整的GPT-4o分析结果
+                import json
                 image.ai_analysis_raw = json.dumps(analysis, ensure_ascii=False)
                 image.ai_mood = analysis.get('mood', '')
                 image.ai_style = analysis.get('style', '')
@@ -86,6 +91,23 @@ async def process_image_with_gpt4o(image_id: int, file_path: str, is_cloud_stora
         except Exception as e:
             print(f"❌ 更新分析结果失败: {e}")
             db.rollback()
+        finally:
+            db.close()
+            
+    except Exception as e:
+        print(f"❌ 图片分析任务失败: {e}")
+        # 标记分析失败
+        from app.database import SessionLocal
+        db = SessionLocal()
+        try:
+            from app.services.database_service import DatabaseService
+            db_service = DatabaseService(db)
+            image = db_service.get_image_by_id(image_id)
+            if image:
+                image.ai_analysis_status = 'failed'
+                db.commit()
+        except:
+            pass
         finally:
             db.close()
             

@@ -698,12 +698,11 @@ async def scan_oss_task(oss_prefix: str, uploader: str, auto_analyze: bool = Tru
     """扫描OSS存储桶任务"""
     try:
         from app.services.storage_service import StorageManager
-        from app.services.ai_service import AIService
-        from app.models.image import Image, TagCreate
+        from app.api.upload import process_image_with_gpt4o  # 导入正确的分析函数
+        from app.models.image import Image
         from app.database import get_db
         
         storage = StorageManager()
-        ai_service = AIService()
         imported_count = 0
         
         # 获取OSS中的图片文件
@@ -713,7 +712,7 @@ async def scan_oss_task(oss_prefix: str, uploader: str, auto_analyze: bool = Tru
             try:
                 db = next(get_db())
                 
-                # 检查文件是否已存在（使用OSS的key作为唯一标识）
+                # 检查文件是否已存在
                 existing = db.query(Image).filter(Image.oss_key == obj['key']).first()
                 if existing:
                     print(f"⏭️ 跳过已存在的文件: {obj['key']}")
@@ -726,7 +725,6 @@ async def scan_oss_task(oss_prefix: str, uploader: str, auto_analyze: bool = Tru
                     import io
                     import requests
                     
-                    # 构建正确的OSS URL
                     oss_url = storage.get_oss_url(obj['key'])
                     response = requests.get(oss_url, timeout=10)
                     img = PILImage.open(io.BytesIO(response.content))
@@ -735,13 +733,13 @@ async def scan_oss_task(oss_prefix: str, uploader: str, auto_analyze: bool = Tru
                     print(f"⚠️ 获取图片尺寸失败: {obj['key']}, {e}")
                     width, height = 0, 0
                 
-                # 创建图片记录 - 关键修复：正确设置路径字段
+                # 创建图片记录
                 image = Image(
-                    filename=obj['key'].split('/')[-1],  # 只保存文件名
+                    filename=obj['key'].split('/')[-1],
                     original_filename=obj['key'].split('/')[-1],
-                    file_path=obj['key'],  # 存储完整的OSS key
-                    oss_key=obj['key'],    # 新增：OSS key字段
-                    url=storage.get_oss_url(obj['key']),  # 存储完整的访问URL
+                    file_path=obj['key'],
+                    oss_key=obj['key'],
+                    url=storage.get_oss_url(obj['key']),
                     file_size=obj['size'],
                     width=width,
                     height=height,
@@ -756,9 +754,10 @@ async def scan_oss_task(oss_prefix: str, uploader: str, auto_analyze: bool = Tru
                 
                 imported_count += 1
                 
-                # 自动分析
+                # 使用正确的AI分析函数，传入OSS URL而不是key
                 if auto_analyze:
-                    await reanalyze_image_task(image.id, obj['key'])
+                    # 使用BackgroundTasks或直接调用
+                    await process_image_with_gpt4o(image.id, storage.get_oss_url(obj['key']), is_cloud_storage=True)
                 
                 print(f"✅ 导入OSS图片: {obj['key']}")
                 db.close()

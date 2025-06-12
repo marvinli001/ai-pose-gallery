@@ -1190,113 +1190,234 @@ function displayImages(images) {
         return;
     }
             
-    tbody.innerHTML = images.map(image => {
-        const isSelected = selectedImages.has(image.id);
-        return `
-            <tr id="row_${image.id}" class="${isSelected ? 'selected-row' : ''}">
-                <td class="select-column" style="display: ${batchActionsVisible ? 'table-cell' : 'none'};">
-                    <input type="checkbox" class="form-check-input image-checkbox" 
-                           value="${image.id}" onchange="toggleImageSelection(${image.id})"
-                           ${isSelected ? 'checked' : ''}>
-                </td>
-                <td>
-                    <div class="position-relative">
-                        <img src="${image.thumbnail_url || image.url}" 
-                             class="img-thumbnail rounded-3 shadow-sm cursor-pointer" 
-                             style="width: 80px; height: 80px; object-fit: cover;"
-                             alt="${image.filename}"
-                             onclick="previewImage('${image.url}', '${image.filename}')"
-                             onerror="this.src='/static/images/placeholder.jpg'">
-                        <span class="position-absolute top-0 start-0 badge bg-primary rounded-pill m-1">
-                            #${image.id}
-                        </span>
+tbody.innerHTML = images.map(image => {
+    const isSelected = selectedImages.has(image.id);
+    
+    // 修复图片URL
+    let imageUrl = image.url || '';
+    if (!imageUrl && image.file_path) {
+        if (image.oss_key || image.file_path.startsWith('ai-pose-gallery/')) {
+            const baseUrl = 'https://poseapp-ai.cat.sd';
+            imageUrl = `${baseUrl}/${image.file_path}`;
+        } else if (image.file_path.startsWith('uploads/')) {
+            const filename = image.file_path.split('/').pop();
+            imageUrl = `https://poseapp-ai.cat.sd/ai-pose-gallery/${filename}`;
+        }
+    }
+
+    if (imageUrl && !imageUrl.startsWith('http')) {
+        imageUrl = `https://poseapp-ai.cat.sd/${imageUrl.replace(/^\/+/, '')}`;
+    }
+
+    return `
+        <tr id="row_${image.id}" class="${isSelected ? 'selected-row' : ''}">
+            <td class="select-column" style="display: ${batchActionsVisible ? 'table-cell' : 'none'};">
+                <div class="form-check">
+                    <input class="form-check-input image-checkbox" type="checkbox" 
+                           value="${image.id}"
+                           ${isSelected ? 'checked' : ''} 
+                           onchange="toggleImageSelection(${image.id})">
+                </div>
+            </td>
+            <td>
+                <div class="image-preview" onclick="previewImage('${imageUrl}', '${image.filename}')">
+                    <img src="${imageUrl}" alt="${image.filename}" 
+                         class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;"
+                         onerror="this.src='/static/images/placeholder.png';">
+                </div>
+            </td>
+            <td>
+                <div class="text-truncate" style="max-width: 150px;" title="${image.filename}">
+                    <i class="fas fa-file-image me-1 text-muted"></i>${image.filename}
+                </div>
+                <small class="text-muted">
+                    ${formatFileSize(image.file_size || 0)} | ${image.width || 0}×${image.height || 0}
+                </small>
+            </td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="me-2">
+                        <i class="fas fa-user-circle fa-lg text-primary"></i>
                     </div>
-                </td>
-                <td>
-                    <div class="fw-bold text-truncate mb-1" style="max-width: 200px;" title="${image.filename}">
-                        <i class="fas fa-file-image me-1 text-primary"></i>
-                        ${image.filename}
+                    <div>
+                        <div class="fw-bold">${image.uploader}</div>
+                        <small class="text-muted">上传者</small>
                     </div>
-                    <div class="small text-muted mb-1">
-                        <i class="fas fa-expand-arrows-alt me-1"></i>
-                        ${image.width}×${image.height} · 
-                        <i class="fas fa-weight-hanging me-1"></i>
-                        ${formatFileSize(image.file_size)}
-                    </div>
-                    <div class="small text-muted">
-                        <i class="fas fa-calendar me-1"></i>
-                        ${formatDate(image.upload_time)} · 
-                        <i class="fas fa-eye me-1"></i>
-                        ${image.view_count || 0} 次浏览
-                    </div>
-                </td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <div class="me-2">
-                            <i class="fas fa-user-circle fa-lg text-primary"></i>
-                        </div>
-                        <div>
-                            <div class="fw-bold">${image.uploader}</div>
-                            <small class="text-muted">上传者</small>
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <div class="mb-2">
-                        <span class="status-badge status-${image.ai_analysis_status}">
-                            ${getStatusIcon(image.ai_analysis_status)}
-                            ${getStatusText(image.ai_analysis_status)}
-                        </span>
-                    </div>
-                    <div class="confidence-bar">
-                        <div class="confidence-fill bg-${getConfidenceColor(image.confidence)}" 
-                             style="width: ${(image.confidence || 0) * 100}%"></div>
-                    </div>
-                    <small class="text-muted">
-                        <i class="fas fa-percentage me-1"></i>
-                        置信度: ${Math.round((image.confidence || 0) * 100)}%
-                    </small>
-                </td>
-                <td>
-                    <div class="tag-cloud">
-                        ${(image.tags || []).slice(0, 3).map(tag => 
-                            `<span class="badge bg-secondary me-1 mb-1">${tag.name}</span>`
-                        ).join('')}
-                        ${image.tags && image.tags.length > 3 ? 
-                            `<span class="badge bg-light text-dark">+${image.tags.length - 3}</span>` : ''}
-                    </div>
-                </td>
-                <td>
-                    <div class="text-truncate" style="max-width: 250px;" title="${image.description || '暂无描述'}">
-                        ${image.description ? 
-                            `<i class="fas fa-quote-left me-1 text-muted"></i>${image.description}` : 
-                            '<span class="text-muted"><i class="fas fa-minus me-1"></i>暂无AI描述</span>'
-                        }
-                    </div>
-                </td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="btn btn-outline-primary btn-sm mb-1" onclick="viewDetails(${image.id})" 
-                                title="查看详情">
-                            <i class="fas fa-info-circle"></i>
-                        </button>
-                        <button class="btn btn-outline-warning btn-sm mb-1" onclick="reanalyzeImage(${image.id})" 
-                                title="重新分析">
-                            <i class="fas fa-brain"></i>
-                        </button>
-                        <button class="btn btn-outline-success btn-sm mb-1" onclick="editImage(${image.id})" 
-                                title="编辑">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-outline-danger btn-sm mb-1" onclick="deleteImage(${image.id})" 
-                                title="删除">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }).join('');
+                </div>
+            </td>
+            <td>
+                <div class="mb-2">
+                    <span class="status-badge status-${image.ai_analysis_status}">
+                        ${getStatusIcon(image.ai_analysis_status)}
+                        ${getStatusText(image.ai_analysis_status)}
+                    </span>
+                </div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill bg-${getConfidenceColor(image.confidence)}" 
+                         style="width: ${(image.confidence || 0) * 100}%"></div>
+                </div>
+                <small class="text-muted">
+                    <i class="fas fa-percentage me-1"></i>
+                    置信度: ${Math.round((image.confidence || 0) * 100)}%
+                </small>
+            </td>
+            <td>
+                <div class="tag-cloud">
+                    ${(image.tags || []).slice(0, 3).map(tag => 
+                        `<span class="badge bg-secondary me-1 mb-1">${tag.name}</span>`
+                    ).join('')}
+                    ${image.tags && image.tags.length > 3 ? 
+                        `<span class="badge bg-light text-dark">+${image.tags.length - 3}</span>` : ''}
+                </div>
+            </td>
+            <td>
+                <div class="text-truncate" style="max-width: 250px;" title="${image.description || '暂无描述'}">
+                    ${image.description ? 
+                        `<i class="fas fa-quote-left me-1 text-muted"></i>${image.description}` : 
+                        '<span class="text-muted"><i class="fas fa-minus me-1"></i>暂无AI描述</span>'
+                    }
+                </div>
+            </td>
+            <td>
+                <div class="action-buttons">
+                    <button class="btn btn-outline-primary btn-sm mb-1" onclick="viewDetails(${image.id})" 
+                            title="查看详情">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                    <button class="btn btn-outline-warning btn-sm mb-1" onclick="reanalyzeImage(${image.id})" 
+                            title="重新分析">
+                        <i class="fas fa-brain"></i>
+                    </button>
+                    <button class="btn btn-outline-success btn-sm mb-1" onclick="editImage(${image.id})" 
+                            title="编辑">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm mb-1" onclick="deleteImage(${image.id})" 
+                            title="删除">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `;
+}).join('');
+
+// 添加缺失的辅助函数
+function getStatusIcon(status) {
+    const iconMap = {
+        'pending': '<i class="fas fa-clock text-warning"></i>',
+        'completed': '<i class="fas fa-check-circle text-success"></i>',
+        'failed': '<i class="fas fa-exclamation-triangle text-danger"></i>',
+        'processing': '<i class="fas fa-cog fa-spin text-info"></i>'
+    };
+    return iconMap[status] || '<i class="fas fa-question-circle text-muted"></i>';
+}
+
+function getConfidenceColor(confidence) {
+    if (!confidence) return 'secondary';
+    if (confidence >= 0.8) return 'success';
+    if (confidence >= 0.6) return 'warning';
+    return 'danger';
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+}
+
+// 修复模态框删除函数
+function removeModal(modalId) {
+    const existingModal = document.getElementById(modalId);
+    if (existingModal) {
+        const bsModal = bootstrap.Modal.getInstance(existingModal);
+        if (bsModal) {
+            bsModal.dispose();
+        }
+        existingModal.remove();
+    }
+}
+
+// 修复显示/隐藏加载遮罩的函数
+function showLoading(text = '系统处理中...') {
+    const overlay = document.getElementById('loadingOverlay');
+    const textElement = document.getElementById('loadingText');
+    if (textElement) {
+        textElement.textContent = text;
+    }
+    if (overlay) {
+        overlay.style.display = 'flex';
+    }
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
+}
+
+// 修复通知函数
+function showSuccess(message) {
+    showNotification(message, 'success');
+}
+
+function showError(message) {
+    showNotification(message, 'danger');
+}
+
+function showInfo(message) {
+    showNotification(message, 'info');
+}
+
+function showNotification(message, type = 'info', duration = 5000) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = `
+        top: 20px; 
+        right: 20px; 
+        z-index: 10000; 
+        min-width: 300px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    `;
+    
+    alertDiv.innerHTML = `
+        ${getNotificationIcon(type)}
+        <span class="ms-2">${message}</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.classList.remove('show');
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 300);
+        }
+    }, duration);
+}
+
+function getNotificationIcon(type) {
+    const iconMap = {
+        'success': '<i class="fas fa-check-circle text-success"></i>',
+        'danger': '<i class="fas fa-exclamation-triangle text-danger"></i>',
+        'warning': '<i class="fas fa-exclamation-circle text-warning"></i>',
+        'info': '<i class="fas fa-info-circle text-info"></i>'
+    };
+    return iconMap[type] || '<i class="fas fa-bell"></i>';
+}
+
 }
 
         // 更新分页
