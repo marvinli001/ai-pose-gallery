@@ -22,9 +22,12 @@ class DatabaseService:
         self.db.refresh(image)
         return image
     
-    def get_image_by_id(self, image_id: int) -> Optional[Image]:
+    def get_image_by_id(self, image_id: int, include_deleted: bool = False) -> Optional[Image]:
         """根据ID获取图片"""
-        return self.db.query(Image).filter(Image.id == image_id).first()
+        query = self.db.query(Image).filter(Image.id == image_id)
+        if not include_deleted:
+            query = query.filter(Image.is_active == True)
+        return query.first()
     
     def get_images_by_tags(self, tag_names: List[str], limit: int = 20) -> List[Image]:
         """根据标签名称搜索图片"""
@@ -85,7 +88,7 @@ class DatabaseService:
     
     # 图片标签关联操作
     def add_tags_to_image(self, image_id: int, tag_names: List[str], source: str = "ai", confidences: List[float] = None):
-        """为图片添加标签"""
+        """为图片添加标签 - 原版本"""
         if confidences is None:
             confidences = [1.0] * len(tag_names)
         
@@ -115,6 +118,48 @@ class DatabaseService:
                 tag.usage_count += 1
         
         self.db.commit()
+    
+    def add_tags_to_image_safe(self, image_id: int, tag_names: List[str], source: str = "ai", confidences: List[float] = None):
+        """为图片添加标签 - 改进版本，更安全"""
+        if confidences is None:
+            confidences = [1.0] * len(tag_names)
+        
+        # 确保长度一致
+        if len(confidences) != len(tag_names):
+            confidences = [1.0] * len(tag_names)
+        
+        for i, tag_name in enumerate(tag_names):
+            try:
+                # 获取或创建标签
+                tag = self.get_or_create_tag(tag_name, "auto", f"AI生成的标签: {tag_name}")
+                
+                # 使用更严格的重复检查
+                existing = self.db.query(ImageTag).filter(
+                    and_(ImageTag.image_id == image_id, ImageTag.tag_id == tag.id)
+                ).first()
+                
+                if not existing:
+                    image_tag = ImageTag(
+                        image_id=image_id,
+                        tag_id=tag.id,
+                        confidence=confidences[i],
+                        source=source
+                    )
+                    self.db.add(image_tag)
+                    
+                    # 更新标签使用次数
+                    tag.usage_count += 1
+                    
+                    print(f"✅ 添加标签: {tag_name}")
+                else:
+                    print(f"⚠️ 标签已存在，跳过: {tag_name}")
+                    
+            except Exception as tag_error:
+                print(f"❌ 添加单个标签失败 {tag_name}: {tag_error}")
+                # 继续处理其他标签，不中断整个过程
+                continue
+        
+        # 在调用方处理 commit，这里不自动提交
     
     def get_image_tags(self, image_id: int) -> List[Tag]:
         """获取图片的标签"""
