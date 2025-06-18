@@ -1,12 +1,14 @@
 """
-AI服务 - 图片分析和标签生成
+AI服务 - 图片分析和标签生成 - 修复文件路径问题
 """
 import base64
 import httpx
+import os
 from typing import List, Dict, Any
 from PIL import Image
 import io
 import json
+from pathlib import Path
 
 from app.config import get_settings
 from app.models.image import TagCategory
@@ -23,12 +25,22 @@ class AIService:
     async def analyze_image(self, image_path: str) -> Dict[str, Any]:
         """分析图片并生成标签和描述"""
         try:
+            # 修复文件路径
+            fixed_path = self._fix_image_path(image_path)
+            print(f"🔍 原始路径: {image_path}")
+            print(f"🔧 修复后路径: {fixed_path}")
+            
+            # 检查文件是否存在
+            if not os.path.exists(fixed_path):
+                print(f"❌ 文件不存在: {fixed_path}")
+                return self._get_fallback_analysis()
+            
             # 加载和处理图片
-            image_data = self._prepare_image(image_path)
+            image_data = self._prepare_image(fixed_path)
             
             # 如果没有配置OpenAI API Key，使用模拟分析
             if not settings.openai_api_key or settings.openai_api_key == "your_openai_api_key_here":
-                return self._mock_analysis(image_path)
+                return self._mock_analysis(fixed_path)
             
             # 调用OpenAI Vision API
             return await self._call_openai_vision(image_data)
@@ -36,6 +48,44 @@ class AIService:
         except Exception as e:
             print(f"❌ 图片分析失败: {e}")
             return self._get_fallback_analysis()
+    
+    def _fix_image_path(self, image_path: str) -> str:
+        """修复图片路径"""
+        # 如果路径已经是绝对路径且存在，直接返回
+        if os.path.isabs(image_path) and os.path.exists(image_path):
+            return image_path
+        
+        # 尝试各种可能的路径组合
+        possible_paths = [
+            image_path,  # 原始路径
+            os.path.join(settings.upload_dir, image_path),  # upload_dir + 原始路径
+            os.path.join(settings.upload_dir, os.path.basename(image_path)),  # upload_dir + 文件名
+            os.path.join("uploads", image_path),  # uploads + 原始路径
+            os.path.join("uploads", os.path.basename(image_path)),  # uploads + 文件名
+            os.path.join("static/uploads", image_path),  # static/uploads + 原始路径
+            os.path.join("static/uploads", os.path.basename(image_path)),  # static/uploads + 文件名
+        ]
+        
+        # 如果路径包含 "ai-pose-gallery/"，移除这个前缀
+        if "ai-pose-gallery/" in image_path:
+            clean_path = image_path.replace("ai-pose-gallery/", "")
+            possible_paths.extend([
+                clean_path,
+                os.path.join(settings.upload_dir, clean_path),
+                os.path.join("uploads", clean_path),
+                os.path.join("static/uploads", clean_path),
+            ])
+        
+        # 测试每个可能的路径
+        for path in possible_paths:
+            if os.path.exists(path):
+                print(f"✅ 找到文件: {path}")
+                return path
+        
+        # 如果都不存在，返回最可能的路径（uploads目录）
+        fallback_path = os.path.join("uploads", os.path.basename(image_path))
+        print(f"⚠️ 使用回退路径: {fallback_path}")
+        return fallback_path
     
     def _prepare_image(self, image_path: str) -> str:
         """准备图片数据用于AI分析"""
