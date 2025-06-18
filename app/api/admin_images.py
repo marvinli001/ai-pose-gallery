@@ -825,9 +825,39 @@ async def reanalyze_image_task(image_id: int, file_path: str, custom_prompt: Opt
     try:
         print(f"🔄 开始重新分析图片 ID: {image_id}, 文件路径: {file_path}")
         
-        # 获取完整的图片URL
+        # 关键修复：确保获取完整的公网URL
         image_url = storage_manager.get_image_url(file_path)
-        print(f"🖼️ 图片URL: {image_url}")
+        print(f"🖼️ 转换后的图片URL: {image_url}")
+        
+        # 进一步验证URL格式
+        if not image_url.startswith('http'):
+            # 如果仍然不是HTTP URL，手动构建
+            clean_path = file_path.lstrip('/')
+            if not clean_path.startswith('ai-pose-gallery/'):
+                if clean_path.startswith('uploads/'):
+                    filename = clean_path.split('/')[-1]
+                    clean_path = f"ai-pose-gallery/{filename}"
+                else:
+                    clean_path = f"ai-pose-gallery/{clean_path}"
+            
+            # 使用OSS配置构建完整URL
+            oss_bucket_name = os.getenv('OSS_BUCKET_NAME', '')
+            oss_endpoint = os.getenv('OSS_ENDPOINT', '')
+            oss_custom_domain = os.getenv('OSS_CUSTOM_DOMAIN', '')
+            
+            if oss_custom_domain:
+                if not oss_custom_domain.startswith('http'):
+                    oss_custom_domain = f"https://{oss_custom_domain}"
+                image_url = f"{oss_custom_domain.rstrip('/')}/{clean_path}"
+            else:
+                endpoint_clean = oss_endpoint.replace('https://', '').replace('http://', '')
+                image_url = f"https://{oss_bucket_name}.{endpoint_clean}/{clean_path}"
+            
+            print(f"🔧 手动构建的URL: {image_url}")
+        
+        # 最终验证
+        if not image_url.startswith('http'):
+            raise ValueError(f"无法构建有效的图片URL: {image_url}")
         
         # 使用自定义提示词或默认分析
         if custom_prompt:
@@ -839,7 +869,7 @@ async def reanalyze_image_task(image_id: int, file_path: str, custom_prompt: Opt
         
         print(f"📋 分析结果: {analysis_result}")
         
-        # 改进数据库连接和事务管理
+        # 数据库操作保持不变...
         from app.database import SessionLocal
         db = SessionLocal()
         
@@ -897,7 +927,8 @@ async def reanalyze_image_task(image_id: int, file_path: str, custom_prompt: Opt
             else:
                 image.ai_analysis_status = 'failed'
                 db.commit()
-                print(f"❌ 重新分析失败 ID: {image_id}, 错误: {analysis_result.get('error', '未知错误')}")
+                error_msg = analysis_result.get('error', '未知错误')
+                print(f"❌ 重新分析失败 ID: {image_id}, 错误: {error_msg}")
                 
         except Exception as db_error:
             print(f"❌ 数据库操作失败: {db_error}")

@@ -307,21 +307,18 @@ async def reanalyze_image(
         if not image:
             raise HTTPException(status_code=404, detail="图片不存在")
         
+        print(f"🔄 收到重新分析请求 - 图片ID: {image_id}, 文件路径: {image.file_path}")
+        
         # 更新状态为重新分析中
         image.ai_analysis_status = 'pending'
         db.commit()
         
-        # 获取完整的OSS URL（这是关键修复！）
-        from app.services.storage_service import StorageManager
-        storage_manager = StorageManager()
-        image_url = storage_manager.get_oss_url(image.file_path)
-        
-        # 启动重新分析任务 - 传递完整的OSS URL
+        # 启动重新分析任务 - 直接传递file_path，让任务函数内部转换为URL
         background_tasks.add_task(
-            process_image_with_gpt4o, 
+            reanalyze_image_task, 
             image_id, 
-            image_url,  # 传递完整的OSS URL，而不是 image.file_path
-            True  # 使用云存储
+            image.file_path,  # 传递OSS key，在任务内部转换为完整URL
+            custom_prompt
         )
         
         return {
@@ -337,12 +334,33 @@ async def reanalyze_image_task(image_id: int, file_path: str, custom_prompt: Opt
     """重新分析图片的后台任务"""
     try:
         print(f"🔄 开始重新分析图片 ID: {image_id}")
+        print(f"📁 原始文件路径: {file_path}")
+        
+        # 关键修复：获取完整的公网URL
+        from app.services.storage_service import StorageManager
+        storage_manager = StorageManager()
+        
+        # 如果file_path是OSS key，转换为完整URL
+        if not file_path.startswith('http'):
+            image_url = storage_manager.get_oss_url(file_path)
+            print(f"🔧 转换为OSS URL: {image_url}")
+        else:
+            image_url = file_path
+            print(f"🌐 使用现有URL: {image_url}")
+        
+        # 验证URL格式
+        if not image_url.startswith('http'):
+            raise ValueError(f"无效的图片URL: {image_url}")
         
         # 使用自定义提示词或默认分析
         if custom_prompt:
-            analysis_result = await gpt4o_analyzer.analyze_with_custom_prompt(file_path, custom_prompt)
+            print(f"🤖 使用自定义提示词分析: {custom_prompt}")
+            analysis_result = await gpt4o_analyzer.analyze_with_custom_prompt(image_url, custom_prompt)
         else:
-            analysis_result = await gpt4o_analyzer.analyze_for_search(file_path)
+            print(f"🤖 使用默认分析")
+            analysis_result = await gpt4o_analyzer.analyze_for_search(image_url)
+        
+        print(f"📋 GPT分析结果: {analysis_result}")
         
         # 更新数据库
         from app.database import SessionLocal
@@ -379,7 +397,8 @@ async def reanalyze_image_task(image_id: int, file_path: str, custom_prompt: Opt
                 else:
                     image.ai_analysis_status = 'failed'
                     db.commit()
-                    print(f"❌ 重新分析失败 ID: {image_id}")
+                    error_msg = analysis_result.get('error', '未知错误')
+                    print(f"❌ 重新分析失败 ID: {image_id}, 错误: {error_msg}")
             
         except Exception as e:
             print(f"❌ 更新重新分析结果失败: {e}")
@@ -389,6 +408,17 @@ async def reanalyze_image_task(image_id: int, file_path: str, custom_prompt: Opt
             
     except Exception as e:
         print(f"❌ 重新分析任务失败: {e}")
+        # 标记为失败状态
+        try:
+            from app.database import SessionLocal
+            db = SessionLocal()
+            image = db.query(Image).filter(Image.id == image_id).first()
+            if image:
+                image.ai_analysis_status = 'failed'
+                db.commit()
+            db.close()
+        except:
+            pass
 
 
 async def _process_reanalyzed_tags(db_service: DatabaseService, image_id: int, analysis: dict):
