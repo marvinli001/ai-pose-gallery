@@ -20,6 +20,7 @@ from app.services.database_service import DatabaseService
 from app.services.gpt4o_service import gpt4o_analyzer
 from app.services.storage_service import storage_manager
 from app.config import get_settings
+from app.api.upload import process_image_with_gpt4o
 
 router = APIRouter()
 settings = get_settings()
@@ -310,12 +311,17 @@ async def reanalyze_image(
         image.ai_analysis_status = 'pending'
         db.commit()
         
-        # 启动重新分析任务
+        # 获取完整的OSS URL（这是关键修复！）
+        from app.services.storage_service import StorageManager
+        storage_manager = StorageManager()
+        image_url = storage_manager.get_oss_url(image.file_path)
+        
+        # 启动重新分析任务 - 传递完整的OSS URL
         background_tasks.add_task(
-            reanalyze_image_task, 
+            process_image_with_gpt4o, 
             image_id, 
-            image.file_path,
-            custom_prompt
+            image_url,  # 传递完整的OSS URL，而不是 image.file_path
+            True  # 使用云存储
         )
         
         return {

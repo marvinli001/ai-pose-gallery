@@ -332,8 +332,13 @@ async def batch_reanalyze_task(image_ids: List[int], custom_prompt: Optional[str
             if image:
                 print(f"📊 分析进度: {i+1}/{len(image_ids)} - 图片ID: {image_id}")
                 
-                # 调用单个重新分析任务
-                await reanalyze_image_task(image_id, image.file_path, custom_prompt)
+                # 修复：获取完整的OSS URL
+                from app.services.storage_service import StorageManager
+                storage_manager = StorageManager()
+                image_url = storage_manager.get_oss_url(image.file_path)
+                
+                # 调用重新分析任务 - 传递完整URL
+                await reanalyze_image_task(image_id, image.file_path, None)
                 
                 # 检查结果
                 db.refresh(image)

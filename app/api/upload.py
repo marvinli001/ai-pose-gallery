@@ -28,11 +28,19 @@ async def process_image_with_gpt4o(image_id: int, file_path: str, is_cloud_stora
     try:
         print(f"🤖 开始GPT-4o分析图片 ID: {image_id}")
         
-        # 对于云存储，file_path实际上是URL
+        # 修复：确保传递的是完整的URL
         analysis_file_path = file_path
         if is_cloud_storage:
-            # 对于OSS存储，file_path已经是完整的URL
-            print(f"🌐 分析OSS图片URL: {file_path}")
+            # 检查是否已经是完整URL
+            if not file_path.startswith('http'):
+                # 如果不是完整URL，通过StorageManager获取完整URL
+                from app.services.storage_service import StorageManager
+                storage_manager = StorageManager()
+                analysis_file_path = storage_manager.get_oss_url(file_path)
+                print(f"🔧 转换OSS路径为URL: {file_path} -> {analysis_file_path}")
+            else:
+                analysis_file_path = file_path
+            print(f"🌐 分析OSS图片URL: {analysis_file_path}")
         else:
             print(f"📁 分析本地图片: {file_path}")
         
