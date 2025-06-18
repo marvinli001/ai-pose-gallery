@@ -556,33 +556,27 @@ class StorageManager:
         return self.get_oss_url(clean_path)
 
         
-def get_oss_url(self, oss_key: str) -> str:
-    """获取OSS文件的访问URL"""
-    if not oss_key:
-        return "/static/images/placeholder.jpg"
-    
-    # 确保oss_key包含正确的前缀
-    clean_key = oss_key.lstrip('/')
-    
-    # 如果key不包含ai-pose-gallery前缀，添加它
-    if not clean_key.startswith('ai-pose-gallery/'):
-        if '/' not in clean_key:
-            clean_key = f"ai-pose-gallery/{clean_key}"
-        elif clean_key.startswith('uploads/'):
-            filename = clean_key.split('/')[-1]
-            clean_key = f"ai-pose-gallery/{filename}"
-    
-    # 优先使用自定义域名
-    if self.oss_custom_domain:
-        # 确保自定义域名有协议
-        domain = self.oss_custom_domain
-        if not domain.startswith(('http://', 'https://')):
-            domain = f"https://{domain}"
-        return f"{domain.rstrip('/')}/{clean_key}"
-    else:
-        # 使用标准OSS域名
-        endpoint_clean = self.oss_endpoint.replace('https://', '').replace('http://', '')
-        return f"https://{self.oss_bucket_name}.{endpoint_clean}/{clean_key}"
+    def get_oss_url(self, oss_key: str) -> str:
+        """获取OSS文件的访问URL"""
+        if not oss_key:
+            return "/static/images/placeholder.jpg"
+        
+        # 确保oss_key包含正确的前缀
+        clean_key = oss_key.lstrip('/')
+        
+        # 如果key不包含ai-pose-gallery前缀，添加它
+        if not clean_key.startswith('ai-pose-gallery/'):
+            if '/' not in clean_key:
+                clean_key = f"ai-pose-gallery/{clean_key}"
+            elif clean_key.startswith('uploads/'):
+                filename = clean_key.split('/')[-1]
+                clean_key = f"ai-pose-gallery/{filename}"
+        
+        if self.oss_custom_domain:
+            return f"{self.oss_custom_domain}/{clean_key}"
+        else:
+            endpoint_clean = self.oss_endpoint.replace('https://', '').replace('http://', '')
+            return f"https://{self.oss_bucket_name}.{endpoint_clean}/{clean_key}"
 
         
     async def save_upload_file(self, file: UploadFile, subfolder: str = "") -> tuple[str, str]:
