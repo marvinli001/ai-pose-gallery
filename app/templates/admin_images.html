@@ -1558,72 +1558,138 @@ function getNotificationIcon(type) {
             });
         }
 
-        // 批量操作执行
-        async function batchAction(action) {
-            if (selectedImages.size === 0) {
-                showError('请先选择要操作的图片');
-                return;
-            }
+        // 修复批量操作函数，支持重新分析
+async function batchAction(action) {
+    if (selectedImages.size === 0) {
+        showError('请先选择要操作的图片');
+        return;
+    }
+    
+    let confirmMessage = '';
+    let value = null;
+    let apiEndpoint = '';
+    let requestBody = {
+        image_ids: Array.from(selectedImages)
+    };
+    
+    switch (action) {
+        case 'activate':
+            confirmMessage = `确定要激活选中的 ${selectedImages.size} 张图片吗？`;
+            apiEndpoint = '/api/admin/images/batch-update';
+            requestBody.action = 'activate';
+            break;
+        case 'deactivate':
+            confirmMessage = `确定要禁用选中的 ${selectedImages.size} 张图片吗？`;
+            apiEndpoint = '/api/admin/images/batch-update';
+            requestBody.action = 'deactivate';
+            break;
+        case 'reanalyze':
+            const useCustomPrompt = confirm(`确定要重新分析选中的 ${selectedImages.size} 张图片吗？\n\n🤖 是否使用自定义提示词？\n\n✅ 确定 = 自定义分析\n❌ 取消 = 默认分析`);
             
-            let confirmMessage = '';
-            let value = null;
-            
-            switch (action) {
-                case 'activate':
-                    confirmMessage = `确定要激活选中的 ${selectedImages.size} 张图片吗？`;
-                    break;
-                case 'deactivate':
-                    confirmMessage = `确定要禁用选中的 ${selectedImages.size} 张图片吗？`;
-                    break;
-                case 'reanalyze':
-                    confirmMessage = `确定要重新分析选中的 ${selectedImages.size} 张图片吗？\n\n这将使用AI重新处理这些图片。`;
-                    break;
-                case 'delete':
-                    const permanent = confirm('选择删除类型：\n\n确定 = 永久删除（无法恢复）\n取消 = 软删除（可恢复）');
-                    value = permanent ? 'permanent' : 'soft';
-                    confirmMessage = `确定要${permanent ? '永久' : '软'}删除选中的 ${selectedImages.size} 张图片吗？`;
-                    break;
-                default:
-                    return;
-            }
-            
-            if (!confirm(confirmMessage)) {
-                return;
-            }
-            
-            try {
-                showLoading('正在执行批量操作...');
-                
-                const response = await fetch('/api/admin/images/batch-update', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        image_ids: Array.from(selectedImages),
-                        action: action,
-                        value: value
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showSuccess(`批量操作成功：${result.message}`);
-                    selectedImages.clear();
-                    loadImages(currentPage);
-                    loadStats();
-                    toggleBatchActions(); // 关闭批量操作模式
-                } else {
-                    showError(`批量操作失败：${result.detail || '未知错误'}`);
+            let customPrompt = null;
+            if (useCustomPrompt) {
+                customPrompt = prompt('请输入自定义AI分析提示词：\n\n例如：专注分析人物的姿势和表情特征');
+                if (!customPrompt || !customPrompt.trim()) {
+                    customPrompt = null;
                 }
-            } catch (error) {
-                console.error('批量操作失败:', error);
-                showError('网络错误：' + error.message);
-            } finally {
-                hideLoading();
             }
+            
+            confirmMessage = `确定要重新分析选中的 ${selectedImages.size} 张图片吗？`;
+            apiEndpoint = '/api/admin/images/batch-reanalyze';
+            requestBody = {
+                image_ids: Array.from(selectedImages),
+                status_filter: 'all'
+            };
+            if (customPrompt) {
+                requestBody.custom_prompt = customPrompt;
+            }
+            break;
+        case 'delete':
+            const permanent = confirm('选择删除类型：\n\n确定 = 永久删除（无法恢复）\n取消 = 软删除（可恢复）');
+            value = permanent ? 'permanent' : 'soft';
+            confirmMessage = `确定要${permanent ? '永久' : '软'}删除选中的 ${selectedImages.size} 张图片吗？`;
+            apiEndpoint = '/api/admin/images/batch-update';
+            requestBody.action = 'delete';
+            requestBody.value = value;
+            break;
+        default:
+            return;
+    }
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    try {
+        showLoading('正在执行批量操作...');
+        
+        const response = await fetch(apiEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showSuccess(`批量操作成功：${result.message}`);
+            selectedImages.clear();
+            loadImages(currentPage);
+            loadStats();
+            toggleBatchActions(); // 关闭批量操作模式
+        } else {
+            showError(`批量操作失败：${result.detail || '未知错误'}`);
         }
+    } catch (error) {
+        console.error('批量操作失败:', error);
+        showError('网络错误：' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+// 修复主页面批量分析功能
+async function batchAnalyzeFailedImages() {
+    if (!confirm('🔄 确定要重新分析所有失败的图片吗？\n\n这将使用AI重新处理所有分析失败的图片。\n建议在系统空闲时进行此操作。')) {
+        return;
+    }
+    
+    try {
+        showLoading('正在启动批量重新分析...');
+        
+        const response = await fetch('/api/admin/batch/analyze?status_filter=failed&limit=100', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showSuccess(`✅ 批量重新分析已启动！\n\n📊 将处理 ${result.count} 张失败的图片\n⏱️ 预计需要 ${Math.ceil(result.count * 2 / 60)} 分钟`);
+            
+            // 定期刷新统计数据
+            const refreshInterval = setInterval(() => {
+                loadStats();
+            }, 10000); // 每10秒刷新一次
+            
+            // 30分钟后停止自动刷新
+            setTimeout(() => {
+                clearInterval(refreshInterval);
+            }, 30 * 60 * 1000);
+        } else {
+            showError(`启动批量分析失败：${result.detail || result.message || '未知错误'}`);
+        }
+    } catch (error) {
+        console.error('批量分析失败:', error);
+        showError('网络错误：' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
 
         // 显示批量标签模态框
         function showBatchTagModal() {
@@ -1693,44 +1759,60 @@ function getNotificationIcon(type) {
             }
         }
 
-        async function reanalyzeImage(imageId) {
-            const useCustomPrompt = confirm('🤖 是否使用自定义提示词进行AI分析？\n\n✅ 确定 = 自定义分析\n❌ 取消 = 默认分析');
-            
-            let customPrompt = null;
-            if (useCustomPrompt) {
-                customPrompt = prompt('请输入自定义AI分析提示词：\n\n例如：专注分析人物的姿势和表情特征');
-                if (!customPrompt || !customPrompt.trim()) {
-                    return;
-                }
-            }
-            
-            try {
-                showLoading('正在启动AI重新分析...');
-                
-                const response = await fetch(`/api/admin/images/${imageId}/reanalyze`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        custom_prompt: customPrompt
-                    })
-                });
-                
-                const result = await response.json();
-                                if (result.success) {
-                    showSuccess('🧠 AI重新分析任务已启动，请稍候查看结果');
-                    loadImages(currentPage);
-                } else {
-                    showError('启动重新分析失败：' + (result.detail || '未知错误'));
-                }
-            } catch (error) {
-                console.error('重新分析失败:', error);
-                showError('网络错误：' + error.message);
-            } finally {
-                hideLoading();
-            }
+async function reanalyzeImage(imageId) {
+    const useCustomPrompt = confirm('🤖 是否使用自定义提示词进行AI分析？\n\n✅ 确定 = 自定义分析\n❌ 取消 = 默认分析');
+    
+    let customPrompt = null;
+    if (useCustomPrompt) {
+        customPrompt = prompt('请输入自定义AI分析提示词：\n\n例如：专注分析人物的姿势和表情特征');
+        if (!customPrompt || !customPrompt.trim()) {
+            return;
         }
+    }
+    
+    try {
+        showLoading('正在启动AI重新分析...');
+        
+        const requestBody = {};
+        if (customPrompt) {
+            requestBody.custom_prompt = customPrompt;
+        }
+        
+        // 修复API路径 - 使用正确的路由
+        const response = await fetch(`/api/admin/images/${imageId}/reanalyze`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showSuccess('🧠 AI重新分析任务已启动，请稍候查看结果');
+            
+            // 立即更新状态显示
+            const statusElement = document.querySelector(`#row_${imageId} .status-badge`);
+            if (statusElement) {
+                statusElement.className = 'status-badge status-pending';
+                statusElement.innerHTML = '<i class="fas fa-clock"></i> 分析中';
+            }
+            
+            // 延迟刷新列表
+            setTimeout(() => {
+                loadImages(currentPage);
+            }, 1000);
+        } else {
+            showError('启动重新分析失败：' + (result.detail || '未知错误'));
+        }
+    } catch (error) {
+        console.error('重新分析失败:', error);
+        showError('网络错误：' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
 
         async function editImage(imageId) {
             try {

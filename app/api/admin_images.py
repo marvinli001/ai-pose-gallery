@@ -12,6 +12,7 @@ import json
 import os
 import io
 import csv
+import asyncio
 
 from app.database import get_db
 from app.auth.dependencies import require_admin
@@ -53,7 +54,12 @@ async def get_images_list(
         
         # AI分析状态筛选
         if ai_status:
-            query = query.filter(Image.ai_analysis_status == ai_status)
+            if ai_status == "failed":
+                query = query.filter(Image.ai_analysis_status == 'failed')
+            elif ai_status == "pending":
+                query = query.filter(Image.ai_analysis_status == 'pending')
+            elif ai_status == "completed":
+                query = query.filter(Image.ai_analysis_status == 'completed')
         
         # 上传者筛选
         if uploader:
@@ -136,6 +142,7 @@ async def get_images_list(
         }
         
     except Exception as e:
+        print(f"❌ 获取图片列表失败: {e}")
         raise HTTPException(status_code=500, detail=f"获取图片列表失败: {str(e)}")
 
 
@@ -277,6 +284,8 @@ async def reanalyze_image(
             image.ai_model = 'gpt-4o-custom'
         db.commit()
         
+        print(f"🔄 启动重新分析任务 - 图片ID: {image_id}, 文件路径: {image.file_path}")
+        
         # 启动重新分析任务
         background_tasks.add_task(
             reanalyze_image_task, 
@@ -293,8 +302,116 @@ async def reanalyze_image(
     except HTTPException:
         raise
     except Exception as e:
+        print(f"❌ 启动重新分析失败: {e}")
         raise HTTPException(status_code=500, detail=f"启动重新分析失败: {str(e)}")
+    
+async def batch_reanalyze_task(image_ids: List[int], custom_prompt: Optional[str] = None):
+    """批量重新分析任务"""
+    print(f"🚀 开始批量重新分析 {len(image_ids)} 张图片")
+    
+    success_count = 0
+    failed_count = 0
+    
+    for i, image_id in enumerate(image_ids):
+        try:
+            from app.database import SessionLocal
+            db = SessionLocal()
+            
+            image = db.query(Image).filter(Image.id == image_id).first()
+            if image:
+                print(f"📊 分析进度: {i+1}/{len(image_ids)} - 图片ID: {image_id}")
+                
+                # 调用单个重新分析任务
+                await reanalyze_image_task(image_id, image.file_path, custom_prompt)
+                
+                # 检查结果
+                db.refresh(image)
+                if image.ai_analysis_status == 'completed':
+                    success_count += 1
+                else:
+                    failed_count += 1
+                
+                # 添加延迟避免API限制
+                await asyncio.sleep(2)
+            
+            db.close()
+            
+        except Exception as e:
+            print(f"❌ 批量分析图片 {image_id} 失败: {e}")
+            failed_count += 1
+            continue
+    
+    print(f"✅ 批量重新分析完成 - 成功: {success_count}, 失败: {failed_count}")
 
+
+@router.post("/batch-reanalyze")
+async def batch_reanalyze_images(
+    background_tasks: BackgroundTasks,
+    image_ids: List[int],
+    status_filter: str = Query("failed", description="分析状态筛选: pending, failed, all"),
+    custom_prompt: Optional[str] = None,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """批量重新分析图片"""
+    try:
+        print(f"🚀 批量重新分析请求 - 图片IDs: {image_ids}, 状态筛选: {status_filter}")
+        
+        # 如果没有指定图片ID，根据状态筛选查找
+        if not image_ids:
+            query = db.query(Image).filter(Image.is_active == True)
+            
+            if status_filter == "failed":
+                query = query.filter(Image.ai_analysis_status == 'failed')
+            elif status_filter == "pending":
+                query = query.filter(Image.ai_analysis_status == 'pending')
+            elif status_filter == "all":
+                query = query.filter(Image.ai_analysis_status.in_(['failed', 'pending']))
+            
+            images = query.limit(50).all()  # 限制批量数量
+            image_ids = [img.id for img in images]
+        else:
+            # 验证指定的图片ID
+            images = db.query(Image).filter(
+                and_(
+                    Image.id.in_(image_ids),
+                    Image.is_active == True
+                )
+            ).all()
+            image_ids = [img.id for img in images]
+        
+        if not image_ids:
+            return {
+                "success": True,
+                "message": "没有找到需要重新分析的图片",
+                "count": 0
+            }
+        
+        # 更新状态为处理中
+        db.query(Image).filter(Image.id.in_(image_ids)).update(
+            {"ai_analysis_status": "pending"},
+            synchronize_session=False
+        )
+        db.commit()
+        
+        print(f"📊 将重新分析 {len(image_ids)} 张图片")
+        
+        # 启动批量分析任务
+        background_tasks.add_task(
+            batch_reanalyze_task,
+            image_ids,
+            custom_prompt
+        )
+        
+        return {
+            "success": True,
+            "message": f"已启动批量重新分析任务，将处理 {len(image_ids)} 张图片",
+            "count": len(image_ids)
+        }
+        
+    except Exception as e:
+        print(f"❌ 启动批量重新分析失败: {e}")
+        raise HTTPException(status_code=500, detail=f"启动批量重新分析失败: {str(e)}")
 
 @router.delete("/{image_id}")
 async def delete_image(
@@ -689,13 +806,21 @@ async def export_images_data(
 async def reanalyze_image_task(image_id: int, file_path: str, custom_prompt: Optional[str] = None):
     """重新分析图片的后台任务"""
     try:
-        print(f"🔄 开始重新分析图片 ID: {image_id}")
+        print(f"🔄 开始重新分析图片 ID: {image_id}, 文件路径: {file_path}")
+        
+        # 获取完整的图片URL
+        image_url = storage_manager.get_image_url(file_path)
+        print(f"🖼️ 图片URL: {image_url}")
         
         # 使用自定义提示词或默认分析
         if custom_prompt:
-            analysis_result = await gpt4o_analyzer.analyze_with_custom_prompt(file_path, custom_prompt)
+            print(f"🤖 使用自定义提示词: {custom_prompt}")
+            analysis_result = await gpt4o_analyzer.analyze_with_custom_prompt(image_url, custom_prompt)
         else:
-            analysis_result = await gpt4o_analyzer.analyze_for_search(file_path)
+            print(f"🤖 使用默认分析")
+            analysis_result = await gpt4o_analyzer.analyze_for_search(image_url)
+        
+        print(f"📋 分析结果: {analysis_result}")
         
         # 更新数据库
         from app.database import SessionLocal
@@ -732,7 +857,7 @@ async def reanalyze_image_task(image_id: int, file_path: str, custom_prompt: Opt
                 else:
                     image.ai_analysis_status = 'failed'
                     db.commit()
-                    print(f"❌ 重新分析失败 ID: {image_id}")
+                    print(f"❌ 重新分析失败 ID: {image_id}, 错误: {analysis_result.get('error', '未知错误')}")
             
         except Exception as e:
             print(f"❌ 更新重新分析结果失败: {e}")
@@ -742,6 +867,17 @@ async def reanalyze_image_task(image_id: int, file_path: str, custom_prompt: Opt
             
     except Exception as e:
         print(f"❌ 重新分析任务失败: {e}")
+        # 更新状态为失败
+        try:
+            from app.database import SessionLocal
+            db = SessionLocal()
+            image = db.query(Image).filter(Image.id == image_id).first()
+            if image:
+                image.ai_analysis_status = 'failed'
+                db.commit()
+            db.close()
+        except:
+            pass
 
 
 async def _process_reanalyzed_tags(db_service: DatabaseService, image_id: int, analysis: dict):

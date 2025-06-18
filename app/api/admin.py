@@ -994,3 +994,181 @@ async def clear_system_cache(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"清理缓存失败: {str(e)}")
+    
+# 在现有代码中添加/修改以下部分
+
+@router.post("/batch/analyze")
+async def batch_analyze_images(
+    background_tasks: BackgroundTasks,
+    status_filter: str = Query("failed", description="分析状态筛选: pending, failed, all"),
+    limit: int = Query(50, description="批量处理数量限制"),
+    custom_prompt: Optional[str] = None,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """批量分析图片 - 支持失败重试"""
+    try:
+        print(f"🚀 批量分析请求 - 状态筛选: {status_filter}, 限制: {limit}")
+        
+        # 查找需要分析的图片
+        query = db.query(Image).filter(Image.is_active == True)
+        
+        if status_filter == "pending":
+            query = query.filter(Image.ai_analysis_status == 'pending')
+        elif status_filter == "failed":
+            query = query.filter(Image.ai_analysis_status == 'failed')
+        elif status_filter == "all":
+            query = query.filter(Image.ai_analysis_status.in_(['pending', 'failed']))
+        
+        images = query.limit(limit).all()
+        
+        if not images:
+            return {
+                "success": True,
+                "message": f"没有找到需要分析的图片（状态: {status_filter}）",
+                "count": 0
+            }
+        
+        print(f"📊 找到 {len(images)} 张需要分析的图片")
+        
+        # 更新状态为处理中
+        image_ids = [img.id for img in images]
+        db.query(Image).filter(Image.id.in_(image_ids)).update(
+            {"ai_analysis_status": "pending"},
+            synchronize_session=False
+        )
+        db.commit()
+        
+        # 启动批量分析任务
+        background_tasks.add_task(
+            batch_analyze_task,
+            image_ids,
+            custom_prompt
+        )
+        
+        return {
+            "success": True,
+            "message": f"已启动批量分析任务，将处理 {len(images)} 张图片",
+            "count": len(images),
+            "status_filter": status_filter
+        }
+        
+    except Exception as e:
+        print(f"❌ 启动批量分析失败: {e}")
+        raise HTTPException(status_code=500, detail=f"启动批量分析失败: {str(e)}")
+
+
+async def batch_analyze_task(image_ids: List[int], custom_prompt: Optional[str] = None):
+    """批量分析任务 - 改进版"""
+    print(f"🚀 开始批量分析 {len(image_ids)} 张图片")
+    
+    success_count = 0
+    failed_count = 0
+    
+    for i, image_id in enumerate(image_ids):
+        try:
+            from app.database import SessionLocal
+            db = SessionLocal()
+            
+            image = db.query(Image).filter(Image.id == image_id).first()
+            if image:
+                print(f"📊 分析进度: {i+1}/{len(image_ids)} - 图片ID: {image_id}")
+                
+                # 获取图片URL
+                image_url = storage_manager.get_image_url(image.file_path)
+                print(f"🖼️ 分析图片URL: {image_url}")
+                
+                # 执行AI分析
+                if custom_prompt:
+                    analysis_result = await gpt4o_analyzer.analyze_with_custom_prompt(image_url, custom_prompt)
+                else:
+                    analysis_result = await gpt4o_analyzer.analyze_for_search(image_url)
+                
+                # 更新结果
+                if analysis_result.get("success"):
+                    analysis = analysis_result["analysis"]
+                    
+                    # 更新AI分析结果
+                    image.ai_description = analysis.get('description', '')
+                    image.ai_confidence = analysis.get('confidence', 0.0)
+                    image.ai_analysis_status = 'completed'
+                    image.ai_model = 'gpt-4o-batch' if not custom_prompt else 'gpt-4o-custom-batch'
+                    
+                    # 存储完整分析结果
+                    image.ai_analysis_raw = json.dumps(analysis, ensure_ascii=False)
+                    image.ai_mood = analysis.get('mood', '')
+                    image.ai_style = analysis.get('style', '')
+                    image.ai_searchable_keywords = json.dumps(
+                        analysis.get('searchable_keywords', []), 
+                        ensure_ascii=False
+                    )
+                    
+                    # 处理标签
+                    db.query(ImageTag).filter(ImageTag.image_id == image_id).delete()
+                    await _process_batch_tags(db, image_id, analysis)
+                    
+                    success_count += 1
+                    print(f"✅ 分析成功 ID: {image_id}")
+                else:
+                    image.ai_analysis_status = 'failed'
+                    failed_count += 1
+                    print(f"❌ 分析失败 ID: {image_id}, 错误: {analysis_result.get('error', '未知错误')}")
+                
+                db.commit()
+                
+                # 添加延迟避免API限制
+                await asyncio.sleep(2)
+            
+            db.close()
+            
+        except Exception as e:
+            print(f"❌ 批量分析图片 {image_id} 失败: {e}")
+            failed_count += 1
+            
+            # 更新为失败状态
+            try:
+                from app.database import SessionLocal
+                db = SessionLocal()
+                image = db.query(Image).filter(Image.id == image_id).first()
+                if image:
+                    image.ai_analysis_status = 'failed'
+                    db.commit()
+                db.close()
+            except:
+                pass
+            
+            continue
+    
+    print(f"✅ 批量分析完成 - 成功: {success_count}, 失败: {failed_count}")
+
+
+async def _process_batch_tags(db: Session, image_id: int, analysis: dict):
+    """处理批量分析的标签"""
+    try:
+        db_service = DatabaseService(db)
+        
+        tags = analysis.get('tags', {})
+        all_tags = []
+        confidences = []
+        
+        # 处理分类标签
+        for category, tag_list in tags.items():
+            if isinstance(tag_list, list):
+                for tag in tag_list:
+                    if tag and tag.strip() and tag not in all_tags:
+                        all_tags.append(tag.strip())
+                        confidences.append(analysis.get('confidence', 0.8))
+        
+        # 添加搜索关键词作为标签
+        searchable_keywords = analysis.get('searchable_keywords', [])
+        for keyword in searchable_keywords:
+            if keyword and keyword.strip() and keyword not in all_tags:
+                all_tags.append(keyword.strip())
+                confidences.append(analysis.get('confidence', 0.8))
+        
+        # 添加到数据库
+        if all_tags:
+            db_service.add_tags_to_image(image_id, all_tags, 'gpt4o-batch', confidences)
+            
+    except Exception as e:
+        print(f"❌ 处理标签失败: {e}")
