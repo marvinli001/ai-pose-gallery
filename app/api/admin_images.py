@@ -272,19 +272,30 @@ async def reanalyze_image(
 ):
     """重新分析图片"""
     try:
+        print(f"🔄 收到重新分析请求 - 图片ID: {image_id}, 用户: {current_user.username}")
+        
         db_service = DatabaseService(db)
         image = db_service.get_image_by_id(image_id, include_deleted=True)
         
         if not image:
+            print(f"❌ 图片不存在 - ID: {image_id}")
             raise HTTPException(status_code=404, detail="图片不存在")
         
-        # 更新状态为重新分析中
-        image.ai_analysis_status = 'pending'
-        if custom_prompt:
-            image.ai_model = 'gpt-4o-custom'
-        db.commit()
+        print(f"📄 图片信息 - 文件名: {image.filename}, 路径: {image.file_path}, 当前状态: {image.ai_analysis_status}")
         
-        print(f"🔄 启动重新分析任务 - 图片ID: {image_id}, 文件路径: {image.file_path}")
+        # 更新状态为重新分析中
+        try:
+            image.ai_analysis_status = 'pending'
+            if custom_prompt:
+                image.ai_model = 'gpt-4o-custom'
+            db.commit()
+            print(f"✅ 状态更新为pending")
+        except Exception as status_error:
+            print(f"❌ 更新状态失败: {status_error}")
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"更新状态失败: {str(status_error)}")
+        
+        print(f"🚀 启动后台分析任务")
         
         # 启动重新分析任务
         background_tasks.add_task(
@@ -822,7 +833,7 @@ async def reanalyze_image_task(image_id: int, file_path: str, custom_prompt: Opt
         
         print(f"📋 分析结果: {analysis_result}")
         
-        # 更新数据库
+        # 修复数据库连接管理
         from app.database import SessionLocal
         db = SessionLocal()
         try:
@@ -840,6 +851,7 @@ async def reanalyze_image_task(image_id: int, file_path: str, custom_prompt: Opt
                     image.ai_model = 'gpt-4o-reanalyzed' if not custom_prompt else 'gpt-4o-custom'
                     
                     # 存储完整分析结果
+                    import json
                     image.ai_analysis_raw = json.dumps(analysis, ensure_ascii=False)
                     image.ai_mood = analysis.get('mood', '')
                     image.ai_style = analysis.get('style', '')
@@ -848,8 +860,11 @@ async def reanalyze_image_task(image_id: int, file_path: str, custom_prompt: Opt
                         ensure_ascii=False
                     )
                     
-                    # 重新处理标签
+                    # 重新处理标签 - 在事务内执行
+                    from app.models.image import ImageTag
                     db.query(ImageTag).filter(ImageTag.image_id == image_id).delete()
+                    db.flush()  # 立即执行删除操作
+                    
                     await _process_reanalyzed_tags(db_service, image_id, analysis)
                     
                     db.commit()
@@ -858,10 +873,21 @@ async def reanalyze_image_task(image_id: int, file_path: str, custom_prompt: Opt
                     image.ai_analysis_status = 'failed'
                     db.commit()
                     print(f"❌ 重新分析失败 ID: {image_id}, 错误: {analysis_result.get('error', '未知错误')}")
-            
+            else:
+                print(f"❌ 图片不存在 ID: {image_id}")
+                
         except Exception as e:
             print(f"❌ 更新重新分析结果失败: {e}")
             db.rollback()
+            # 确保失败状态被保存
+            try:
+                image = db.query(Image).filter(Image.id == image_id).first()
+                if image:
+                    image.ai_analysis_status = 'failed'
+                    db.commit()
+            except Exception as inner_e:
+                print(f"❌ 更新失败状态也失败: {inner_e}")
+                db.rollback()
         finally:
             db.close()
             
@@ -876,31 +902,49 @@ async def reanalyze_image_task(image_id: int, file_path: str, custom_prompt: Opt
                 image.ai_analysis_status = 'failed'
                 db.commit()
             db.close()
-        except:
-            pass
+        except Exception as fallback_e:
+            print(f"❌ 回退操作也失败: {fallback_e}")
 
 
 async def _process_reanalyzed_tags(db_service: DatabaseService, image_id: int, analysis: dict):
     """处理重新分析的标签"""
-    tags = analysis.get('tags', {})
-    all_tags = []
-    confidences = []
-    
-    # 处理分类标签
-    for category, tag_list in tags.items():
-        if isinstance(tag_list, list):
-            for tag in tag_list:
-                if tag and tag.strip() and tag not in all_tags:
-                    all_tags.append(tag.strip())
-                    confidences.append(analysis.get('confidence', 0.8))
-    
-    # 添加搜索关键词作为标签
-    searchable_keywords = analysis.get('searchable_keywords', [])
-    for keyword in searchable_keywords:
-        if keyword and keyword.strip() and keyword not in all_tags:
-            all_tags.append(keyword.strip())
-            confidences.append(analysis.get('confidence', 0.8))
-    
-    # 添加到数据库
-    if all_tags:
-        db_service.add_tags_to_image(image_id, all_tags, 'gpt4o-reanalyzed', confidences)
+    try:
+        tags = analysis.get('tags', {})
+        all_tags = []
+        confidences = []
+        
+        # 处理分类标签
+        for category, tag_list in tags.items():
+            if isinstance(tag_list, list):
+                for tag in tag_list:
+                    if tag and tag.strip() and tag not in all_tags:
+                        all_tags.append(tag.strip())
+                        confidences.append(analysis.get('confidence', 0.8))
+        
+        # 添加搜索关键词作为标签
+        searchable_keywords = analysis.get('searchable_keywords', [])
+        for keyword in searchable_keywords:
+            if keyword and keyword.strip() and keyword not in all_tags:
+                all_tags.append(keyword.strip())
+                confidences.append(analysis.get('confidence', 0.8))
+        
+        # 添加氛围和风格作为标签
+        mood = analysis.get('mood', '')
+        style = analysis.get('style', '')
+        
+        if mood and mood not in all_tags:
+            all_tags.append(mood)
+            confidences.append(analysis.get('confidence', 0.7))
+        
+        if style and style not in all_tags:
+            all_tags.append(style)
+            confidences.append(analysis.get('confidence', 0.7))
+        
+        # 添加到数据库
+        if all_tags:
+            db_service.add_tags_to_image(image_id, all_tags, 'gpt4o-reanalyzed', confidences)
+            print(f"✅ 成功处理 {len(all_tags)} 个标签")
+            
+    except Exception as e:
+        print(f"❌ 处理标签失败: {e}")
+        # 不抛出异常，让上层继续处理
